@@ -1,0 +1,62 @@
+/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+  
+   Permission to use, copy, modify, and distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+  
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
+
+/* This list should be sorted alphabetically to allow
+   bsearch work correctly. */
+
+KEYWORD (alpha, id, "\\alpha")
+KEYWORD (begin, keyword, "\\begin")
+KEYWORD (beta, id, "\\beta")
+KEYWORD (call, keyword, "\\call")
+KEYWORD (cdot, operator, "\\cdot")
+KEYWORD (chi, id, "\\chi")
+KEYWORD (delta, id, "\\delta")
+KEYWORD (documentclass, keyword, "\\documentclass")
+KEYWORD (end, keyword, "\\end")
+KEYWORD (epsilon, id, "\\epsilon")
+KEYWORD (eta, id, "\\eta")
+KEYWORD (filter, keyword, "\\filter")
+KEYWORD (gamma, id, "\\gamma")
+KEYWORD (geq, operator, "\\geq")
+KEYWORD (gg, operator, "\\gg")
+KEYWORD (If, keyword, "\\If")
+KEYWORD (in, operator, "\\in")
+KEYWORD (iota, id, "\\iota")
+KEYWORD (kappa, id, "\\kappa")
+KEYWORD (lambda, id, "\\lambda")
+KEYWORD (land, operator, "\\land")
+KEYWORD (leq, operator, "\\leq")
+KEYWORD (ll, operator, "\\ll")
+KEYWORD (lnot, operator, "\\lnot")
+KEYWORD (lor, operator, "\\lor")
+KEYWORD (mod, operator, "\\mod")
+KEYWORD (mu, id, "\\mu")
+KEYWORD (not, operator, "\\not")
+KEYWORD (omega, id, "\\omega")
+KEYWORD (oplus, operator, "\\oplus")
+KEYWORD (phi, id, "\\phi")
+KEYWORD (pi, id, "\\pi")
+KEYWORD (psi, id, "\\psi")
+KEYWORD (qquad, whitespace, "\\qquad")
+KEYWORD (quad, whitespace, "\\quad")
+KEYWORD (return, keyword, "\\return")
+KEYWORD (rho, id, "\\rho")
+KEYWORD (sigma, id, "\\sigma")
+KEYWORD (tau, id, "\\tau")
+KEYWORD (theta, id, "\\theta")
+KEYWORD (type, keyword, "\\type")
+KEYWORD (upsilon, id, "\\upsilon")
+KEYWORD (usepackage, keyword, "\\usepackage")
+KEYWORD (xi, id, "\\xi")
+KEYWORD (zeta, id, "\\zeta")

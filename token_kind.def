@@ -1,0 +1,35 @@
+/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+  
+   Permission to use, copy, modify, and distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+  
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
+
+TOKEN_KIND (tv_comma,         ",")
+TOKEN_KIND (tv_lparen,        "(")
+TOKEN_KIND (tv_rparen,        ")")
+TOKEN_KIND (tv_lsquare,       "[")
+TOKEN_KIND (tv_rsquare,       "]")
+TOKEN_KIND (tv_lbrace,        "{")
+TOKEN_KIND (tv_rbrace,        "}")
+TOKEN_KIND (tv_colon,         ":")
+TOKEN_KIND (tv_gt,            ">")
+TOKEN_KIND (tv_lt,            "<")
+TOKEN_KIND (tv_plus,          "+")
+TOKEN_KIND (tv_minus,         "-")
+TOKEN_KIND (tv_eq,            "=")
+TOKEN_KIND (tv_lower_index,   "_")
+TOKEN_KIND (tv_upper_index,   "^")
+TOKEN_KIND (tv_delimiter,     "&")
+TOKEN_KIND (tv_small_space,   "\\,")
+TOKEN_KIND (tv_medium_space,  "\\:")
+TOKEN_KIND (tv_large_space,   "\\;")
+TOKEN_KIND (tv_space,         "\\ ")
+TOKEN_KIND (tv_eof,           "EOF")
