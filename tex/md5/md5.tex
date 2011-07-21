@@ -1,0 +1,122 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+
+\begin{document}
+\begin{eqcode}{length}{a}{\type{Z}}{\type{Z}^1_8}
+    r \in \type{Z}^1_8 \lend
+    r_i\  |\  0 \leq i \leq 7 = 0 \lend
+    n = 256^{\lfloor \log_{256}\left(a\right)\rfloor} \lend
+    n^{[0]} = n \lend
+    r^{[i]}_i = \dfrac{a}{n^{[i]}} \lend
+    n^{[i]} = \dfrac{n^{[i-1]}}{256} \lend
+    \return{\filter{r^{[i]}\  |\  i = \call{shape}{a}_0}} \lend
+\end{eqcode}
+
+\begin{eqcode}{divide}{w}{\type{Z}^1}{\type{Z}^1_{64}}
+    l = \call{length}{\call{shape}{w}_0} \lend
+    a_i\  |\  0 \leq i \leq 63 = 
+        \begin{cases}
+            w_i & i < \call{shape}{w} \lend
+            \hex{80}  & i = \call{shape}{w} \lend
+            l_{i-56} & i \geq 56 \lend
+            0 & \text{otherwise} \lend
+        \end{cases} \lend
+    \return{a} \lend
+\end{eqcode}
+
+\begin{eqcode}{T}{i}{\type{Z}}{\type{Z}}
+    \return{\lfloor \hex{100000000} \cdot |\sin i| \rfloor } \lend
+\end{eqcode}
+
+\begin{eqcode}{F}{i, x, y, z}{\type{Z}, \type{Z}, \type{Z},
+\type{Z}}{\type{Z}}
+    \iif i < 16\  \return{(x \land y) \lor (\lnot x \land z)} \lend
+    \iif i < 32\  \return{(x \land z) \lor (y \land \lnot z)} \lend
+    \iif i < 48\  \return{x \oplus y \oplus z} \lend
+    \iif i < 64\  \return{y \oplus (x \lor \lnot z)} \lend
+\end{eqcode}
+
+\begin{eqcode}{P}{a,b,c,d,k,s,i,W,X}{\type{Z}, \type{Z}, \type{Z},
+\type{Z}, \type{Z}, \type{Z}, \type{Z}, \type{Z}^1_4,
+\type{Z}^1_{16}}{\type{Z}^1_4}
+    W_a = W_b + ((W_a + X_k + \call{T}{i+1}  + \call{F}{i,b,c,d}) \ll s ) \lend
+    \return{W} \lend
+\end{eqcode}
+
+\begin{eqcode}{transform}{a}{\type{Z}^1_{64}}{\type{Z}^1_{16}}
+    r \in \type{Z}^1_{16} \lend
+    r_i\  |\  \forall i = a_{4 \cdot i} \ll 24 \lend
+    r_i\  |\  \forall i = r_i + a_{4 \cdot i+1} \ll 16 \lend
+    r_i\  |\  \forall i = r_i + a_{4 \cdot i+2} \ll 8 \lend
+    r_i\  |\  \forall i  = r_i + a_{4 \cdot i+3} \lend
+    \return{r} \lend
+\end{eqcode}
+
+\begin{eqcode}{transform\_back}{a}{\type{Z}^1_4}{\type{Z}^1_{16}}
+    r \in \type{Z}^1_{16} \lend
+    r_i\  |\  0 \leq i \leq 15 = \dfrac{a_\frac{i}{4}}{2^{8 \cdot
+    (3 - \frac{i}{4})}} \mod 2^{8 \cdot (4 - \frac{i}{4})} \lend
+    \return{r} \lend
+\end{eqcode}
+
+\begin{eqcode}{process}{A}{\type{Z}^1_{64}}{\type{Z}^1_{16}}
+    W = \begin{tvector}
+        \hex{01234567} \lend
+        \hex{89ABCDEF} \lend
+        \hex{FEDCBA98} \lend
+        \hex{76543210} \lend
+    \end{tvector} \lend
+    Q = \call{transform}{A} \lend
+    W = \call{P}{0,1,2,3, 0, 7, 0,W,Q},\quad W = \call{P}{3,0,1,2, 1,12, 1,W,Q} \lend
+    W = \call{P}{2,3,0,1, 2,17, 2,W,Q},\quad W = \call{P}{1,2,3,0, 3,22, 3,W,Q} \lend
+    W = \call{P}{0,1,2,3, 4, 7, 4,W,Q},\quad W = \call{P}{3,0,1,2, 5,12, 5,W,Q} \lend
+    W = \call{P}{2,3,1,0, 6,17, 6,W,Q},\quad W = \call{P}{1,2,3,0, 7,22, 7,W,Q} \lend
+    W = \call{P}{0,1,2,3, 8, 7, 8,W,Q},\quad W = \call{P}{3,0,1,2, 9,12, 9,W,Q} \lend
+    W = \call{P}{2,3,0,1,10,17,10,W,Q},\quad W = \call{P}{1,2,3,0,11,22,11,W,Q} \lend
+    W = \call{P}{0,1,2,3,12, 7,12,W,Q},\quad W = \call{P}{3,0,1,2,13,12,13,W,Q} \lend
+    W = \call{P}{2,3,0,1,14,17,14,W,Q},\quad W = \call{P}{1,2,3,0,15,22,15,W,Q} \lend
+    W = \call{P}{0,1,2,3, 1, 5,16,W,Q},\quad W = \call{P}{3,0,1,2, 6, 9,17,W,Q} \lend
+    W = \call{P}{2,3,1,0,11,14,18,W,Q},\quad W = \call{P}{1,2,3,0, 0,20,19,W,Q} \lend
+    W = \call{P}{0,1,2,3, 5, 5,20,W,Q},\quad W = \call{P}{3,0,1,2,10, 9,21,W,Q} \lend
+    W = \call{P}{2,3,1,0,15,14,22,W,Q},\quad W = \call{P}{1,2,3,0, 4,20,23,W,Q} \lend
+    W = \call{P}{0,1,2,3, 9, 5,24,W,Q},\quad W = \call{P}{3,0,1,2,14, 9,25,W,Q} \lend
+    W = \call{P}{2,3,1,0, 3,14,26,W,Q},\quad W = \call{P}{1,2,3,0, 8,20,27,W,Q} \lend
+    W = \call{P}{0,1,2,3,13, 5,28,W,Q},\quad W = \call{P}{3,0,1,2, 2, 9,29,W,Q} \lend
+    W = \call{P}{2,3,1,0, 7,14,30,W,Q},\quad W = \call{P}{1,2,3,0,12,20,31,W,Q} \lend
+    W = \call{P}{0,1,2,3, 5, 4,32,W,Q},\quad W = \call{P}{3,0,1,2, 8,11,33,W,Q} \lend
+    W = \call{P}{2,3,0,1,11,16,34,W,Q},\quad W = \call{P}{1,2,3,0,14,23,35,W,Q} \lend
+    W = \call{P}{0,1,2,3, 1, 4,36,W,Q},\quad W = \call{P}{3,0,1,2, 4,11,37,W,Q} \lend
+    W = \call{P}{2,3,0,1, 7,16,38,W,Q},\quad W = \call{P}{1,2,3,0,10,23,39,W,Q} \lend
+    W = \call{P}{0,1,2,3,13, 4,40,W,Q},\quad W = \call{P}{3,0,1,2, 0,11,41,W,Q} \lend
+    W = \call{P}{2,3,1,0, 3,16,42,W,Q},\quad W = \call{P}{1,2,3,0, 6,23,43,W,Q} \lend
+    W = \call{P}{0,1,2,3, 9, 4,44,W,Q},\quad W = \call{P}{3,0,1,2,12,11,45,W,Q} \lend
+    W = \call{P}{2,3,1,0,15,16,46,W,Q},\quad W = \call{P}{1,2,3,0, 2,23,47,W,Q} \lend
+    W = \call{P}{0,1,2,3, 0, 6,48,W,Q},\quad W = \call{P}{3,0,1,2, 7,10,49,W,Q} \lend
+    W = \call{P}{2,3,1,0,14,15,50,W,Q},\quad W = \call{P}{1,2,3,0, 5,21,51,W,Q} \lend
+    W = \call{P}{0,1,2,3,12, 6,52,W,Q},\quad W = \call{P}{3,0,1,2, 3,10,53,W,Q} \lend
+    W = \call{P}{2,3,1,0,10,15,54,W,Q},\quad W = \call{P}{1,2,3,0, 1,21,55,W,Q} \lend
+    W = \call{P}{0,1,2,3, 8, 6,56,W,Q},\quad W = \call{P}{3,0,1,2,15,10,57,W,Q} \lend
+    W = \call{P}{2,3,1,0, 6,15,58,W,Q},\quad W = \call{P}{1,2,3,0,13,21,59,W,Q} \lend
+    W = \call{P}{0,1,2,3, 4, 6,60,W,Q},\quad W = \call{P}{3,0,1,2,11,10,61,W,Q} \lend
+    W = \call{P}{2,3,1,0, 2,15,62,W,Q},\quad W = \call{P}{1,2,3,0, 9,21,63,W,Q} \lend
+    W = W + Q \lend
+    \return{{\call{transform\_back}{W}}} \lend
+\end{eqcode}
+
+\begin{eqcode}{main}{\ }{\ }{\type{Z}}
+    w \in \type{Z}^1 \lend
+    w = \begin{tvector}
+        68 \lend
+        61 \lend
+        62 \lend
+        72 \lend
+        61 \lend
+        68 \lend
+        62 \lend
+        72 \lend
+    \end{tvector} \lend
+    a = \call{divide}{w} \lend
+    \print{\call{process}{a}} \lend
+    \return{0} \lend 
+\end{eqcode}
+\end{document}
