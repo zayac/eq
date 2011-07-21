@@ -42,8 +42,8 @@
     \return{\lfloor \hex{100000000} \cdot |\sin i| \rfloor } \lend
 \end{eqcode}
 
-\begin{eqcode}{F}{i, x, y, z}{\type{Z}, \type{Z}, \type{Z},
-\type{Z}}{\type{Z}}
+\begin{eqcode}{F}{i, x, y, z}{\type{B}, \type{B}, \type{B},
+\type{B}}{\type{Z}}
     \iif i < 16\  \return{(x \land y) \lor (\lnot x \land z)} \lend
     \iif i < 32\  \return{(x \land z) \lor (y \land \lnot z)} \lend
     \iif i < 48\  \return{x \oplus y \oplus z} \lend
