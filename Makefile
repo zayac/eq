@@ -1,4 +1,5 @@
 #  Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+#											Pavel Zaichenkov <zaichenkov@gmail.com>
 #
 #  Permission to use, copy, modify, and distribute this software for any
 #  purpose with or without fee is hereby granted, provided that the above
@@ -16,23 +17,8 @@ all: lexer
 
 CFLAGS = -Wall -g -pedantic -std=c99
 
-OBJECTS = lex.o parser.o tree.o global.o print.o typecheck.o optimise.o
-
 lexer: lex.c
 	$(CC) $(CFLAGS) -DLEXER_BINARY -o $@ $^
 
-parser: $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^
 clean:
-	$(RM) *.o lexer parser
-
-codegen:
-	cpp -P codegen.exp | ./parser /dev/stdin
-
-lex.o: expand.h token_kind.def keywords.def token_class.def
-parser.o: expand.h keywords.def tree.def
-tree.o: expand.h tree.h tree.def
-global.o: global.h
-print.o: print.h expand.h tree.h
-typecheck.o: expand.h tree.h global.h
-optimise.o: optimise.h tree.h global.h expand.h
+	$(RM) *.o lexer

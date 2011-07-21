@@ -1,5 +1,6 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
-  
+                      Pavel Zaichenkov <zaichenkov@gmail.com>
+
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
@@ -252,48 +253,10 @@ static inline enum token_class
 lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 {
   char *index = *buf;
-  bool isoctal=false;
-  bool ishex=false;
-
-  /* first digit  */
   buffer_add_char (buf, &index, size, c);
-
-  if (c == '0')
-    {
-      c = lexer_getch (lex);
-
-      if  (c == 'x' || c == 'X')
-	ishex = true;
-      else if (isdigit (c))
-        {
-	  isoctal = true;
-	  if (!(c >= '0' && c <= '7'))
-	    error_loc (lex->loc, "%c found in the octal number", c);
-	}
-      else
-	{
-	  lexer_ungetch (lex, c);
-  	  buffer_add_char (buf, &index, size, 0);
-	  return tok_number;
-	}
-      buffer_add_char (buf, &index, size, c);
-    }
-
-  /* middle of the number  */
-  while ((c = lexer_getch (lex))
-	 && (isdigit (c)
-	     || (ishex && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))))
-    {
-      if (isoctal && c >= '8')
-	error_loc (lex->loc, "%c found in octal number", c);
-
-      buffer_add_char (buf, &index, size, c);
-    }
-
-  if (c == 'l' || c == 'L')
+  while ((c = lexer_getch (lex)) && (isdigit (c)))
     {
       buffer_add_char (buf, &index, size, c);
-      c = lexer_getch (lex);
     }
 
   lexer_ungetch (lex, c);
@@ -335,6 +298,18 @@ lexer_get_token (struct lexer *lex)
 
     }
 
+  if(c == '/')
+    {
+      char c1 = lexer_getch(lex);
+      if (c1 == '/')
+        {
+          tval_tok_init( tok, tok_keyword, tv_lend);
+          goto return_token;
+        }
+      else
+        lexer_ungetch(lex, c1);
+    }
+
   if(c == '\\')
     {
       char c1 = lexer_getch(lex);
@@ -369,7 +344,7 @@ lexer_get_token (struct lexer *lex)
 
   if (c == '&')
     {
-      tval_tok_init (tok, tok_keyword, tv_delimiter);
+      tval_tok_init (tok, tok_operator, tv_delimiter);
       goto return_token;
     }
   
@@ -379,6 +354,11 @@ lexer_get_token (struct lexer *lex)
       goto return_token;
     }
    
+  if (c == '|')
+    {
+      tval_tok_init (tok, tok_operator, tv_vertical);
+      goto return_token;
+    }
   if (c == '-')
     {
       tval_tok_init (tok, tok_operator, tv_minus);

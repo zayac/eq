@@ -1,5 +1,6 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
-  
+                      Pavel Zaichenkov <zaichenkov@gmail.com>
+
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
@@ -25,6 +26,7 @@ TOKEN_KIND (tv_lt,            "<")
 TOKEN_KIND (tv_plus,          "+")
 TOKEN_KIND (tv_minus,         "-")
 TOKEN_KIND (tv_eq,            "=")
+TOKEN_KIND (tv_vertical,      "|")
 TOKEN_KIND (tv_lower_index,   "_")
 TOKEN_KIND (tv_upper_index,   "^")
 TOKEN_KIND (tv_delimiter,     "&")
