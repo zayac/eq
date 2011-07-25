@@ -1,0 +1,223 @@
+\documentclass[xcolor=dvipsnames,mathserif,professionalfont,12pt]{beamer} 
+\usecolortheme[named=RoyalBlue]{structure} 
+\useoutertheme{infolines} 
+\usetheme[height=7mm]{Rochester} 
+\setbeamertemplate{items}[ball] 
+\setbeamertemplate{blocks}[rounded][shadow=true] 
+\setbeamertemplate{navigation symbols}{}
+%\usefonttheme{serif}
+\usefonttheme{professionalfonts}
+
+\usepackage[croatian]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{txfonts}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{textcomp}
+
+\definecolor{listinggray}{gray}{0.9}
+\definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
+\lstset{
+	tabsize=2,
+	rulecolor=,
+	language=,
+  basicstyle=\scriptsize,
+  upquote=true,
+  columns=fixed,
+  showstringspaces=false,
+  extendedchars=true,
+  breaklines=true,
+  prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+  identifierstyle=\ttfamily,
+  keywordstyle=\color[rgb]{0,0,1},
+  commentstyle=\color[rgb]{0.133,0.545,0.133},
+  stringstyle=\color[rgb]{0.627,0.126,0.941},
+}
+
+\title[Eq Programming Language]{Eq Programming Language\\How to write a program
+with \LaTeX?}
+\author[Pavel Zaichenkov]{Pavel Zaichenkov}
+\institute[UoH]{University of Hertfordshire}
+\date{July 26, 2011}
+\begin{document}
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Agenda}
+  \tableofcontents
+\end{frame}
+
+\section{General overview}
+\subsection{Fibonacci numbers}
+
+\begin{frame}[fragile]
+  \frametitle{Fibonacci numbers}
+  \begin{columns}[t]
+    \column{.4\textwidth}
+      \begin{block}{Mathematical terms}
+        \begin{align*}
+F_0 &= 0  \\
+F_1 &= 1  \\ 
+F_i &= F_{i-1} + F_{i-2}
+        \end{align*}
+      \end{block}
+    \column{.5\textwidth}
+      \begin{block}{C / SaC}
+        \begin{lstlisting}
+int f(int n)
+{
+  if ((n == 0) || (n == 1))
+    return n;
+  return f(n - 1) + f(n - 2);
+}
+        \end{lstlisting}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+      \begin{block}{Mathematical notation}
+        \begin{align*}
+F_0 &= 0  \\
+F_1 &= 1  \\ 
+F_i &= F_{i-1} + F_{i-2}
+        \end{align*}
+      \end{block}
+      \begin{itemize}
+        \item Familiar
+        \item Short
+        \item Easy to understand
+        \item Customizable backend
+      \end{itemize}
+\end{frame}
+ 
+\section{EqCode}
+\subsection{Basic functionality}
+\section{Problem overview}
+
+\begin{frame}[fragile]
+  \frametitle{For-loop}
+  \begin{columns}[t]
+    \column{.4\textwidth}
+    \begin{block}{EqCode}
+      \begin{align*}
+& f(n):\  \mathbb{Z}\  \rightarrow\  \mathbb{Z} \\
+& \quad F^{[0]} = 0 \\
+& \quad F^{[1]} = 1 \\
+& \quad F^{[i]} = F^{[i-1]} + F^{[i-2]} \\
+& \quad {\textbf {return}}({\textbf {filter}}(F^{[i]}\  |\  i = n))
+      \end{align*}
+    \end{block}
+    \column{.6\textwidth}
+      \begin{block}{\LaTeX}
+      \begin{lstlisting}
+\begin{eqcode}{n}{\type{Z}}{\type{Z}}
+  F^{[0]} = 0 \lend
+  F^{[1]} = 1 \lend
+  f^{[i]} = F^{[i-1]} + F^{[i-2]} \lend
+  \return{\filter{F^{[i]}\  |\  i = n}}
+\end{eqcode}
+      \end{lstlisting}
+      \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{With-loop}
+    \begin{block}{EqCode}
+      \begin{align*}
+a_{i,j}\  |\  0 \leq i < 5 \land 2 \leq j < 6 =
+\begin{cases}
+42 & 0 \leq i < 2 \land 0 \leq j < 3 \\
+0 & \text{otherwise}
+\end{cases}
+      \end{align*}
+    \end{block}
+      \begin{block}{\LaTeX}
+      \begin{lstlisting}
+a_{i,j}\  |\  0 \leq i < 5 \land 2 \leq j < 6 = 
+  \begin{cases}
+    42 & 0 \leq i < 2 \land 0 \leq j < 3 \lend
+    0 \otherwise
+  \end{cases}
+      \end{lstlisting}
+      \end{block}
+      \begin{block}{SaC}
+      \begin{lstlisting}
+a = with {
+    ([0,2] <= [i,j] < [5,6] ) : 42;
+  } : genarray([5,6], 0);
+      \end{lstlisting}
+      \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Vector}
+    \begin{block}{EqCode}
+      \begin{align*}
+      w \in \mathbb{Z}^1 \\
+      w = \left(
+        \begin{array}{c}
+        1 \\
+        2 \\
+        3 \\
+      \end{array}
+      \right)
+      \end{align*}
+    \end{block}
+      \begin{block}{\LaTeX}
+      \begin{lstlisting}
+      w \in \type{Z}^1 \lend
+      w = \begin{vector}
+        1 \lend
+        2 \lend
+        3 \lend
+      \end{vector}
+      \end{lstlisting}
+      \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Matrix}
+    \begin{block}{EqCode}
+      \begin{align*}
+      w \in \mathbb{Z}^2 \\
+      w = \left(
+        \begin{array}{cc}
+        1 & 2\\
+        3 & 4 \\
+      \end{array}
+      \right)
+      \end{align*}
+    \end{block}
+      \begin{block}{\LaTeX}
+      \begin{lstlisting}
+      w \in \type{Z}^2 \lend
+      w = \begin{matrix}{cc}
+        1 & 2\lend
+        3 & 4 \lend
+      \end{matrix}
+      \end{lstlisting}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Problems and restrictions}
+  \begin{itemize}
+    \item Loss of abstraction
+    \item Types and type conversion
+    \item Syntax restrictions
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \begin{block}{Project repository}
+    http://github.com/zayac/EqCode/
+  \end{block}
+  \begin{block}{Contacts}
+    Mail+Jabber: zaichenkov@gmail.com
+  \end{block}
+\begin{center} Questions? \end{center}
+\end{frame}
+\end{document}

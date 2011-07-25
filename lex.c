@@ -247,18 +247,82 @@ lexer_read_id (struct lexer *lex, struct token *tok,
   return;
 }
 
-/* FIXME real numbers currently are not recognized.  */
 /* Internal function to read until the end of number.  */
 static inline enum token_class
 lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 {
+  bool ishex = false;
   char *index = *buf;
+
   buffer_add_char (buf, &index, size, c);
-  while ((c = lexer_getch (lex)) && (isdigit (c)))
+  if (c == '0')
     {
-      buffer_add_char (buf, &index, size, c);
+      c = lexer_getch (lex);
+
+      if (c == 'x' || c == 'X')
+        {
+          ishex = true;
+          buffer_add_char (buf, &index, size, c);
+        }
+        else
+          lexer_ungetch(lex, c);
     }
 
+  /* middle of the number */
+
+  while (true)
+    {
+      c = lexer_getch (lex);
+      if (isdigit (c)
+              || (ishex && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))))
+        buffer_add_char (buf, &index, size, c);
+      else
+        {
+          lexer_ungetch(lex, c);
+          break;
+        }
+    }
+
+  c = lexer_getch(lex);
+
+  if (c == '.')
+    {
+      if (ishex)
+        {
+          error_loc(lex->loc, "\'%c\' found in hex number", c);
+          return tok_unknown;
+        }
+      buffer_add_char(buf, &index, size, c);
+      
+      c = lexer_getch (lex);
+      buffer_add_char(buf, &index, size, c);
+      if (!isdigit(c))
+        {
+          error_loc(lex->loc, "there should be at least one digit after dot. \'%c\' found", c);
+          return tok_unknown;
+        }
+
+      while((c = lexer_getch (lex)) && isdigit(c))
+        buffer_add_char(buf, &index, size, c);
+
+    }
+
+  if (c == 'e' || c == 'E')
+    {
+      buffer_add_char(buf, &index, size, c);
+
+      c = lexer_getch(lex);
+      if(isdigit(c))
+        buffer_add_char(buf, &index, size, c);
+      else
+        {
+          error_loc(lex->loc, "there should be at least one digit after \'E\'. \'%c\' found", c);
+          return tok_unknown;
+        }
+
+      while((c = lexer_getch (lex)) && isdigit(c))
+        buffer_add_char(buf, &index, size, c);
+    }
   lexer_ungetch (lex, c);
   buffer_add_char (buf, &index, size, 0);
 
