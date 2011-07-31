@@ -1,0 +1,37 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Environment for EBNF style grammar definitions
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\font\euler=cmti12
+\newcommand{\sla}[1]{\begin{euler}#1\end{euler}}
+
+\newenvironment{BNF}
+%{ \vspace*{1ex} \begin{tabular}[t]{p{2.5cm}cl}}
+{ \vspace*{1ex} \begin{tabular}[t]{p{3cm}cl}}
+{ \end{tabular}  }
+
+
+\newcommand{\bDAlt}{\ $|$\ }
+\newcommand{\bAltBegin}{\hbox{\sla{(}}\ }
+\newcommand{\bAltEnd}{\hbox{\sla{)}}\ }
+
+\newcommand{\bs}{\textbackslash}
+
+\newcommand{\bHead}[1]{\textit{#1} & $\Rightarrow$ &\it}
+\newcommand{\bAlt}[2]{\hbox{\sla{(}}\ #1\ $|$\ #2 \hbox{\sla{)}}}
+\newcommand{\bOpt}[1]{\hbox{\sla{[}}\,#1\ \hbox{\sla{]}}}
+\newcommand{\bStar}[1]{\bOpt{#1}$^{_{\hbox{\normalsize *}}}$}
+\newcommand{\bPlus}[1]{\bOpt{#1}$^{_{\hbox{\normalsize +}}}$}
+%\newcommand{\bOr}{ \\ \phantom{\bStar{x}} & $|$ & }
+\newcommand{\bOr}{ \\  & $|$ & \ \it }
+\newcommand{\bOrL}{\ $|$ \ }
+\newcommand{\bSkip}{ \\ &  & \hspace*{2ex} \it}
+\newcommand{\bEnd}{ \\[.8ex] }
+
+
+% \newcommand{\bToken}[1]{~{\underline{\bf #1}}~}
+\newcommand{\bToken}[1]{~{\textbf{\textrm{\textup{#1}}}}~}
+\newcommand{\bSymb}[1]{~{\mbox{\large\texttt{\textup{#1}}}}~}
+\newcommand{\bSpecial}[1]{~{\textbf{\textit{#1}}}~}

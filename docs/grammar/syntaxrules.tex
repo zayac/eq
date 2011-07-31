@@ -1,0 +1,204 @@
+%
+% Definition of BNF syntax rules. 
+%
+
+\newcommand{\BnfPrg}{
+\bHead{prg}
+  header \bStar{function} footer
+\bEnd
+}
+
+\newcommand{\BnfHeader}{
+\bHead{header}
+  \bToken{\bs documenttype} \bSymb{\{} \bSpecial{str} \bSymb{\}} \bSymb{\{}
+  \bSpecial{str} \bSymb{\}} \bSkip
+  \bToken{\bs usepackage} \bSymb{\{} \bSpecial{str} \bSymb{\}} \bSkip
+  \bToken{\bs begin} \bSymb{\{} \bToken{document} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfFooter}{
+\bHead{footer}
+  \bToken{\bs end} \bSymb{\{} \bToken{document} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfFunction}{
+\bHead{function}
+  \bToken{\bs begin} \bSymb{\{} \bToken{eqcode} \bSymb{\}} \bSymb{\{}
+  \bSpecial{id} \bSymb{\}} \bSkip \bSymb{\{} \bOpt{idx \bStar{\bSymb{,}
+  idx}} \bSymb{\}} \bSkip \bSymb{\{} \bOpt{ext\_type \bStar{\bSymb{,}
+  ext\_type}} \bSymb{\}} \bSymb{\{} ext\_type \bSymb{\}} \bSkip
+  instr\_list \bSkip
+  \bToken{\bs end} \bSymb{\{} \bToken{eqcode} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfIdx}{
+\bHead{idx}
+  \bSpecial{id} \bOpt{upper} \bOpt{lower}
+\bEnd
+}
+
+\newcommand{\BnfUpper}{
+\bHead{upper}
+  \bSymb{\^} \bSymb{\{} \bOpt{\bSpecial{id} \bOpt{\bAlt{\bSymb{+}}{\bSymb{-}}
+  \bSpecial{num}} \bSymb{\}}}
+\bEnd
+}
+
+\newcommand{\BnfLower}{
+\bHead{lower}
+  \bSymb{\_} \bSymb{\{} expr \bStar{\bSymb{,} expr} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfType}{
+\bHead{type}
+  \bToken{\bs type} \bSymb{\{} \bAltBegin \bToken{Z} \bDAlt \bToken{R} \bDAlt
+  \bToken{N} \bDAlt \bToken{B} \bAltEnd \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfExtType}{
+\bHead{ext\_type}
+  type \bOpt{\bSymb{\^} \bSymb{\{} \bSpecial{num} \bSymb{\}} \bSkip \bOpt{\bSymb{\_} \bSymb{\{} \bSpecial{num} \bStar{\bSymb{,}
+  \bSpecial{num}} \bSymb{\}}}}
+\bEnd
+}
+
+\newcommand{\BnfInstrList}{
+\bHead{instr\_list}
+  \bStar{instr \bToken{\bs endl}}
+\bEnd
+}
+
+\newcommand{\BnfInstr}{
+\bHead{instr}
+  definition \bOr
+  declaration \bOr
+  with\_loop \bOr
+  return
+\bEnd
+}
+
+\newcommand{\BnfDefinition}{
+\bHead{definition}
+  \bPlus{idx} expr
+\bEnd
+}
+
+\newcommand{\BnfBoolOp}{
+\bHead{boolop}
+  \bToken{\bs land} \bOr
+  \bToken{\bs lor} \bOr
+  \bToken{\bs lnot} \bOr
+  \bToken{\bs oplus}
+\bEnd
+}
+
+\newcommand{\BnfBinOp}{
+\bHead{binop}
+  \bSymb{+} \bOr
+  \bSymb{-} \bOr
+  \bToken{\bs cdot} \bOr
+  divide \bOr
+  \bToken{\bs ll} \bOr
+  \bToken{\bs gg} \bOr
+  \bToken{\bs mod}
+\bEnd
+}
+
+\newcommand{\BnfDivide}{
+\bHead{divide}
+  \bAlt{\bToken{\bs frac}}{\bToken{\bs dfrac}} \bSymb{\{} expr \bSymb{\}}
+  \bSymb{\{} expr \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfFunctionCall}{
+\bHead{function\_call}
+  \bToken{\bs CALL} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSymb{\{} \bOpt{idx
+  \bStar{\bSymb{,} id }} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfSExpr}{
+\bHead{sexpr}
+  \bAltBegin \bSpecial{idx} \bDAlt \bSpecial{num} \bDAlt function\_call \bAltEnd
+  \bStar{\bAlt{binop}{boolop} \bSkip \bAltBegin \bSpecial{idx} \bDAlt \bSpecial{num}
+  \bDAlt function\_call \bAltEnd}
+\bEnd
+}
+
+\newcommand{\BnfFilter}{
+\bHead{filter}
+  \bToken{\bs filter} \bSymb{\{} \bSpecial{id} \bSymb{\^} \bSpecial{\{}
+  \bSymb{[} \bSpecial{id} \bSymb{]} \bSpecial{\}} \bSkip \bStar{\bSymb{,}
+  \bSpecial{id} \bSymb{\^} \bSpecial{\{} \bSymb{[} \bSpecial{id} \bSymb{]}
+  \bSpecial{\}}} \bSkip \bSymb{|} extended\_condition \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfGenArray}{
+\bHead{genarray}
+ \bToken{\bs GenAr} \bToken{\bs limits} \bSymb{\^} \bSymb{\{} expr \bSymb{\}}
+ \bSymb{(} sexpr \bSymb{)}
+\bEnd
+}
+
+\newcommand{\BnfVector}{
+\bHead{vector}
+  \bToken{\bs begin} \bSymb{\{} \bToken{tvector} \bSymb{\}} \bSkip
+  \bPlus{sexpr\bToken{\bs endl}} \bSkip
+  \bToken{\bs end} \bSymb{\{} \bToken{tvector} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfMatrix}{
+\bHead{matrix}
+  \bToken{\bs begin} \bSymb{\{} \bToken{ttmatrix} \bSymb{\}}\bSymb{\{}
+  \bPlus{\bToken{c}} \bSymb{\}} \bSkip
+  \bPlus{sexpr \bStar{ sexpr \bSymb{\&}} \bToken{\bs endl}} \bSkip
+  \bToken{\bs end} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfExpr}{
+\bHead{expr}
+  sexpr \bOr
+  filter \bOr
+  genarray \bOr
+  vector \bOr
+  matrix
+\bEnd
+}
+
+\newcommand{\BnfWithLoop}{
+\bHead{with\_loop}
+  with\_loop\_wbr \bOr
+  with\_loop\_wobr
+\bEnd
+}
+
+\newcommand{\BnfWithLoopWBr}{
+\bHead{with\_loop\_wbr}
+  idx \bSymb{|} extended\_condition \bSymb{=} \bSkip
+  \bToken{\bs begin} \bSymb{\{} \bToken{cases} \bSymb{\}} \bSkip
+  \bPlus{expr \bSymb{\&} extended\_condition} \bSkip
+  \bPlus{expr \bSymb{\&} \bToken{\bs otherwise}}\bSkip
+  \bToken{\bs end} \bSymb{\{} \bToken{cases} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfWithLoopWOBr}{
+\bHead{with\_loop\_wobr}
+  idx \bSymb{|} extended\_condition \bSymb{=} expr
+\bEnd
+}
+
+\newcommand{\BnfReturn}{
+\bHead{return}
+  \bToken{\bs return} \bSymb{\{} expr \bSymb{\}}
+\bEnd
+}

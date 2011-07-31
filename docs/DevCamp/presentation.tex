@@ -1,0 +1,344 @@
+\documentclass[xcolor=dvipsnames,mathserif,professionalfont,12pt]{beamer} 
+\usecolortheme[named=RoyalBlue]{structure} 
+\useoutertheme{infolines} 
+\usetheme[height=7mm]{Rochester} 
+\setbeamertemplate{items}[ball] 
+\setbeamertemplate{blocks}[rounded][shadow=true] 
+\setbeamertemplate{navigation symbols}{}
+%\usefonttheme{serif}
+\usefonttheme{professionalfonts}
+
+\usepackage[croatian]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{txfonts}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{textcomp}
+
+\definecolor{listinggray}{gray}{0.9}
+\definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
+\lstset{
+	tabsize=2,
+	rulecolor=,
+	language=,
+  basicstyle=\scriptsize,
+  upquote=true,
+  columns=fixed,
+  showstringspaces=false,
+  extendedchars=true,
+  breaklines=true,
+  prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+  identifierstyle=\ttfamily,
+  keywordstyle=\color[rgb]{0,0,1},
+  commentstyle=\color[rgb]{0.133,0.545,0.133},
+  stringstyle=\color[rgb]{0.627,0.126,0.941},
+}
+
+\title[Eq Programming Language]{Eq Programming Language}
+\author[Pavel Zaichenkov]{Pavel Zaichenkov}
+\institute[UoH]{University of Hertfordshire}
+\date{July 26, 2011}
+\begin{document}
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Agenda}
+  \tableofcontents
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{A language concept}
+  In computational mathematics or physics all operations can be separated into
+  two types. \\
+  \textbf{Data parallel operation} doesn't depend on previous iterations. It
+  deals with independent data. In this way, all computational processes can be
+  run separately.\\ 
+  \textbf{Recurrent depended operations} can't be run separately. Iterations
+  have to be run in a queue, as an every next operation is going to use the result
+  of the previous one. \\ 
+\quad \\
+  In mathematics there is a widely used notation, which seems quite easy to
+  understand because of formulas, equations and mathematical designations. 
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{A language concept}
+  \begin{block}{Data parallel operation}
+%If the data is independent, it's possible to run computational tasks
+%in several processes. \\
+  \begin{align*}
+f_0=f(x_0, x_1,\ ...\ x_n) \\
+f_1=f(x_0, x_1,\ ...\ x_n) \\
+ ... \quad \ \  \\
+f_i=f(x_0, x_1,\ ...\ x_n) \\
+\text{where}\  \forall i\ x_i\  \text{is data }  \\
+    \end{align*}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{A language concept}
+  \begin{block}{Recurrent depended operation}
+%Recurrent depended data can be represented as an infinite list or a stream. It
+%allows us to filter a necessary range of data. Required data will be calculated
+%automatically. This is a functional language concept.\\ 
+\begin{align*}
+f_i=f(f_j, f_{j+1},\ ...\ f_{i-1}, x_1,\ ...\ x_n) \\
+\text{where}\ \forall i\ x_i\  \text{is data } \  \text{and}\  j \leq i-1 \\
+\end{align*}
+  \end{block}
+\end{frame}
+
+\begin{frame}{The structure of a compiler}
+  \begin{enumerate}
+    \item \textbf{\LaTeX\  front-end}. It's possible to write a program using
+    \LaTeX\  syntax. This allows to use any existing \LaTeX\  tools (compile to
+    pdf, ps, html, etc...). \\
+    \item \textbf{EqCode compiler}. We are going to write a compiler which will
+    be able to compile an existing \LaTeX\  code into any chosen back-end
+    language.
+    \item \textbf{Custom back-end (SaC, S-Net, C, ...)}. It's possible to
+    create a code-generator into any language we want to deal with. We are
+    going to support SaC as it has a relevant data parallelism and recurrent
+    dependency support.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Fibonacci numbers}
+  \begin{columns}[t]
+    \column{.4\textwidth}
+      \begin{block}{Wikipedia}
+        \begin{align*}
+F_0 &= 0  \\
+F_1 &= 1  \\ 
+F_i &= F_{i-1} + F_{i-2}
+        \end{align*}
+      \end{block}
+    \column{.5\textwidth}
+      \begin{block}{C / SaC}
+        \begin{lstlisting}
+int f(int n)
+{
+  if ((n == 0) || (n == 1))
+    return n;
+  return f(n - 1) + f(n - 2);
+}
+        \end{lstlisting}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%\begin{frame}{Fibonacci numbers}
+%      \begin{block}{M
+%        \begin{align*}
+%F_0 &= 0  \\
+%F_1 &= 1  \\ 
+%F_i &= F_{i-1} + F_{i-2}
+%        \end{align*}
+%      \end{block}
+%      \begin{itemize}
+%        \item Familiar
+%        \item Short
+%        \item Easy to understand
+%        \item Customizable backend
+%      \end{itemize}
+%\end{frame}
+ 
+\begin{frame}[fragile]
+  \frametitle{N-body problem}
+  \begin{block}{Wikipedia}
+    \begin{align*}
+m_j	\ddot{\mathbf{q}}_j	= G \sum\limits_{k\neq j }  \frac{m_j
+m_k(\mathbf{q}_k-\mathbf{q}_j)}{|\mathbf{q}_k-\mathbf{q}_j|^3}, j=1,\ldots,n \\
+    \end{align*}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{N-body problem}
+\begin{block}{C\  (debian shootout)}
+    \begin{lstlisting}
+void advance(int nbodies, struct planet * bodies, double dt)
+{
+  int i, j;
+  for (i = 0; i < nbodies; i++) {
+    struct planet * b = &(bodies[i]);
+    for (j = i + 1; j < nbodies; j++) {
+      struct planet * b2 = &(bodies[j]);
+      double dx = b->x - b2->x; double dy = b->y - b2->y; double dz = b->z - b2->z;
+      double distance = sqrt(dx * dx + dy * dy + dz * dz);
+      double mag = dt / (distance * distance * distance);
+      b->vx -= dx * b2->mass * mag; b->vy -= dy * b2->mass * mag; b->vz -= dz * b2->mass * mag;
+      b2->vx += dx * b->mass * mag; b2->vy += dy * b->mass * mag; b2->vz += dz * b->mass * mag;
+    }
+  }
+  for (i = 0; i < nbodies; i++) {
+    struct planet * b = &(bodies[i]);
+    b->x += dt * b->vx; b->y += dt * b->vy; b->z += dt * b->vz;
+  }
+}
+    \end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{N-body problem}
+\begin{block}{EqCode}
+  \begin{align*}
+& advance(p, v, m, dt):\ \mathbb{R}^2_{5,3}, \mathbb{R}^2_{5,3}, \mathbb{R}^1_5,
+\mathbb{R}\  \rightarrow\ \mathbb{R}^3 \\
+& \quad  accs_{i,j}\  |\  0 \leq i \leq 4 \land 0 \leq j \leq 4 =
+        \begin{cases}
+            \dfrac{(p_j-p_i) \cdot m_j}{\rho(p_i,p_j)^3} & j < i \\
+ 0 & \text{otherwise}
+       \end{cases} \\
+& \quad accs_{i,j}\  |\  j > i = - accs_{j,i} \\
+& \quad   a_{i,j} = \sum \limits_k accs_{i,k,j} \\
+& \quad   v = v + a \cdot dt \\
+& \quad   p = p + v \cdot dt \\
+& \quad  \text{return}(p, v) \\
+  \end{align*}
+\end{block}
+\end{frame}
+
+\section{Introduction}
+\subsection{A language concept}
+\section{EqCode description}
+\subsection{The structure of a compiler}
+\subsection{Fibonacci numbers\  (example)}
+\subsection{N-body problem\ (example)}
+\subsection{Syntax and language constructions}
+\section{Problems and restrictions}
+
+\begin{frame}[fragile]
+  \frametitle{Recurrent operations support}
+  \begin{columns}[t]
+    \column{.4\textwidth}
+    \begin{block}{EqCode}
+      \begin{align*}
+& f(n):\  \mathbb{Z}\  \rightarrow\  \mathbb{Z} \\
+& \quad F^{[0]} = 0 \\
+& \quad F^{[1]} = 1 \\
+& \quad F^{[i]} = F^{[i-1]} + F^{[i-2]} \\
+& \quad {\textbf {return}}({\textbf {filter}}(F^{[i]}\  |\  i = n))
+      \end{align*}
+    \end{block}
+    \column{.6\textwidth}
+      \begin{block}{\LaTeX}
+      \begin{lstlisting}
+\begin{eqcode}{n}{\type{Z}}{\type{Z}}
+  F^{[0]} = 0 \lend
+  F^{[1]} = 1 \lend
+  F^{[i]} = F^{[i-1]} + F^{[i-2]} \lend
+  \return{\filter{F^{[i]}\  |\  i = n}}
+\end{eqcode}
+      \end{lstlisting}
+      \end{block}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Parallelized operations support}
+    \begin{block}{EqCode}
+      \begin{align*}
+a_{i,j}\  |\  0 \leq i < 5 \land 2 \leq j < 6 =
+\begin{cases}
+42 & 0 \leq i < 2 \land 0 \leq j < 3 \\
+0 & \text{otherwise}
+\end{cases}
+      \end{align*}
+    \end{block}
+      \begin{block}{\LaTeX}
+      \begin{lstlisting}
+a_{i,j}\  |\  0 \leq i < 5 \land 2 \leq j < 6 = 
+  \begin{cases}
+    42 & 0 \leq i < 2 \land 0 \leq j < 3 \lend
+    0 \otherwise
+  \end{cases}
+      \end{lstlisting}
+      \end{block}
+      \begin{block}{SaC}
+      \begin{lstlisting}
+a = with {
+    ([0,2] <= [i,j] < [5,6] ) : 42;
+  } : genarray([5,6], 0);
+      \end{lstlisting}
+      \end{block}
+\end{frame}
+
+%\begin{frame}[fragile]
+%  \frametitle{Vector}
+%    \begin{block}{EqCode}
+%      \begin{align*}
+%      w \in \mathbb{Z}^1 \\
+%      w = \left(
+%        \begin{array}{c}
+%        1 \\
+%        2 \\
+%        3 \\
+%      \end{array}
+%      \right)
+%      \end{align*}
+%    \end{block}
+%      \begin{block}{\LaTeX}
+%      \begin{lstlisting}
+%      w \in \type{Z}^1 \lend
+%      w = \begin{vector}
+%        1 \lend
+%        2 \lend
+%        3 \lend
+%      \end{vector}
+%      \end{lstlisting}
+%      \end{block}
+%\end{frame}
+
+%\begin{frame}[fragile]
+%  \frametitle{Matrix}
+%    \begin{block}{EqCode}
+%      \begin{align*}
+%      w \in \mathbb{Z}^2 \\
+%      w = \left(
+%        \begin{array}{cc}
+%        1 & 2\\
+%        3 & 4 \\
+%      \end{array}
+%      \right)
+%      \end{align*}
+%    \end{block}
+%      \begin{block}{\LaTeX}
+%      \begin{lstlisting}
+%      w \in \type{Z}^2 \lend
+%      w = \begin{matrix}{cc}
+%        1 & 2\lend
+%        3 & 4 \lend
+%      \end{matrix}
+%      \end{lstlisting}
+%    \end{block}
+%\end{frame}
+
+\begin{frame}{Problems and restrictions}
+  \begin{itemize}
+    \item \textbf{Types and type conversion issues}. We can't use just
+    types that mathematicians are familiar with( natural numbers, whole
+    numbers, etc.). There should be a type hierarchy to understand the
+    representation of these types in the architecture.
+    \item \textbf{Syntax restrictions}. The same algorithm
+    can be represented In \LaTeX\ in different ways. However, a source code
+    should be translated unambiguously into the target code. That's why some
+    syntax restrictions are needed.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \begin{block}{Project repository}
+    http://github.com/zayac/EqCode/
+  \end{block}
+  \begin{block}{Contacts}
+    Mail+Jabber: zaichenkov@gmail.com
+  \end{block}
+\begin{center} Questions? \end{center}
+\end{frame}
+\end{document}
