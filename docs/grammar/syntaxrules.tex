@@ -10,9 +10,9 @@
 
 \newcommand{\BnfHeader}{
 \bHead{header}
-  \bToken{\bs documenttype} \bSymb{\{} \bSpecial{str} \bSymb{\}} \bSymb{\{}
-  \bSpecial{str} \bSymb{\}} \bSkip
-  \bToken{\bs usepackage} \bSymb{\{} \bSpecial{str} \bSymb{\}} \bSkip
+  \bToken{\bs documentclass} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSymb{\{}
+  \bSpecial{id} \bSymb{\}} \bSkip
+  \bToken{\bs usepackage} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSkip
   \bToken{\bs begin} \bSymb{\{} \bToken{document} \bSymb{\}}
 \bEnd
 }
@@ -118,7 +118,7 @@
 
 \newcommand{\BnfFunctionCall}{
 \bHead{function\_call}
-  \bToken{\bs CALL} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSymb{\{} \bOpt{idx
+  \bToken{\bs call} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSymb{\{} \bOpt{idx
   \bStar{\bSymb{,} id }} \bSymb{\}}
 \bEnd
 }
@@ -157,8 +157,8 @@
 
 \newcommand{\BnfMatrix}{
 \bHead{matrix}
-  \bToken{\bs begin} \bSymb{\{} \bToken{ttmatrix} \bSymb{\}}\bSymb{\{}
-  \bPlus{\bToken{c}} \bSymb{\}} \bSkip
+  \bToken{\bs begin} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}\bSymb{\{}
+  \bPlus{ \bSpecial{id} } \bSymb{\}} \bSkip
   \bPlus{sexpr \bStar{ sexpr \bSymb{\&}} \bToken{\bs endl}} \bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}
 \bEnd

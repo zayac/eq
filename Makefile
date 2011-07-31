@@ -13,12 +13,15 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-all: lexer
+all: parser
 
 CFLAGS = -Wall -g -pedantic -std=c99
 
 lexer: lex.c
 	$(CC) $(CFLAGS) -DLEXER_BINARY -o $@ $^
 
+parser: lex.o parser.o tree.o global.o print.o
+		$(CC) $(CFLAGS) -o $@ $^
+
 clean:
-	$(RM) *.o lexer
+	$(RM) *.o lexer parser

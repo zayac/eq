@@ -26,7 +26,7 @@
 \begin{eqcode}{simps}{f, h}{\type{R}^1,\type{R}^1}{\type{R}^1}
 	r \in \type{R}^2_{100, 80} \lend
 	n = \call{shape}{f}_0 \lend
-	undef = \genAr \limits^{\call{drop}{[1], \call{shape}{f}}} 0.0 \lend
+	undef = \genar \limits^{\call{drop}{[1], \call{shape}{f}}} 0.0 \lend
 	r_i\  |\  i \in [0,n-1] =
 	\begin{cases}
 		\dfrac{11.0 \cdot f_0+14.0 \cdot f_1-f_2}{24.0} & i=0 \lend	
@@ -45,7 +45,7 @@
 \end{eqcode}
 
 \begin{eqcode}{N}{u,dx,dy}{\type{R}^2,\type{R}^1,\type{R}^1}{\type{R}^2}
-	undef = \genAr \limits^{\call{drop}{[1], \call{shape}{u}}} 0.0 \lend
+	undef = \genar \limits^{\call{drop}{[1], \call{shape}{u}}} 0.0 \lend
 	z_{i,j}\  |\  [i,j : 0 \leq i \leq s_0 \land  0 \leq j \leq s_1]
  =  
 	\begin{cases}
@@ -69,7 +69,7 @@
 \end{eqcode}
 
 \begin{eqcode}{L}{u, dx}{\type{R}^1,\type{R}^1}{\type{R}^1}
-	undef = \genAr \limits^{\call{drop}{[1] ,\call{shape}{u}}} 0.0 \lend
+	undef = \genar \limits^{\call{drop}{[1] ,\call{shape}{u}}} 0.0 \lend
 	s = \call{shape}{u}_0 \lend
 	z_i\  |\  i \in [0, \call{take}{[1], \call{shape}{u}}] =  
 	\begin{cases}
@@ -92,8 +92,8 @@
 
 \begin{eqcode}{prepent}{a,b,c,d,e}{\type{R}^1, \type{R}^1, \type{R}^1, \type{R}^1, \type{R}^1}{\type{R}^1, \type{R}^1, \type{R}^1, \type{R}^1}
 	n = \call{shape}{a}_0 \lend
-	undef = \genAr \limits^{\call{drop}{[1], \call{shape}{a}}} 0.0 \lend
-	p = q = bet = den = \genAr \limits^{n} undef \lend
+	undef = \genar \limits^{\call{drop}{[1], \call{shape}{a}}} 0.0 \lend
+	p = q = bet = den = \genar \limits^{n} undef \lend
 	bet_0 = \dfrac{1.0}{c_0} \lend
 	p_0 = -d_0 \cdot bet_0 \lend
 	q_0 = -e_0 \cdot bet_0 \lend
@@ -163,27 +163,27 @@
 			& \otherwise
 	\end{cases}
 	\lend
-	a = \genAr \limits^{n} -eps \lend
+	a = \genar \limits^{n} -eps \lend
 	a_0 = [0.0, 0.0, 0.0] \lend
 	a_1 = [0.0, 0.0, 0.0] \lend
 	a_{n-2} = 2.0 \cdot a_{n-3} \lend
 	a_{n-1} = a_{n-2} \lend
-	b = \genAr \limits^{n} (2.0 \cdot eps) \lend
+	b = \genar \limits^{n} (2.0 \cdot eps) \lend
 	b_0 = [0.0, 0.0, 0.0] \lend
 	b_1 = -b_2 \lend
 	b_{n-2} = 3.0 \cdot b_{n-3} \lend
 	b_{n-1} = 2.0 \cdot b_{n-3} \lend
-	c = \genAr \limits^{n \times 3} 1.0 \lend
+	c = \genar \limits^{n \times 3} 1.0 \lend
 	c_0 = c_0 + 2.0 \cdot eps \lend
 	c_1 = c_1 + 6.0 \cdot eps \lend
 	c_{n-2} = c_{n-2} - 6.0 \cdot eps \lend
 	c_{n-1} = c_{n-1} -2.0 \cdot eps \lend
-	d = \genAr \limits^{n} (-2.0 \cdot eps) \lend
+	d = \genar \limits^{n} (-2.0 \cdot eps) \lend
 	d_0 = 2.0 \cdot d_2 \lend
 	d_1 = 3.0 \cdot d_2 \lend
 	d_{n-2} = -d{n-3} \lend
 	d_{n-1} = [0.0, 0.0, 0.0] \lend
-	e = \genAr \limits^{n} eps \lend
+	e = \genar \limits^{n} eps \lend
 	e_0 = 2.0 \cdot e_2 \lend
 	e_1 = e_0 \lend
 	e_{n-2} = [0.0, 0.0, 0.0] \lend
