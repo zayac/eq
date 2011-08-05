@@ -61,11 +61,11 @@ kw_bsearch (const char *key, const char *table[], size_t len)
       /* printf ("%s ? %s, [%i, %i, %i]\n", key, table[hit], l, r, i); */
 
       if (i == 0)
-	return hit;
+	      return hit;
       else if (i < 0)
-	r = hit;
+	      r = hit;
       else
-	l = hit + 1;
+	      l = hit + 1;
     }
   return len;
 }
@@ -194,10 +194,10 @@ lexer_read_comments (struct lexer *lex, char **buf, size_t *size)
    return tok_comments;
 }
 
-/* Internal function to read a string, which starts with backslash,
+/* Internal function to read a string,
    checking if it is a keyword, an operator or id */
 static inline void
-lexer_read_backslashed (struct lexer *lex, struct token *tok,
+lexer_read_keyword (struct lexer *lex, struct token *tok,
                         char **buf, size_t *size, char c)
 {
   char *index = *buf;
@@ -390,14 +390,16 @@ lexer_get_token (struct lexer *lex)
           tval_tok_init (tok, tok_whitespace, tv_space); goto return_token;     
         default:
           lexer_ungetch(lex, c1);
-          lexer_read_backslashed(lex, tok, &buf, &buf_size, c);
+          lexer_read_keyword(lex, tok, &buf, &buf_size, c);
           goto return_token;
       }
     }
 
   if (isalpha (c))
     {
-      lexer_read_id (lex, tok, &buf, &buf_size, c);
+      lexer_read_keyword(lex, tok, &buf, &buf_size, c);
+      if (tok->tok_class == tok_unknown)
+        lexer_read_id (lex, tok, &buf, &buf_size, c);
       goto return_token;
     }
 

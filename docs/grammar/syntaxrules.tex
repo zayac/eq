@@ -7,16 +7,34 @@
   header \bStar{function} footer
 \bEnd
 }
-
 \newcommand{\BnfHeader}{
 \bHead{header}
+  documentclass
+  usepackage
+  begindocument
+\bEnd
+}
+
+\newcommand{\BnfDocumentClass}{
+\bHead{documentclass}
   \bToken{\bs documentclass} \bSymb{\{} \bSpecial{num} \bSpecial{id} \bSymb{,}
   \bSpecial{id} \bSymb{\}} \bSymb{\{}
-  \bSpecial{id} \bSymb{\}} \bSkip
-  \bToken{\bs usepackage} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSkip
+  \bSpecial{id} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfUsePackage}{
+\bHead{usepackage}
+  \bToken{\bs usepackage} \bSymb{\{} \bSpecial{id} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfBeginDocument}{
+\bHead{begindocument}
   \bToken{\bs begin} \bSymb{\{} \bToken{document} \bSymb{\}}
 \bEnd
 }
+
 
 \newcommand{\BnfFooter}{
 \bHead{footer}
@@ -43,8 +61,13 @@
 
 \newcommand{\BnfUpper}{
 \bHead{upper}
-  \bSymb{\^} \bSymb{\{} \bOpt{\bSpecial{id} \bOpt{\bAlt{\bSymb{+}}{\bSymb{-}}
-  \bSpecial{num}} \bSymb{\}}}
+  \bSymb{\^} \bSymb{\{} \bOpt{\bAlt{\bSymb{[} linear \bSymb{]}}{linear}} \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfLinear}{
+\bHead{linear}
+ \bSpecial{id} \bOpt{\bAlt{\bSymb{+}}{\bSymb{-}} \bSpecial{num}}
 \bEnd
 }
 

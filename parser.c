@@ -235,6 +235,38 @@ parser_forward_tclass (struct parser *parser, enum token_class tclass)
   return tok;
 }
 
+/* Get the next token from two alternative class options.
+   If the token is different, return NULL
+ */
+struct token *
+parser_token_alternative_tclass (struct parser *parser, enum token_class first, enum token_class second)
+{
+  struct token* tok = parser_get_token (parser);
+  
+  if ((token_class(tok) == first) || (token_class(tok) == second))
+    return tok;
+  
+  parser_unget (parser);
+  return NULL;
+}
+
+/* Get the next token from two alternative valueoptions.
+   If the token is different, return NULL
+ */
+struct token *
+parser_token_alternative_tval (struct parser *parser, enum token_kind first, enum token_kind second)
+{
+  struct token* tok = parser_get_token (parser);
+  
+  if ((token_value(tok) == first) || (token_value(tok) == second))
+    return tok;
+  
+  parser_unget (parser);
+  return NULL;
+}
+
+
+
 /* Check if the next token returned by parser_get_token would be
    token with the value TKIND, in case the value is different,
    the error_loc would be called.
@@ -320,7 +352,7 @@ parser_finalize (struct parser *parser)
   return true;
 }
 
-/* Documentclass:
+/* documentclass:
    \documentclass { <num> <id>, <id> } { <id> }
    FIXME: In LaTeX the first argument should be <num><id>, i.e. 12pt,
    where spaces have to be missing. However, in this grammar spaces 
@@ -331,6 +363,9 @@ handle_documentclass (struct parser *parser)
 {
   tree t;
   struct token * tok;
+
+  if (!(tok = parser_forward_tval(parser, tv_documentclass)))
+    return error_mark_node;
 
   if (!(tok = parser_forward_tval(parser, tv_lbrace)))
     return error_mark_node;
@@ -372,8 +407,145 @@ handle_documentclass (struct parser *parser)
   return t;
 
 error:
-    free(t);
+    free_tree(t);
     return error_mark_node;
+}
+
+/* usepackage:
+   \usepackage { <id> }
+ */
+tree
+handle_usepackage (struct parser *parser)
+{
+  tree t;
+  struct token * tok;
+
+  if (!(tok = parser_forward_tval(parser, tv_usepackage)))
+    return error_mark_node; 
+  
+  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
+    return error_mark_node;
+  
+  t = make_tree (USEPACKAGE);
+
+  if (!(tok = parser_forward_tval(parser, tv_eqcode)))
+    goto error;
+  else
+    TREE_OPERAND_SET(t, 0, make_string_cst_tok (tok));
+
+  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error;
+  
+  return t;
+
+error:
+    free_tree(t);
+    return error_mark_node;
+}
+
+/* begindocument:
+ * \begin{ document }
+ */
+tree
+handle_begindocument (struct parser *parser)
+{
+  tree t;
+  struct token * tok;
+
+  if (!(tok = parser_forward_tval(parser, tv_begin)))
+    return error_mark_node; 
+  
+  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
+    return error_mark_node;
+  
+  t = make_tree (BEGIN);
+
+  if (!(tok = parser_forward_tval(parser, tv_document)))
+    goto error;
+  else
+    TREE_OPERAND_SET(t, 0, make_string_cst_tok (tok));
+
+  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error;
+  
+  return t;
+
+error:
+    free_tree(t);
+    return error_mark_node;
+}
+
+/* footer:
+ * \end { document }
+ */
+tree
+handle_footer (struct parser *parser)
+{
+  tree t;
+  struct token * tok;
+
+  if (!(tok = parser_forward_tval(parser, tv_begin)))
+    return error_mark_node; 
+  
+  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
+    return error_mark_node;
+  
+  t = make_tree (END);
+
+  if (!(tok = parser_forward_tval(parser, tv_document)))
+    goto error;
+  else
+    TREE_OPERAND_SET(t, 0, make_string_cst_tok (tok));
+
+  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error;
+  
+  return t;
+
+error:
+    free_tree(t);
+    return error_mark_node;
+}
+
+
+/* header:
+ * documentclass usepackage begindocument
+ */
+static inline void handle_header (struct parser* parser)
+{
+  handle_documentclass (parser);
+  handle_usepackage (parser);
+  handle_begindocument (parser);
+}
+
+/* linear:
+ * <id> [ ( + | - ) <num> ]
+ */
+tree
+handle_linear (struct parser* parser)
+{
+  tree id;
+  struct token* tok;
+
+  if (!(tok = parser_forward_tclass(parser, tok_id)))
+    return error_mark_node;
+  else
+    id = make_identifier_tok (tok);
+
+  if (!(tok = parser_token_alternative_tval(parser, tv_plus, tv_minus)))
+  {
+    enum token_kind op = token_value(tok);
+    tok = parser_get_token(parser);
+    if(token_class(tok) != tok_number)
+    {
+      parser_unget(parser);
+      parser_unget(parser);
+      return id;
+    }
+    else
+      return make_binary_op (op, id, make_integer_tok(tok));
+  }
+  return id; 
 }
 
 /* Top level function to parse the file.  */
@@ -383,26 +555,29 @@ parse (struct parser *parser)
   struct token *  tok;
   
   error_count = warning_count = 0;
-
   while (token_class (tok = parser_get_token (parser)) != tok_eof)
     {
       switch (token_class (tok))
         {
         case tok_keyword:
-    
           switch (token_value (tok))
             {
-              tree res;
             case tv_documentclass:
-              handle_documentclass (parser);
+              parser_unget (parser);
+              handle_header (parser);
               break;
-          
+            default:
+              error_loc( token_location (tok), "keyword `%s` is not expected here",
+                  token_as_string(tok));
             }
           break;
         case tok_unknown:
-          error_loc( token_location (tok), "unknown token found `%s`!", 
+          error_loc( token_location (tok), "unknown token found `%s`", 
               token_as_string(tok));
           break;
+        default:
+          error_loc (token_location (tok), "token `%s` is not expected here",
+            token_as_string(tok));
         }
     }
 

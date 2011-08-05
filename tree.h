@@ -100,6 +100,24 @@ struct tree_documentclass_node
   tree operands[4];
 };
 
+struct tree_usepackage_node
+{
+  struct tree_base base;
+  tree operands[1];
+};
+
+struct tree_begin_node
+{
+  struct tree_base base;
+  tree operands[1];
+};
+
+struct tree_end_node
+{
+  struct tree_base base;
+  tree operands[1];
+};
+
 struct tree_string_cst_node
 {
   //struct tree_base base;
@@ -190,6 +208,9 @@ union tree_node
   struct tree_three_op_stmt_node    three_op_stmt_node;
   struct tree_stmt_list_node        stmt_list_node;
   struct tree_documentclass_node    documentclass_node;
+  struct tree_usepackage_node       usepackage_node;
+  struct tree_begin_node            begin_node;
+  struct tree_end_node              end_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
 
@@ -242,6 +263,12 @@ get_tree_operand (tree node, int idx)
     case tcl_misc:
       if (code == DOCUMENTCLASS)
         return node->documentclass_node.operands[idx];
+      else if (code == USEPACKAGE)
+        return node->usepackage_node.operands[idx];
+      else if (code == BEGIN)
+        return node->begin_node.operands[idx];
+      else if (code == END)
+        return node->end_node.operands[idx];
       else
         unreachable("node `%s` of tcl_misc doesn't have operands", TREE_CODE_NAME (code));
       break;
@@ -280,6 +307,12 @@ set_tree_operand (tree node, int idx, tree value)
     case tcl_misc:
       if (code == DOCUMENTCLASS)
         node->documentclass_node.operands[idx] = value;
+      else if (code == USEPACKAGE)
+        node->usepackage_node.operands[idx] = value;
+      else if (code == BEGIN)
+        node->begin_node.operands[idx] = value;
+      else if (code == END)
+        node->end_node.operands[idx] = value;
       else
         unreachable ("nod `%s` of tcl_misc does not have operands",
                     TREE_CODE_NAME (code));

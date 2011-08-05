@@ -16,8 +16,13 @@
 
 /* Tree nodes are defined in this file.  */
 
+/* Header related productions */
 DEF_TREE_CODE (DOCUMENTCLASS, "documentclass", tcl_misc, 4)
+DEF_TREE_CODE (USEPACKAGE, "usepackage", tcl_misc, 1)
+DEF_TREE_CODE (BEGIN, "begin", tcl_misc,1)
 
+/* Footer */
+DEF_TREE_CODE (END, "end", tcl_misc, 1)
 
 /* Used when freeing atomic objects.  */
 DEF_TREE_CODE (EMPTY_MARK, "error_mark", tcl_misc, 0)
