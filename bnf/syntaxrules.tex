@@ -1,0 +1,687 @@
+%
+% Definition of BNF syntax rules. 
+%
+
+\newcommand{\BnfPrg}{
+\bHead{prg}
+  \bOpt{\bAlt{module}{class}}
+  \bStar{interface} \bStar{tfspec} \bStar{structdef} \bSkip \bStar{typedef}
+  \bStar{object} \bStar{function}
+\bEnd
+}
+
+%
+% Rules for module implementation
+%
+
+\newcommand{\BnfModule}{
+\bHead{module}
+  \bToken{module} \bSpecial{id} \bOpt{\bToken{deprecated} \bSpecial{str}} \bSymb{;}
+\bEnd
+}
+
+\newcommand{\BnfClass}{
+\bHead{class}
+  \bToken{class} \bSpecial{id} \bOpt{\bToken{deprecated} \bSpecial{str}} \bSymb{;}
+  classtype \bOpt{pragmas}
+\bEnd
+}
+
+\newcommand{\BnfClassType}{
+\bHead{classtype}
+  \bToken{classtype} ntype \bSymb{;} \bOr
+  \bToken{extern} \bToken{classtype} \bSymb{;}
+\bEnd
+}
+
+%
+% Rules for ordinary SAC programs
+%
+
+\newcommand{\BnfTypeDef}{
+\bHead{typedef}
+  \bAlt{loctypedef}{exttypedef \bOpt{pragmas}}
+\bEnd
+}
+
+\newcommand{\BnfObject}{
+\bHead{object}
+  \bAlt{objdef}{extobjdef\bOpt{pragmas}}
+\bEnd
+}
+
+\newcommand{\BnfFunction}{
+\bHead{function}
+  \bAlt{\bToken{external}}{\bToken{specialize}} fundec \bOpt{pragmas} \bOr
+  fundef \bOpt{pragmas} \bOr
+  main
+\bEnd
+}
+
+%
+% Rules for imports
+%
+
+\newcommand{\BnfInterface}{
+\bHead{interface}
+  \bAltBegin \bToken{import} \bDAlt \bToken{use} \bDAlt \bToken{export} \bDAlt
+  \bToken{provide} \bAltEnd
+  \bSpecial{id} \bSymb{:} \bSkip
+  \bAlt{\bToken{all} \bOpt{\bToken{except}
+  \bSymb{\{} ext\_id \bOpt{\bSymb{,}
+  ext\_id} \bSymb{\}}}}{\bSkip \bSymb{\{} ext\_id \bOpt{\bSymb{,}
+  ext\_id} \bSymb{\}}} \bSymb{;}
+\bEnd
+}
+
+%
+% Rules for structs
+%
+
+\newcommand{\BnfStructDef}{
+\bHead{structdef}
+  \bToken{struct} \bSpecial{id} \bSymb{\{} \bStar{ntype \bSpecial{id}
+  \bStar{\bSymb{,} \bSpecial{id}} \bSymb{;}} \bSymb{\}}  \bSymb{;}
+\bEnd
+}
+
+% 
+% Rules for typedefs
+%
+
+\newcommand{\BnfLocTypeDef}{
+\bHead{loctypedef}
+  \bToken{typedef} ntype \bSpecial{id} \bSymb{;}
+\bEnd
+}
+
+\newcommand{\BnfExtTypeDef}{
+\bHead{exttypedef}
+  \bToken{external} \bToken{typedef} \bSpecial{id} \bSymb{;}
+\bEnd
+}
+
+%
+% Rules for objdefs
+%
+
+\newcommand{\BnfObjDef}{
+\bHead{objdef}
+    \bToken{objdef} ntype \bSpecial{id} = expr\_ap \bSymb{;}
+\bEnd
+}
+
+\newcommand{\BnfExtObjDef}{
+\bHead{extobjdef}
+  \bToken{external} \bToken{objdef} ntype \bSpecial{id} \bSymb{;}
+\bEnd
+}
+
+%
+% Rules for fundefs
+%
+
+\newcommand{\BnfFunDef}{
+\bHead{fundef}
+  \bOpt{\bToken{inline}} \bOpt{\bToken{thread}} \bAlt{\bToken{void}}{ntype
+  \bStar{\bSymb{,} ntype}} \bSkip \bAlt{ \bSymb{(} ext\_id \bSymb{)}}{ ext\_id }
+  \bSymb{(} vardec  \bSymb{)} \bSkip body 
+\bEnd
+}
+
+\newcommand{\BnfVarDec}{
+\bHead{vardec}
+  \bOpt{\bAlt{arg \bStar{\bSymb{,} arg}}} 
+\bEnd
+}
+
+\newcommand{\BnfVarArgs}{
+\bHead{varargs}
+  arg \bOpt{\bToken{,} \bAlt{arg}} \bOpt{\bSymb{...}}
+\bEnd
+}
+
+\newcommand{\BnfArg}{
+\bHead{arg}
+  ntype \bOpt{\bSymb{\&}} \bSpecial{id}
+\bEnd
+}
+
+\newcommand{\BnfMain}{
+\bHead{main}
+  \bToken{int} \bToken{main} \bSymb{(} \bOpt{\bToken{void}} \bSymb{)} body
+\bEnd
+}
+
+%
+% Rules for fundecs
+%
+
+\newcommand{\BnfFunDec}{
+\bHead{fundec}
+    \bAltBegin \bToken{void} \bDAlt varntypes \bDAlt \bSymb{...} \bAltEnd
+    ext\_id \bSkip \bSymb{(} \bOpt{\bAltBegin varargs \bDAlt \bToken{void}
+    \bDAlt \bSymb{...} \bAltEnd} \bSymb{)} \bSymb{;}
+
+\bEnd
+}
+
+%
+% Rules for pragmas
+%
+
+\newcommand{\BnfHashPragma}{
+\bHead{hash\_pragma}
+  \bToken{\#} \bToken{pragma}
+\bEnd
+}
+
+\newcommand{\BnfPragmaCacheSim}{
+\bHead{pragmacachesim}
+  hash\_pragma \bToken{cachesim}
+  \bOpt{\bPlus{\bSpecial{str}}}
+\bEnd
+}
+
+\newcommand{\BnfPragmas}{
+\bHead{pragmas}
+  \bPlus{pragma}  \bOr
+  hash\_pragma \bToken{wlcomp} expr\_ap
+\bEnd
+}
+
+\newcommand{\BnfPragma}{
+\bHead{pragma}
+  hash\_pragma
+  \bAltBegin \bToken{linkname} \bDAlt \bToken{cudalinkname} \bSkip \bDAlt 
+  \bToken{linkwith} \bDAlt \bToken{linkobj} \bDAlt \bToken{copyfun} \bDAlt
+  \bSkip \bToken{freefun} \bAltEnd \bPlus{\bSpecial{str}} \bOr
+  hash\_pragma \bAlt{\bToken{linksign}}{\bToken{refcounting}}
+  \bSymb{[} nums \bSymb{]} \bOr
+  hash\_pragma \bToken{effect} qual\_ext\_id \bStar{\bSymb{,} qual\_ext\_id} \bOr
+  hash\_pragma
+  \bAltBegin \bToken{recountdots} \bDAlt \bToken{mutcthreadfun} \bDAlt \bSkip
+  \bToken{noinline} \bAltEnd
+\bEnd
+}
+
+%
+% Rules for expression blocks
+%
+
+\newcommand{\BnfBody}{
+\bHead{body}
+  \bSymb{\{} \bOpt{pragmacachesim} \bStar{ntype \bSpecial{id} \bStar{\bSymb{,}
+  \bSpecial{id}} \bSymb{;}} \bSkip \bStar{statement} \bOpt{\bToken{return}
+  \bOpt{\bSymb{(} \bOpt{exprs} \bSymb{)}}} \bSymb{;}  \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfAssignOPTret}{
+\bHead{assignOPTret}
+  \bOpt{\bToken{return} \bOpt{\bSymb{(} \bOpt{exprs} \bSymb{)}} \bSymb{;} \bOr
+  statement assignsOPTret}
+\bEnd
+}
+
+\newcommand{\BnfStatement}{
+\bHead{statement}
+  \bSymb{;}  \bOr
+  let \bSymb{;} \bOr
+  cond \bOr
+  doloop \bOr
+  whileloop \bOr
+  forloop
+\bEnd
+}
+
+
+\newcommand{\BnfLet}{
+\bHead{let}
+  id \bStar{\bSymb{,} id} \bSymb{=} expr \bOr
+  \bSpecial{id} \bSymb{.} \bSpecial{id} \bSymb{=} expr \bOr
+  \bSpecial{id} \bSymb{[} exprs \bSymb{]} \bSymb{=} expr \bOr
+  expr\_ap \bOr
+  expr\_with \bOr
+  \bSpecial{id} \bAlt{\bSymb{++}}{\bSymb{--}} \bOr
+  \bAlt{\bSymb{++}}{\bSymb{--}} \bSpecial{id} \bOr
+  \bSpecial{id} \bAltBegin \bSymb{+=} \bDAlt \bSymb{-=} \bDAlt \bSymb{*=}
+  \bDAlt \bSymb{/=} \bDAlt \bSymb{\%=} \bAltEnd expr 
+\bEnd
+}
+
+\newcommand{\BnfCond}{
+\bHead{cond}
+  \bToken{if} \bSymb{(} expr \bSymb{)} statementblock \bOpt{\bToken{else}
+  statementblock}
+\bEnd
+}
+
+\newcommand{\BnfDoLoop}{
+\bHead{doloop}
+  \bToken{do} statementblock
+  \bToken{while} \bSymb{(} expr \bSymb{)} \bSymb{;}
+\bEnd
+}
+
+\newcommand{\BnfWhileLoop}{
+\bHead{whileloop}
+  \bToken{while} \bSymb{(} expr \bSymb{)} statementblock
+\bEnd
+}
+
+\newcommand{\BnfForLoop}{
+\bHead{forloop}
+  \bToken{for} \bSymb{(} let \bStar{ \bSymb{,} let } \bSymb{;} expr \bSymb{;}
+  let \bStar{ \bSymb{,} let } \bSymb{)} \bSkip statementblock
+\bEnd
+}
+
+\newcommand{\BnfStatementBlock}{
+\bHead{statementblock}
+  \bSymb{\{} \bOpt{pragmacachesim} \bStar{statement} \bSymb{\}} \bOr
+  statement
+\bEnd
+}
+
+%
+% Rules for expressions
+%
+
+\newcommand{\BnfExpr}{
+\bHead{expr}
+  \bSymb{.} \bOr
+  \bSymb{...} \bOr
+  subexpr
+\bEnd
+}
+
+\newcommand{\BnfExprs}{
+\bHead{exprs}
+  expr \bStar{ \bSymb{,} expr }
+\bEnd
+}
+
+\newcommand{\BnfSubExpr}{
+\bHead{subexpr}
+  subexpr \bSymb{.} \bSpecial{id} \bOr
+  nostrexpr
+\bEnd
+}
+
+\newcommand{\BnfNoStrExpr}{
+\bHead{nostrexpr}
+  qual\_ext\_id \bOr
+  \bToken{numbyte} \bOr
+  \bToken{numshort} \bOr
+  \bToken{numint} \bOr
+  \bToken{numlong} \bOr
+  \bToken{numlonglong} \bOr
+  \bToken{numubyte} \bOr
+  \bToken{numushort} \bOr
+  \bToken{numuint}  \bOr
+  \bToken{numulong} \bOr
+  \bToken{numulonglong} \bOr
+  \bSpecial{num} \bOr
+  \bToken{float} \bOr
+  \bToken{double} \bOr
+  \bToken{char} \bOr
+  \bPlus{\bSpecial{str}} \bOr
+  \bToken{true} \bOr
+  \bToken{false} \bOr
+  expr \bAlt{\bSymb{\&\&}}{\bSymb{||}} expr \bOr
+  expr \bSymb{?} expr \bSymb{:} expr \bOr
+  \bSymb{(} expr \bSymb{)} \bOr
+  expr qual\_ext\_id expr \bOr
+  \bAltBegin \bSymb{+} \bDAlt \bSymb{-} \bDAlt \bSymb{\~} \bDAlt \bSymb{!}
+  \bAltEnd expr \bOr
+  \bAltBegin \bSymb{+} \bDAlt \bSymb{-} \bDAlt \bSymb{\~} \bDAlt \bSymb{!}
+  \bAltEnd \bSymb{(} expr \bSymb{,}
+  exprs \bSymb{)} \bOr
+  expr \bSymb{[} \bOpt{exprs} \bSymb{]} \bOr
+  expr\_ap \bOr
+  expr\_with \bOr
+  expr\_ar \bOr
+  \bSymb{(} \bSymb{:} ntype \bSymb{)} expr \bOr
+  \bSymb{\{} \bSpecial{id} \bSymb{->} expr \bSymb{\}} \bOr
+  \bSymb{\{} \bSymb{[} exprs \bSymb{]} \bSymb{->} expr \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfExprWith}{
+\bHead{expr\_with}
+  \bOpt{\bToken{local}} \bToken{with} with 
+\bEnd
+}
+
+\newcommand{\BnfWith}{
+\bHead{with}
+  \bOpt{\bSymb{\{} \bOpt{with\_opt}
+  \bOpt{\bPlus{generators}} \bSymb{\}}} \bSkip \bSymb{:}
+  operators
+\bEnd
+}
+
+\newcommand{\BnfWithOpt}{
+\bHead{with\_opt}
+  hash\_pragma \bToken{wlcomp} expr\_ap
+\bEnd
+}
+
+\newcommand{\BnfOperators}{
+\bHead{operators}
+  \bSymb{(} nwithop \bOpt{\bToken{,} nwithop} \bSymb{)} \bOr
+  nwithop \bOr
+  \bToken{void}
+\bEnd
+}
+
+\newcommand{\BnfExprAp}{
+\bHead{expr\_ap}
+  qual\_ext\_id \bSymb{(} \bOpt{ exprs } \bSymb{)} \bOr
+  prf \bSymb{(} \bOpt{ exprs} \bSymb{)} \bOr
+  \bToken{spawn} \bOpt{ \bSymb{(} \bSpecial{str} \bSymb{)} } qual\_ext\_id \bSymb{(} \bOpt{ exprs } \bSymb{)} \bOr
+  \bToken{rspawn} \bOpt{ \bSymb{(} \bSpecial{str} \bSymb{)}} qual\_ext\_id  \bSymb{(} \bOpt{ exprs } \bSymb{)}
+\bEnd
+}
+
+\newcommand{\BnfExprAr}{
+\bHead{expr\_ar}
+  \bSymb{[} \bOpt{exprs} \bSymb{]} \bOr
+  \bSymb{[} \bSymb{:} ntype \bSymb{]} \bOr
+  \bSymb{<} exprs \bSymb{>}
+\bEnd
+}
+
+\newcommand{\BnfGenerators}{
+  \bHead{generators}
+    \bSymb{(} generator \bSymb{)} \bOpt{\{ \bStar{statement} \}}
+    \bSkip \bOpt{\bSymb{:} \bAlt{\bSymb{(} expr \bSymb{,} exprs
+    \bSymb{)}}{exprs}} \bSymb{;}
+ \bEnd
+}
+
+\newcommand{\BnfGenerator}{
+\bHead{generator}
+  expr \bAlt{\bSymb{<=}}{\bSymb{<}} \bAlt{\bSpecial{id}}{\bOpt{\bSpecial{id}
+  \bSymb{=}} \bSkip \bSymb{[} \bSpecial{id} \bStar{\bSymb{,} \bSpecial{id}} \bSymb{]}}
+   \bAlt{\bSymb{<=}}{\bSymb{<}} \bSkip expr \bOpt{\bToken{step} expr}
+   \bOpt{\bToken{width} expr} \bOr
+\bEnd
+}
+
+\newcommand{\BnfGenIdx}{
+\bHead{genidx}
+  \bOpt{\bSpecial{id} \bSymb{=}} \bSymb{[} \bSpecial{id} \bStar{\bSymb{,} \bSpecial{id}}  \bSymb{]} \bOr
+  \bSpecial{id}
+\bEnd
+}
+
+\newcommand{\BnfNWithOp}{
+\bHead{nwithop}
+  \bToken{genarray} \bSymb{(} expr \bOpt{\bSymb{,} expr} \bSymb{)} \bOr
+  \bToken{modarray} \bSymb{(} expr \bSymb{)} \bOr
+  \bToken{fold} \bSymb{(} qual\_ext\_id \bSymb{,} expr \bSymb{)} \bOr
+  \bToken{foldfix} \bSymb{(} qual\_ext\_id \bSymb{,} expr \bSymb{,} expr
+  \bSymb{)} \bOr
+  \bToken{propagate} \bSymb{(} expr \bSymb{)}
+\bEnd
+}
+
+\newcommand{\BnfPrf}{
+\bHead{prf}
+  \bToken{\_dim\_A\_} \bOr
+  \bToken{\_shape\_A\_} \bOr
+  \bToken{\_reshape\_VxA\_} \bOr
+  \bToken{\_sel\_VxA\_} \bOr
+  \bToken{\_modarray\_AxVxS\_} \bOr
+  \bToken{\_sel\_VxIA\_} \bOr
+  \bToken{\_hideValue\_SxA\_} \bOr
+  \bToken{\_hideShape\_SxA\_} \bOr
+  \bToken{\_hideDim\_SxA\_} \bOr
+  \bToken{\_add\_SxS\_} \bOr
+  \bToken{\_add\_SxV\_} \bOr
+  \bToken{\_add\_VxS\_} \bOr
+  \bToken{\_add\_VxV\_} \bOr
+  \bToken{\_sub\_SxS\_} \bOr
+  \bToken{\_sub\_SxV\_} \bOr
+  \bToken{\_sub\_VxS\_} \bOr
+  \bToken{\_sub\_VxV\_} \bOr
+  \bToken{\_mul\_SxS\_} \bOr
+  \bToken{\_mul\_SxV\_} \bOr
+  \bToken{\_mul\_VxS\_} \bOr
+  \bToken{\_mul\_VxV\_} \bOr
+  \bToken{\_div\_SxS\_} \bOr
+  \bToken{\_div\_SxV\_} \bOr
+  \bToken{\_div\_VxS\_} \bOr
+  \bToken{\_div\_VxV\_} \bOr
+  \bToken{\_mod\_SxS\_} \bOr
+  \bToken{\_mod\_SxV\_} \bOr
+  \bToken{\_mod\_VxS\_} \bOr
+  \bToken{\_mod\_VxV\_} \bOr
+  \bToken{\_abs\_S\_} \bOr
+  \bToken{\_abs\_V\_} \bOr
+  \bToken{\_neg\_S\_} \bOr
+  \bToken{\_neg\_V\_} \bOr
+  \bToken{\_reciproc\_S\_} \bOr
+  \bToken{\_reciproc\_V\_} \bOr
+  \bToken{\_min\_SxS\_} \bOr
+  \bToken{\_min\_SxV\_} \bOr
+  \bToken{\_min\_VxS\_} \bOr
+  \bToken{\_min\_VxV\_} \bOr
+  \bToken{\_max\_SxS\_} \bOr
+  \bToken{\_max\_SxV\_} \bOr
+  \bToken{\_max\_VxS\_} \bOr
+  \bToken{\_max\_VxV\_} \bOr
+  \bToken{\_eq\_SxS\_} \bOr
+  \bToken{\_eq\_SxV\_} \bOr
+  \bToken{\_eq\_VxS\_} \bOr
+  \bToken{\_eq\_VxV\_} \bOr
+  \bToken{\_neq\_SxS\_} \bOr
+  \bToken{\_neq\_SxV\_} \bOr
+  \bToken{\_neq\_VxS\_} \bOr
+  \bToken{\_neq\_VxV\_} \bOr
+  \bToken{\_lt\_SxS\_} \bOr
+  \bToken{\_lt\_SxV\_} \bOr
+  \bToken{\_lt\_VxS\_} \bOr
+  \bToken{\_lt\_VxV\_} \bOr
+  \bToken{\_le\_SxS\_} \bOr
+  \bToken{\_le\_SxV\_} \bOr
+  \bToken{\_le\_VxS\_} \bOr
+  \bToken{\_le\_VxV\_} \bOr
+  \bToken{\_gt\_SxS\_} \bOr
+  \bToken{\_gt\_SxV\_} \bOr
+  \bToken{\_gt\_VxS\_} \bOr
+  \bToken{\_gt\_VxV\_} \bOr
+  \bToken{\_ge\_SxS\_} \bOr
+  \bToken{\_ge\_SxV\_} \bOr
+  \bToken{\_ge\_VxS\_} \bOr
+  \bToken{\_ge\_VxV\_} \bOr
+  \bToken{\_not\_S\_} \bOr
+  \bToken{\_not\_V\_} \bOr
+  \bToken{\_and\_SxS\_} \bOr
+  \bToken{\_and\_SxV\_} \bOr
+  \bToken{\_and\_VxS\_} \bOr
+  \bToken{\_and\_VxV\_} \bOr
+  \bToken{\_or\_SxS\_} \bOr
+  \bToken{\_or\_SxV\_} \bOr
+  \bToken{\_or\_VxS\_} \bOr
+  \bToken{\_or\_VxV\_} \bOr
+  \bToken{\_tob\_S\_} \bOr
+  \bToken{\_tos\_S\_} \bOr
+  \bToken{\_toi\_S\_} \bOr
+  \bToken{\_tol\_S\_} \bOr
+  \bToken{\_toll\_S\_} \bOr
+  \bToken{\_toub\_S\_} \bOr
+  \bToken{\_tous\_S\_} \bOr
+  \bToken{\_toui\_S\_} \bOr
+  \bToken{\_toul\_S\_} \bOr
+  \bToken{\_toull\_S\_} \bOr
+  \bToken{\_tof\_S\_} \bOr
+  \bToken{\_tod\_S\_} \bOr
+  \bToken{\_toc\_S\_} \bOr
+  \bToken{\_tobool\_S\_} \bOr
+  \bToken{\_cat\_VxV\_} \bOr
+  \bToken{\_take\_SxV\_} \bOr
+  \bToken{\_drop\_SxV\_} \bOr
+  \bToken{\_mask\_VxVxV\_} \bOr
+  \bToken{\_non\_neg\_val\_S\_} \bOr
+  \bToken{\_non\_neg\_val\_V\_} \bOr
+  \bToken{\_val\_le\_val\_SxS\_} \bOr
+  \bToken{\_val\_le\_val\_VxV\_}
+\bEnd
+}
+
+\newcommand{\BnfQualExtId}{
+\bHead{qual\_ext\_id}
+  \bOpt { \bSpecial{id} \bSymb{::} } ext\_id 
+\bEnd
+}
+
+\newcommand{\BnfExtId}{
+  \bHead{ext\_id}
+  \bAlt{\bSpecial{id}}{reservedid} \bEnd
+\bEnd
+}
+
+\newcommand{\BnfReservedId}{
+\bHead{reservedid}
+  \bToken{genarray} \bOr
+  \bToken{modarray} \bOr
+  \bToken{all}      \bOr
+  \bSymb{\&}        \bOr
+  \bSymb{!}         \bOr
+  \bSymb{++}        \bOr
+  \bSymb{--}        \bOr
+  \bSymb{+}         \bOr
+  \bSymb{-}         \bOr
+  \bSymb{*}         \bOr
+  \bSymb{<=}        \bOr
+  \bSymb{<}         \bOr
+  \bSymb{>} 
+\bEnd
+}
+
+%
+% Rules for typefamily (tf)
+%
+
+\newcommand{\BnfTfSpec}{
+\bHead{tfspec}
+  \bPlus{tfdef} \bPlus{tfrel}
+\bEnd
+}
+
+\newcommand{\BnfTfDef}{
+\bHead{tfdef}
+  \bToken{abstract-typedef} \bSpecial{id} \bOpt{tfarg} \bSymb{;} \bOr
+  \bToken{user-typedef} \bSpecial{id} tfarg \bSymb{;} \bOr
+  \bToken{builtin-typedef} \bAlt{simplentype}{\bSpecial{id} \bSkip \bOpt{\bSymb{(||}
+  tfarg \bSymb{||)}}} \bSymb{;}
+\bEnd
+}
+
+\newcommand{\BnfTfArg}{
+\bHead{tfarg}
+  \bSpecial{id} \bOpt{\bSymb{::} \bSpecial{id}} \bOpt{\bSymb{,}
+  tfarg}
+\bEnd
+}
+
+\newcommand{\BnfTfRel}{
+\bHead{tfrel}
+  \bToken{typerel} simplentype \bSymb{<:} \bAlt{simplentype}{\bSpecial{id}}
+  \bSymb{;} \bOr
+  \bToken{typerel} \bSpecial{id} \bSymb{<:} \bSpecial{id} \bOpt{\bToken{iff}
+  tfexprs} \bSymb{;}
+\bEnd
+}
+
+\newcommand{\BnfTfExprs}{
+\bHead{tfexprs}
+  tfexprs \bAltBegin \bSymb{.}
+  \bAlt{\bSymb{<}}{\bSymb{<=}} \bDAlt \bSymb{.>} \bDAlt \bSymb{.>=} \bDAlt
+  \bSymb{.*} \bDAlt \bSkip \bSymb{./} \bDAlt \bSymb{.+} \bDAlt \bSymb{.-}
+  \bAltEnd
+  \bOr
+  \bSymb{(} tfexprs \bSymb{)} \bOr
+  \bAlt{\bSpecial{id}}{\bSpecial{num}}
+\bEnd
+}
+
+%
+% Rules for ntype
+%
+
+\newcommand{\BnfVarNTypes}{
+\bHead{varntypes}
+  ntype \bOpt{\bSymb{,} \bAlt{ntype \bStar{\bSymb{,} ntype}}{\bSymb{...}}}
+\bEnd
+}
+
+\newcommand{\BnfNType}{
+  \bHead{ntype}
+  basentype \bOr
+  basentype \bSymb{[} \bOpt{exprs} \bSymb{]}
+\bEnd
+}
+
+\newcommand{\BnfBaseNType}{
+  \bHead{basentype}
+  simpletype \bOr
+  userntype \bOr
+  polyntype
+\bEnd
+}
+
+\newcommand{\BnfSimpleNType}{
+  \bHead{simplentype}
+  \bToken{byte} \bOr
+  \bToken{short} \bOr
+  \bToken{int} \bOr
+  \bToken{long} \bOr
+  \bToken{longlong} \bOr
+  \bToken{ubyte} \bOr
+  \bToken{ushort} \bOr
+  \bToken{uint} \bOr
+  \bToken{ulong} \bOr
+  \bToken{ulonglong} \bOr
+  \bToken{float} \bOr
+  \bToken{bool} \bOr
+  \bToken{char} \bOr
+  \bToken{double}
+\bEnd
+}
+
+\newcommand{\BnfUserNType}{
+\bHead{userntype}
+  \bAlt{\bOpt{\bToken{struct}}}{\bSpecial{id} \bSymb{::}} \bSpecial{id}
+\bEnd
+}
+
+\newcommand{\BnfPolyNType}{
+\bHead{polyntype}
+  \bSymb{<} \bSpecial{id} \bOpt {\bSymb{=} \bSpecial{id} \bSymb{[} \bSpecial{id}
+  \bSymb{]}} \bSymb{>} \bOr
+  \bSymb{<} \bSpecial{id} \bAlt{\bSymb{->}}{\bSymb{<-}} \bSpecial{id} \bSymb{[}
+  \bSpecial{id} \bSymb{]}
+  \bSymb{>}
+\bEnd
+}
+%
+% Rules for sac2src files
+%
+
+\newcommand{\BnfTargets}{
+\bHead{targets}
+  \bStar{\bToken{target} \bSpecial{id} \bStar{\bSymb{::} \bSpecial{id}} \bToken{:}
+  resources}
+\bEnd
+}
+
+\newcommand{\BnfResources}{
+  \bHead{resources}
+  \bStar{\bSpecial{id} \bAlt{\bSymb{:}}{\bSymb{+=}} \bSymb{=}
+  \bAlt{\bSpecial{num}}{\bStar{\bSpecial{str}}}}
+\bEnd
+}

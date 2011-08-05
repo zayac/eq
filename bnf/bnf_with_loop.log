@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.1415926-1.40.11 (TeX Live 2010/Arch Linux) (format=pdflatex 2011.7.13)  1 AUG 2011 01:37
+This is pdfTeX, Version 3.1415926-1.40.11 (TeX Live 2010/Arch Linux) (format=pdflatex 2011.7.13)  31 JUL 2011 18:21
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**syntax.tex
-(./syntax.tex
+**bnf_with_loop.tex
+(./bnf_with_loop.tex
 LaTeX2e <2009/09/24>
 Babel <v3.8l> and hyphenation patterns for english, dumylang, nohyphenation, ge
 rman-x-2009-06-19, ngerman-x-2009-06-19, afrikaans, ancientgreek, ibycus, arabi
@@ -40,8 +40,8 @@ File: bk12.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
 \@input{syntaxrules.aux}
 \openout2 = `syntaxrules.aux'.
 
-(./syntaxrules.tex) (./syntax.aux)
-\openout1 = `syntax.aux'.
+(./syntaxrules.tex) (./bnf_with_loop.aux)
+\openout1 = `bnf_with_loop.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 5.
 LaTeX Font Info:    ... okay on input line 5.
@@ -56,33 +56,25 @@ LaTeX Font Info:    ... okay on input line 5.
 LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 5.
 LaTeX Font Info:    ... okay on input line 5.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 7.
+(Font)              <12> on input line 8.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 7.
+(Font)              <8> on input line 8.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 7.
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 9.
+(Font)              <6> on input line 8.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 13.
 
 (/usr/share/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/bx/n' in size <12> not available
-(Font)              Font shape `OMS/cmsy/b/n' tried instead on input line 9.
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 9.
-LaTeX Font Info:    No file OMScmtt.fd. on input line 9.
+(Font)              Font shape `OMS/cmsy/b/n' tried instead on input line 13.
 
-
-LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
-(Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbraceleft' on input line 9.
-
-
-Overfull \hbox (79.82564pt too wide) in paragraph at lines 7--24
+Overfull \hbox (119.7801pt too wide) in paragraph at lines 8--49
 [][]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 7--24
+Underfull \hbox (badness 10000) in paragraph at lines 8--49
 
  []
 
@@ -92,42 +84,24 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--24
 
 
 
-]
-LaTeX Font Info:    Font shape `OMS/cmr/bx/it' in size <12> not available
-(Font)              Font shape `OMS/cmsy/b/n' tried instead on input line 30.
-
-Overfull \hbox (42.77135pt too wide) in paragraph at lines 27--40
-[][]
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 27--40
-
- []
-
-[2] (./syntax.aux)
-
-LaTeX Font Warning: Some font shapes were not available, defaults substituted.
-
- ) 
+] (./bnf_with_loop.aux) ) 
 Here is how much of TeX's memory you used:
- 338 strings out of 493772
- 3564 string characters out of 3150564
- 60782 words of memory out of 3000000
- 3691 multiletter control sequences out of 15000+200000
- 8937 words of font info for 32 fonts, out of 3000000 for 9000
+ 359 strings out of 493772
+ 3806 string characters out of 3150564
+ 61217 words of memory out of 3000000
+ 3716 multiletter control sequences out of 15000+200000
+ 7996 words of font info for 28 fonts, out of 3000000 for 9000
  715 hyphenation exceptions out of 8191
- 23i,11n,19p,162b,258s stack positions out of 5000i,500n,10000p,200000b,50000s
-</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbsy10.pfb></usr/share
-/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texmf-dist/fo
-nts/type1/public/amsfonts/cm/cmbxti10.pfb></usr/share/texmf-dist/fonts/type1/pu
-blic/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><
-/usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on syntax.pdf (2 pages, 65068 bytes).
+ 22i,11n,19p,174b,246s stack positions out of 5000i,500n,10000p,200000b,50000s
+</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmbsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></
+usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf
+-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/ty
+pe1/public/amsfonts/cm/cmti12.pfb>
+Output written on bnf_with_loop.pdf (1 page, 49380 bytes).
 PDF statistics:
- 39 PDF objects out of 1000 (max. 8388607)
- 27 compressed objects within 1 object stream
+ 28 PDF objects out of 1000 (max. 8388607)
+ 19 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1,0 +1,95 @@
+% Copyright (c) 2011 Pavel Zaichenkov <zaichenkov@gmail.com>
+%
+% Permission to use, copy, modify, and distribute this software for any
+% purpose with or without fee is hereby granted, provided that the above
+% copyright notice and this permission notice appear in all copies.
+%
+% THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+% WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+% MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+% ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+% WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+
+\begin{document}
+\begin{eqcode}{advance}{p, v, m, dt}{\type{R}^2_{5,3}, \type{R}^2_{5,3}, \type{R}^1_5, \type{R}}{\type{R}^3}
+    accs_{i,j}\ |\ 0 \leq i \leq 4 \land 0 \leq j \leq 4 =
+        \begin{cases}
+            \dfrac{(p_j-p_i) \cdot m_j}{\rho(p_i,p_j)^3} & j < i \lend
+            0 & otherwise
+        \end{cases} \lend
+    accs_{i,j}\ |\ j > i = - accs_{j,i} \lend
+    a_{i,j} = \sum \limits_k accs_{i,k,j} \lend
+    v = v + a \cdot dt \lend
+    p = p + v \cdot dt \lend
+    \return {p, v} \lend
+\end{eqcode}
+
+\begin{eqcode}{energy}{p, v, m}{\type{R}^2_{5,3},
+    \type{R}^2_{5,3}, \type{R}^1_5}{\type{R}}
+    e \in \type{R} \lend
+    e = \sum\limits_{i=0}^{4} \dfrac{m_i \cdot \sum\limits_{j} v_j^2}{2} \lend
+    e = e - \sum\limits_{i=0, j=0}^{i<5,j<5}
+    \begin{cases}
+        \dfrac{m_i \cdot m_j}{\rho(p_i - p_j)} & i < j \lend
+        0 & \text{otherwise} \lend
+    \end{cases} \lend
+    \return{e}
+\end{eqcode}
+
+\begin{eqcode}{offset\_momentum}{v, m}{\type{R}^2_{5,3},
+    \type{R}^1_5}{\type{R}^2_{5,3}}
+    v_{0,j}\ |\ 0 \leq j \leq 2 = \dfrac{-\sum\limits_{i} v_{i,j}
+    \cdot m_i}{4 \cdot \pi^2} \lend
+    \return{v} \lend
+\end{eqcode}
+
+\begin{eqcode}{main}{\ }{\ }{\type{Z}}
+    p \in \type{R}^2_{5,3},
+    v \in \type{R}^2_{5,3},
+    m \in \type{R}^2_{5} \lend
+    p = \begin{tmatrix}{ccc}
+            0 & 0 & 0 \lend
+            4.84143144246472090e+00 & -1.16032004402742839e+00 &
+            -1.03622044471123109e-01 \lend
+            8.34336671824457987e+00 & 4.12479856412430479e+00 &
+            -4.03523417114321381e-01 \lend
+            1.28943695621391310e+01 & -1.51111514016986312e+01 &
+            -2.23307578892655734e-01 \lend
+            1.53796971148509165e+01 & -2.59193146099879641e+01 &
+            1.79258772950371181e-01 \lend
+        \end{tmatrix} \lend
+    v = 365.24 \cdot
+        \begin{tmatrix}{ccc}
+            0 & 0 & 0 \lend
+            4.84143144246472090e+00 & -1.16032004402742839e+00 &
+            -1.03622044471123109e-01 \lend
+            8.34336671824457987e+00 & 4.12479856412430479e+00 &
+            -4.03523417114321381e-01 \lend
+            1.28943695621391310e+01 & -1.51111514016986312e+01 &
+            -2.23307578892655734e-01 \lend
+            1.53796971148509165e+01 & -2.59193146099879641e+01 &
+            1.79258772950371181e-01 \lend
+        \end{tmatrix} \lend
+    m = 4.0 \cdot \pi^2 \cdot
+        \begin{tvector}
+            1 \lend
+            9.5479384224326609e-04 \lend
+            2.8588598066613812e-04 \lend
+            4.3662440433515629e-05 \lend
+            5.1513890046611451e-05 \lend
+        \end{tvector} \lend
+    v = \call{offset\_momentum}{v, m} \lend
+    \print{\call{energy}{p, v, m} } \lend
+    p^{[0]}, v^{[0]} = p, v \lend
+    p^{[i]}, v^{[i]} = \call{advance}{p^{[i-1]},
+    v^{[i-1]}, m, 0.01} \lend
+    p, v = \filter{p^{[i]}, v^{[i]}\ |\ i = n} \lend
+    \print{\call{energy}{p, v, m} } \lend
+    \return{0} \lend
+\end{eqcode}
+\end{document}

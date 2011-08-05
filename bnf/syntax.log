@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.11 (TeX Live 2010/Arch Linux) (format=pdflatex 2011.7.13)  1 AUG 2011 01:37
+This is pdfTeX, Version 3.1415926-1.40.11 (TeX Live 2010/Arch Linux) (format=pdflatex 2011.7.13)  31 JUL 2011 20:06
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -61,28 +61,22 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <8> on input line 7.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 7.
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 9.
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 15.
 
-(/usr/share/texmf-dist/tex/latex/base/omscmr.fd
-File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
-)
-LaTeX Font Info:    Font shape `OMS/cmr/bx/n' in size <12> not available
-(Font)              Font shape `OMS/cmsy/b/n' tried instead on input line 9.
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 9.
-LaTeX Font Info:    No file OMScmtt.fd. on input line 9.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 15.
 
 
 LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbraceleft' on input line 9.
+(Font)              for symbol `textbraceleft' on input line 15.
 
 
-Overfull \hbox (79.82564pt too wide) in paragraph at lines 7--24
+Overfull \hbox (76.456pt too wide) in paragraph at lines 7--27
 [][]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 7--24
+Underfull \hbox (badness 10000) in paragraph at lines 7--27
 
  []
 
@@ -93,41 +87,101 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--24
 
 
 ]
-LaTeX Font Info:    Font shape `OMS/cmr/bx/it' in size <12> not available
-(Font)              Font shape `OMS/cmsy/b/n' tried instead on input line 30.
-
-Overfull \hbox (42.77135pt too wide) in paragraph at lines 27--40
+Overfull \hbox (67.6981pt too wide) in paragraph at lines 30--40
 [][]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 27--40
+Underfull \hbox (badness 10000) in paragraph at lines 30--40
 
  []
 
-[2] (./syntax.aux)
+[2]
+Overfull \hbox (63.78397pt too wide) in paragraph at lines 43--53
+[][]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 43--53
+
+ []
+
+[3]
+Overfull \hbox (14.87114pt too wide) in paragraph at lines 56--60
+[][]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 56--60
+
+ []
+
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 66.
+(/usr/share/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/it' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 66.
+
+Overfull \hbox (56.39111pt too wide) in paragraph at lines 61--72
+[][]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 61--72
+
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [4]
+[5]
+Overfull \vbox (863.14856pt too high) has occurred while \output is active []
+
+
+[6]
+Overfull \hbox (43.3664pt too wide) in paragraph at lines 81--94
+[][]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 81--94
+
+ []
+
+[7]
+Overfull \hbox (16.71396pt too wide) in paragraph at lines 97--104
+[][]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 97--104
+
+ []
+
+[8] (./syntax.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
  ) 
 Here is how much of TeX's memory you used:
- 338 strings out of 493772
- 3564 string characters out of 3150564
- 60782 words of memory out of 3000000
- 3691 multiletter control sequences out of 15000+200000
- 8937 words of font info for 32 fonts, out of 3000000 for 9000
+ 369 strings out of 493772
+ 3883 string characters out of 3150564
+ 82821 words of memory out of 3000000
+ 3723 multiletter control sequences out of 15000+200000
+ 8682 words of font info for 31 fonts, out of 3000000 for 9000
  715 hyphenation exceptions out of 8191
- 23i,11n,19p,162b,258s stack positions out of 5000i,500n,10000p,200000b,50000s
-</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbsy10.pfb></usr/share
-/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texmf-dist/fo
-nts/type1/public/amsfonts/cm/cmbxti10.pfb></usr/share/texmf-dist/fonts/type1/pu
-blic/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><
-/usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on syntax.pdf (2 pages, 65068 bytes).
+ 24i,11n,19p,149b,267s stack positions out of 5000i,500n,10000p,200000b,50000s
+</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmbxti10.pfb></usr/share/texmf-dist/f
+onts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-dist/fonts/type1/publ
+ic/amsfonts/cm/cmsy10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm
+/cmti12.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
+Output written on syntax.pdf (8 pages, 71460 bytes).
 PDF statistics:
- 39 PDF objects out of 1000 (max. 8388607)
- 27 compressed objects within 1 object stream
+ 55 PDF objects out of 1000 (max. 8388607)
+ 38 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

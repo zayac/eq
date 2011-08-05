@@ -25,3 +25,9 @@ parser: lex.o parser.o tree.o global.o print.o
 
 clean:
 	$(RM) *.o lexer parser
+
+lex.o: expand.h token_kind.def keywords.def token_class.def
+parser.o: expand.h keywords.def tree.def
+tree.o: expand.h tree.h tree.def
+global.o: global.h
+print.o: print.h expand.h tree.h

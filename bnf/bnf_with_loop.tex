@@ -1,0 +1,51 @@
+\documentclass[12pt,a4paper]{book}
+
+\include{bnf}
+\include{syntaxrules}
+\begin{document}
+
+
+\begin{BNF}
+\bHead{WithLoop}
+   \bToken{with} \bOpt{Generators} \bToken{:} Operators
+\bEnd
+\bHead{Generators}
+  \bToken{\{} \bStar{Generator} \bToken{\}}
+\bEnd
+\bHead{Generator}
+  \bToken{(} IndexSet \bToken{)}
+     \bOpt{\bToken{\{} Assignments \bToken{\}}}
+        \bToken{:} GenExprs \bToken{;}
+\bEnd
+\bHead{IndexSet}
+  \bAlt{Expr}{\bToken{.}} \ \bAlt{\bToken{<}}{\bToken{<=}} \ IndexVars \ 
+    \bAlt{\bToken{<}}{\bToken{<=}} \ \bAlt{Expr}{\bToken{.}} \bSkip
+      \bOpt{\bToken{step} Expr \bOpt{\bToken{width} Expr}}
+\bEnd
+\bHead{IndexVars}
+  Id \bOpt{\bToken{=} IdVect}
+  \bOr IdVect
+\bEnd
+\bHead{IdVect}
+  \bToken{[} \bOpt{Id \bStar{\bToken{,} Id}} \bToken{]}
+\bEnd
+\bHead{GenExprs}
+  Expr
+  \bOr \bToken{(} Expr \bStar{\bToken{,} Expr} \bToken{)}
+\bEnd
+\bHead{Operators}
+  \bToken{void}
+  \bOr Operator
+  \bOr \bToken{(} Operator \bStar{\bToken{,} Operator} \bToken{)}
+\bEnd
+\bHead{Operator}
+  \bToken{genarray} \bToken{(} Expr \bToken{,} Expr \bToken{)}
+  \bOr \bToken{modarray} \bToken{(} Expr \bToken{)}
+  \bOr \bToken{fold} \bToken{(} Id \bToken{,} Expr \bToken{)}
+  \bOr \bToken{foldfix} \bToken{(} Id \bToken{,} Expr  \bToken{,} Expr \bToken{)}
+  \bOr \bToken{propagate} \bToken{(} Id \bToken{)}
+\bEnd
+\end{BNF}
+
+
+\end{document}

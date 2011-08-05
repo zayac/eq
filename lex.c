@@ -45,8 +45,8 @@ const char *token_class_name[] =
 #undef TOKEN_CLASS
 
 /* This is a pointer to the first token from keywords.def  */
-const char **  keywords = &token_kind_name[(int) tv_alpha];
-size_t keywords_length = tok_kind_length  - tv_alpha;
+const char **  keywords = &token_kind_name[(int) tv_boolean];
+size_t keywords_length = tok_kind_length  - tv_boolean;
 
 /* Binary search function to search string in a char** table.  */
 static inline size_t
@@ -58,7 +58,7 @@ kw_bsearch (const char *key, const char *table[], size_t len)
     {
       size_t hit = (l + r) / 2;
       int i = strcmp (key, table[hit]);
-      /*printf ("%s ? %s, [%i, %i, %i]\n", key, table[hit], l, r, i);*/
+      /* printf ("%s ? %s, [%i, %i, %i]\n", key, table[hit], l, r, i); */
 
       if (i == 0)
 	return hit;
@@ -202,7 +202,6 @@ lexer_read_backslashed (struct lexer *lex, struct token *tok,
 {
   char *index = *buf;
   size_t search;
-
   do
     {
       buffer_add_char (buf, &index, size, c);
@@ -219,7 +218,7 @@ lexer_read_backslashed (struct lexer *lex, struct token *tok,
         free (*buf);
       *size = 0;
       *buf = NULL;
-      tval_tok_init (tok, keyword_type[search], (enum token_kind)(search + tv_alpha));
+      tval_tok_init (tok, keyword_type[search], (enum token_kind)(search + tv_boolean));
       return;
     }
   
@@ -251,11 +250,11 @@ lexer_read_id (struct lexer *lex, struct token *tok,
 static inline enum token_class
 lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 {
-  bool ishex = false;
+  //bool ishex = false;
   char *index = *buf;
 
   buffer_add_char (buf, &index, size, c);
-  if (c == '0')
+  /*if (c == '0')
     {
       c = lexer_getch (lex);
 
@@ -267,6 +266,7 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
         else
           lexer_ungetch(lex, c);
     }
+  */
 
   /* middle of the number */
 
@@ -274,7 +274,7 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
     {
       c = lexer_getch (lex);
       if (isdigit (c)
-              || (ishex && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))))
+              /* ||  (ishex && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))*/)
         buffer_add_char (buf, &index, size, c);
       else
         {
@@ -287,11 +287,12 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 
   if (c == '.')
     {
-      if (ishex)
+      /*if (ishex)
         {
           error_loc(lex->loc, "\'%c\' found in hex number", c);
           return tok_unknown;
         }
+      */
       buffer_add_char(buf, &index, size, c);
       
       c = lexer_getch (lex);
