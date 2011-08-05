@@ -1,8 +1,0 @@
-1. Check space between hash (#) and pragma
-2. Sort out pragmas in BNF and parser.
-3. Is id, num, str terminal or non-terminals? [DONE]
-4. Create a new rule for vardec [DONE]
-5. assign -> statement [DONE]
-6. Implement assignment becomes semicolumn (empty let)
-7. Fix withloops
-8. Fix expressions
