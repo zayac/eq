@@ -651,43 +651,70 @@ tree handle_idx_or_idx_list (struct parser * parser)
 
     }
   }
-
+  parser_unget(parser);
   return ret;
 }
 
 
 /*
  * function_call:
- * \call { <id>  { [ idx [, idx ]* ] }
+ * \call { <id> } { [ idx [, idx ]* ] }
  */
 tree handle_function_call (struct parser* parser)
 {
-  tree t, args;
+  tree t = NULL, args = NULL;
   struct token * tok;
 
   if (!(tok = parser_forward_tval(parser, tv_call)))
-    return error_mark_node;
+    goto error;
 
   if (!(tok = parser_forward_tval(parser, tv_lbrace)))
-    return error_mark_node;
+    goto error;
 
   t = make_tree (FUNCTION_CALL);
 
   if (!(tok = parser_forward_tclass(parser, tok_id)))
-    return error_mark_node;
+    goto error;
   else
     TREE_OPERAND_SET(t, 0, make_identifier_tok (tok));
 
+  if(!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error;
   if(!(tok = parser_forward_tval(parser, tv_lbrace)))
-    return error_mark_node;
+    goto error;
  
+  TREE_OPERAND_SET(t, 1, NULL);
   tok = parser_get_token(parser);
   if(token_class(tok) == tok_id || token_class(tok) == tok_number)
   {
     parser_unget (parser);
     args = handle_idx_or_idx_list (parser);
-
+    if (args != NULL && args != error_mark_node)
+      TREE_OPERAND_SET(t, 1, args);     
+    else
+      goto error;
   }
+  else if (token_value(tok) != tv_rbrace)
+  {
+    free_tree(t);
+    return error_mark_node;
+  }
+  else
+    return t;
+ 
+  if(!(tok = parser_forward_tval(parser, tv_rbrace)))
+  {
+    free_tree(t);
+    return error_mark_node;
+  }
+
+  return t;
+
+error:
+  parser_get_until_tval(parser, tv_rbrace);
+  free_tree(t);
+  return error_mark_node;
+
 }
 
 /*
@@ -808,7 +835,11 @@ parse (struct parser *parser)
         case tok_keyword:
           switch (token_value (tok))
             {
-            //case tv_documentclass:
+              case tv_call:
+                parser_unget (parser);
+                handle_function_call(parser);
+                break;
+              //case tv_documentclass:
               //parser_unget (parser);
               //handle_header (parser);
               //break;
@@ -818,8 +849,8 @@ parse (struct parser *parser)
             }
           break;
         case tok_id:
-          parser_unget (parser);
-          handle_idx_or_idx_list (parser);
+          //parser_unget (parser);
+          //handle_idx_or_idx_list (parser);
           break;
         case tok_unknown:
           error_loc( token_location (tok), "unknown token found `%s`", 
