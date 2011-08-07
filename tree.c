@@ -74,6 +74,10 @@ make_tree (enum tree_code code)
         ret = (tree) malloc (size = sizeof (struct tree_begin_node));
       else if (code == END)
         ret = (tree) malloc (size = sizeof (struct tree_end_node));
+      else if (code == CIRCUMFLEX)
+        ret = (tree) malloc (size = sizeof (struct tree_circumflex_node));
+      else if (code == FUNCTION_CALL)
+        ret = (tree) malloc (size = sizeof (struct tree_function_call_node));
       else if (code == STMT_LIST)
         ret = (tree) malloc (size = sizeof (struct tree_stmt_list_node));
       else if (code == ERROR_MARK)
@@ -234,9 +238,9 @@ free_tree (tree node)
                 }
             }
         }
-      else if (code == DOCUMENTCLASS)
-        { 
-          //TODO Check this statement
+      else if (code == DOCUMENTCLASS || code == USEPACKAGE || code == BEGIN || code == END || code == CIRCUMFLEX || code == FUNCTION_CALL )
+        {
+
         }
       else if (code == STMT_LIST)
         {

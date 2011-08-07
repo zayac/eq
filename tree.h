@@ -117,6 +117,18 @@ struct tree_end_node
   struct tree_base base;
   tree operands[1];
 };
+struct tree_circumflex_node
+{
+  struct tree_base base;
+  tree operands[2];
+  bool is_index;
+};
+
+struct tree_function_call_node
+{
+  struct tree_base base;
+  tree operands[2];
+};
 
 struct tree_string_cst_node
 {
@@ -211,6 +223,8 @@ union tree_node
   struct tree_usepackage_node       usepackage_node;
   struct tree_begin_node            begin_node;
   struct tree_end_node              end_node;
+  struct tree_circumflex_node       circumflex_node; 
+  struct tree_function_call_node    function_call_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
 
@@ -269,6 +283,10 @@ get_tree_operand (tree node, int idx)
         return node->begin_node.operands[idx];
       else if (code == END)
         return node->end_node.operands[idx];
+      else if (code == CIRCUMFLEX)
+        return node->circumflex_node.operands[idx];
+      else if (code == FUNCTION_CALL)
+        return node->function_call_node.operands[idx];
       else
         unreachable("node `%s` of tcl_misc doesn't have operands", TREE_CODE_NAME (code));
       break;
@@ -313,6 +331,10 @@ set_tree_operand (tree node, int idx, tree value)
         node->begin_node.operands[idx] = value;
       else if (code == END)
         node->end_node.operands[idx] = value;
+      else if (code == CIRCUMFLEX)
+        node->circumflex_node.operands[idx] = value;
+      else if (code == FUNCTION_CALL)
+        node->function_call_node.operands[idx] = value;
       else
         unreachable ("nod `%s` of tcl_misc does not have operands",
                     TREE_CODE_NAME (code));

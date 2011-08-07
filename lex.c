@@ -126,7 +126,6 @@ lexer_getch (struct lexer *lex)
     }
   else
     lex->loc.col++;
-
   return (char)ch;
 }
 
@@ -222,7 +221,7 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
       return;
     }
   
-  tok->tok_class = tok_unknown;
+  tok->tok_class = tok_id;
 }
 
 /* Internal function to read until the end of identifier, checking
@@ -398,8 +397,6 @@ lexer_get_token (struct lexer *lex)
   if (isalpha (c))
     {
       lexer_read_keyword(lex, tok, &buf, &buf_size, c);
-      if (tok->tok_class == tok_unknown)
-        lexer_read_id (lex, tok, &buf, &buf_size, c);
       goto return_token;
     }
 
@@ -440,7 +437,7 @@ lexer_get_token (struct lexer *lex)
   
   if (c == '^')
     {
-      tval_tok_init (tok, tok_operator, tv_upper_index);
+      tval_tok_init (tok, tok_operator, tv_circumflex);
       goto return_token;
     }
 
