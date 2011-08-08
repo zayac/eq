@@ -77,8 +77,8 @@ tree handle_idx_or_idx_list (struct parser *);
 tree handle_function_call (struct parser *);
 tree handle_upper (struct parser *);
 tree handle_linear (struct parser *);
-tree handle_binop (struct parser *, tree);
-tree handle_boolop (struct parser *, tree);
+tree handle_binop (struct parser *);
+tree handle_boolop (struct parser *);
 tree handle_sexpr_op (struct parser *);
 tree handle_sexpr (struct parser *);
 tree handle_lower (struct parser *);
@@ -606,6 +606,7 @@ handle_idx (struct parser* parser)
   }
 
   tok = parser_get_token(parser);
+
   if (token_value(tok) == tv_circumflex)
   {
     parser_unget(parser);
@@ -627,10 +628,12 @@ handle_idx (struct parser* parser)
   { 
     parser_unget(parser);
     t = handle_lower(parser);
+    
     if (t != NULL && t != error_mark_node)
     {
       TREE_OPERAND_SET(t, 0, idx);
-      idx = t;
+    
+      return t;
     }
     else
       return error_mark_node;
@@ -689,6 +692,8 @@ tree handle_sexpr_or_sexpr_list (struct parser * parser)
   struct token * tok;
   sexpr = handle_sexpr (parser);
 
+
+
   if(token_value(tok = parser_get_token(parser)) != tv_comma)
   {
     ret = sexpr;
@@ -700,6 +705,7 @@ tree handle_sexpr_or_sexpr_list (struct parser * parser)
     while (true)
     {
       sexpr = handle_sexpr(parser);
+
       if (sexpr != NULL && sexpr != error_mark_node)
       {
         tree_list_append(sexpr_list, sexpr);
@@ -708,9 +714,10 @@ tree handle_sexpr_or_sexpr_list (struct parser * parser)
       if (token_value(tok) != tv_comma)
         break;
     }
+    ret = sexpr_list;
   }
   parser_unget(parser);
-  
+
   return ret;
 }
 
@@ -729,7 +736,6 @@ tree handle_lower (struct parser* parser)
     return error_mark_node;
   }
 
-
   if (!(tok = parser_forward_tval(parser, tv_lbrace)))
   {
     parser_get_until_tval(parser, tv_rbrace);
@@ -737,6 +743,7 @@ tree handle_lower (struct parser* parser)
   }
 
   t = handle_sexpr_or_sexpr_list (parser);
+  
   if (t == NULL || t == error_mark_node)
     goto error_shift;
   else
@@ -928,24 +935,24 @@ handle_linear (struct parser* parser)
  * + | - | \cdot | divide | \ll | \gg | \mod
  */
 tree
-handle_binop (struct parser * parser, tree left)
+handle_binop (struct parser * parser)
 {
   struct token * tok = parser_get_token (parser);
 
   if (token_value (tok) == tv_plus)
   {
-    return make_binary_op (PLUS_EXPR, left, NULL);
+    return make_binary_op (PLUS_EXPR, NULL, NULL);
   }
   if (token_value (tok) == tv_minus)
-    return make_binary_op (MINUS_EXPR, left, NULL);
+    return make_binary_op (MINUS_EXPR, NULL, NULL);
   if (token_value (tok) == tv_cdot)
-    return make_binary_op (MULT_EXPR, left, NULL);
+    return make_binary_op (MULT_EXPR, NULL, NULL);
   if (token_value (tok) ==tv_ll)
-    return make_binary_op (SLEFT_EXPR, left, NULL);
+    return make_binary_op (SLEFT_EXPR, NULL, NULL);
   if (token_value (tok) == tv_gg)
-    return make_binary_op (SRIGTH_EXPR, left, NULL);
+    return make_binary_op (SRIGHT_EXPR, NULL, NULL);
   if (token_value (tok) == tv_mod)
-    return make_binary_op (MOD_EXPR, left, NULL);
+    return make_binary_op (MOD_EXPR, NULL, NULL);
 
   error_loc (token_location (tok), "unexpected token `%s` ", token_as_string (tok));
   return NULL;
@@ -956,16 +963,16 @@ handle_binop (struct parser * parser, tree left)
  * \land | \lor | \oplus
  */
 tree
-handle_boolop (struct parser * parser, tree left)
+handle_boolop (struct parser * parser)
 {
   struct token * tok = parser_get_token (parser);
 
   if (token_value(tok) == tv_land)
-    return make_binary_op (AND_EXPR, left, NULL);
+    return make_binary_op (AND_EXPR, NULL, NULL);
   if (token_value(tok) == tv_lor)
-    return make_binary_op (OR_EXPR, left, NULL);
+    return make_binary_op (OR_EXPR, NULL, NULL);
   if (token_value(tok) == tv_oplus)
-    return make_binary_op (XOR_EXPR, left, NULL);
+    return make_binary_op (XOR_EXPR, NULL, NULL);
 
   error_loc (token_location (tok), "unexpected token `%s` ", token_as_string (tok));
   return error_mark_node;
@@ -980,6 +987,7 @@ tree handle_sexpr (struct parser * parser)
 {
   tree t, l, r;
   struct token * tok = parser_get_token (parser);
+  bool flag = false;
 
   if (   token_value(tok) == tv_minus
       || token_value(tok) == tv_lnot
@@ -988,7 +996,7 @@ tree handle_sexpr (struct parser * parser)
       || token_value(tok) == tv_call)
   {
     parser_unget (parser);
-    l = handle_sexpr_op (parser);
+    l = handle_sexpr_op (parser); 
   }
   else
   {
@@ -1009,14 +1017,17 @@ tree handle_sexpr (struct parser * parser)
         || token_value(tok) == tv_mod)
     {
       parser_unget (parser);
-      t = handle_binop (parser, l);
+      t = handle_binop (parser);
+      TREE_OPERAND_SET(t, 0, l);
+
     }
     else if (   token_value(tok) == tv_land
              || token_value(tok) == tv_lor
              || token_value(tok) == tv_oplus)
     {
       parser_unget(parser);
-      t = handle_boolop (parser, l);
+      t = handle_boolop (parser);
+      TREE_OPERAND_SET(t, 0, l);
     }
     else
       break;
@@ -1027,11 +1038,17 @@ tree handle_sexpr (struct parser * parser)
       goto error;
 
     TREE_OPERAND_SET(t, 1, r);
-    
+
+    flag = true;
     l = t;
   }
-  parser_unget(parser); 
-  return t;
+
+  parser_unget(parser);
+
+  if (!flag)
+    return l;
+  else
+    return t;
 error:
     free_tree (t);
     free_tree (l);
@@ -1098,7 +1115,6 @@ handle_sexpr_op (struct parser * parser)
       goto error;
 
   }
-
   return t;
 
 error:
@@ -1150,7 +1166,8 @@ parse (struct parser *parser)
         }
       */
       parser_unget(parser);
-      handle_sexpr(parser);
+      print_expression(stdout, handle_sexpr(parser));
+      printf("\n");
     }
 
             

@@ -74,10 +74,6 @@ make_tree (enum tree_code code)
         ret = (tree) malloc (size = sizeof (struct tree_begin_node));
       else if (code == END)
         ret = (tree) malloc (size = sizeof (struct tree_end_node));
-      else if (code == CIRCUMFLEX)
-        ret = (tree) malloc (size = sizeof (struct tree_circumflex_node));
-      else if (code == FUNCTION_CALL)
-        ret = (tree) malloc (size = sizeof (struct tree_function_call_node));
       else if (code == STMT_LIST)
         ret = (tree) malloc (size = sizeof (struct tree_stmt_list_node));
       else if (code == ERROR_MARK)
@@ -120,6 +116,8 @@ make_tree (enum tree_code code)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_unary_expr_node));
+      else if (code == FUNCTION_CALL)
+        ret = (tree) malloc (size = sizeof (struct tree_function_call_node));
       else if (code == COND_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_trinary_expr_node));
       else
@@ -238,7 +236,7 @@ free_tree (tree node)
                 }
             }
         }
-      else if (code == DOCUMENTCLASS || code == USEPACKAGE || code == BEGIN || code == END || code == CIRCUMFLEX || code == FUNCTION_CALL )
+      else if (code == DOCUMENTCLASS || code == USEPACKAGE || code == BEGIN || code == END )
         {
 
         }

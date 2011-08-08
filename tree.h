@@ -283,10 +283,6 @@ get_tree_operand (tree node, int idx)
         return node->begin_node.operands[idx];
       else if (code == END)
         return node->end_node.operands[idx];
-      else if (code == CIRCUMFLEX)
-        return node->circumflex_node.operands[idx];
-      else if (code == FUNCTION_CALL)
-        return node->function_call_node.operands[idx];
       else
         unreachable("node `%s` of tcl_misc doesn't have operands", TREE_CODE_NAME (code));
       break;
@@ -302,8 +298,10 @@ get_tree_operand (tree node, int idx)
       return node->three_op_stmt_node.operands[idx];
 
     case tcl_expression:
-      if (code == UMINUS_EXPR || code == TRUTH_NOT_EXPR)
+      if (code == UMINUS_EXPR || code == NOT_EXPR)
         return node->unary_expr_node.operands[idx];
+      else if (code == FUNCTION_CALL)
+        return node->function_call_node.operands[idx];
       else
         return node->binary_expr_node.operands[idx];
 
@@ -331,10 +329,6 @@ set_tree_operand (tree node, int idx, tree value)
         node->begin_node.operands[idx] = value;
       else if (code == END)
         node->end_node.operands[idx] = value;
-      else if (code == CIRCUMFLEX)
-        node->circumflex_node.operands[idx] = value;
-      else if (code == FUNCTION_CALL)
-        node->function_call_node.operands[idx] = value;
       else
         unreachable ("nod `%s` of tcl_misc does not have operands",
                     TREE_CODE_NAME (code));
@@ -352,8 +346,10 @@ set_tree_operand (tree node, int idx, tree value)
       break;
 
     case tcl_expression:
-      if (code == UMINUS_EXPR || code == TRUTH_NOT_EXPR)
+      if (code == UMINUS_EXPR || code == NOT_EXPR)
         node->unary_expr_node.operands[idx] = value;
+      else if (code == FUNCTION_CALL)
+        node->function_call_node.operands[idx] = value;
       else
         node->binary_expr_node.operands[idx] = value;
       break;

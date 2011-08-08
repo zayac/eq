@@ -24,16 +24,6 @@ DEF_TREE_CODE (BEGIN, "begin_node", tcl_misc,1)
 /* Footer */
 DEF_TREE_CODE (END, "end", tcl_misc, 1)
 
-/* Used to distinguish upper index and power operation */
-DEF_TREE_CODE (CIRCUMFLEX, "circumflex_node", tcl_misc,  2)
-
-
-/* Function call */
-DEF_TREE_CODE (FUNCTION_CALL, "function_call_node", tcl_misc, 2)
-
-
-
-
 /* Used when freeing atomic objects.  */
 DEF_TREE_CODE (EMPTY_MARK, "error_mark", tcl_misc, 0)
 
@@ -45,7 +35,7 @@ DEF_TREE_CODE (IDENTIFIER, "identifier_node", tcl_misc, 0)
 
 /* List of trees, used to represent list of statements
    or list of arguments in the function call.  */
-DEF_TREE_CODE (LIST, "tree_list", tcl_misc, 0)
+DEF_TREE_CODE (LIST, "tree_list", tcl_expression, 0)
 
 /* List of statements. Also stores variables used inside
    that list.  */
@@ -150,15 +140,15 @@ DEF_TREE_CODE (MINUS_EXPR, "minus_expr", tcl_expression, 2)
 DEF_TREE_CODE (DIV_EXPR, "div_expr", tcl_expression, 2)
 DEF_TREE_CODE (MULT_EXPR, "mult_expr", tcl_expression, 2)
 DEF_TREE_CODE (MOD_EXPR, "mod_exp", tcl_expression, 2)
-DEF_TREE_CODE (SLEFT_EXPR, "sleft_expr", tcl_expression, 2)
-DEF_TREE_CODE (SRIGTH_EXPR, "sright_expr", tcl_expression, 2)
-DEF_TREE_CODE (UMINUS_EXPR, "uminus_exp", tcl_expression, 1)
-DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2)
-DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2)
-DEF_TREE_CODE (NOT_EXPR, "not_expr", tcl_expression, 1)
-DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2)
 
+DEF_TREE_CODE (UMINUS_EXPR, "uminus_exp", tcl_expression, 1)
+DEF_TREE_CODE (NOT_EXPR, "not_expr", tcl_expression, 1)
 DEF_TREE_CODE (LOWER, "lower_expr", tcl_expression, 2)
+/* Used to distinguish upper index and power operation */
+DEF_TREE_CODE (CIRCUMFLEX, "circumflex_node", tcl_expression,  2)
+
+/* Function call */
+DEF_TREE_CODE (FUNCTION_CALL, "function_call_node", tcl_expression, 2)
 
 /* Comparison  */
 DEF_TREE_CODE (EQ_EXPR, "eq_expr", tcl_expression, 2)
@@ -169,12 +159,10 @@ DEF_TREE_CODE (LE_EXPR, "le_expr", tcl_expression, 2)
 DEF_TREE_CODE (NE_EXPR, "ne_expr", tcl_expression, 2)
 
 /* Shifts */
-DEF_TREE_CODE (SHR_EXPR, "shl_expr", tcl_expression, 2)
-DEF_TREE_CODE (SHL_EXPR, "shr_expr", tcl_expression, 2)
+DEF_TREE_CODE (SLEFT_EXPR, "sleft_expr", tcl_expression, 2)
+DEF_TREE_CODE (SRIGHT_EXPR, "sright_expr", tcl_expression, 2)
 
 /* Truth expressions || && !  */
-DEF_TREE_CODE (TRUTH_AND_EXPR, "truth_and_expr", tcl_expression, 2)
-DEF_TREE_CODE (TRUTH_OR_EXPR, "truth_or_expr", tcl_expression, 2)
-DEF_TREE_CODE (TRUTH_NOT_EXPR, "truth_not_expr", tcl_expression, 1)
-
-
+DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2)
+DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2)
+DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2)
