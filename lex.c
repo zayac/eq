@@ -220,8 +220,11 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
       tval_tok_init (tok, keyword_type[search], (enum token_kind)(search + tv_boolean));
       return;
     }
-  
-  tok->tok_class = tok_id;
+ 
+  if (**buf != '\\')
+    tok->tok_class = tok_id;
+  else
+    tok->tok_class = tok_unknown;
 }
 
 /* Internal function to read until the end of identifier, checking

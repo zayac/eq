@@ -27,6 +27,7 @@ DEF_TREE_CODE (END, "end", tcl_misc, 1)
 /* Used to distinguish upper index and power operation */
 DEF_TREE_CODE (CIRCUMFLEX, "circumflex_node", tcl_misc,  2)
 
+
 /* Function call */
 DEF_TREE_CODE (FUNCTION_CALL, "function_call_node", tcl_misc, 2)
 
@@ -149,7 +150,15 @@ DEF_TREE_CODE (MINUS_EXPR, "minus_expr", tcl_expression, 2)
 DEF_TREE_CODE (DIV_EXPR, "div_expr", tcl_expression, 2)
 DEF_TREE_CODE (MULT_EXPR, "mult_expr", tcl_expression, 2)
 DEF_TREE_CODE (MOD_EXPR, "mod_exp", tcl_expression, 2)
+DEF_TREE_CODE (SLEFT_EXPR, "sleft_expr", tcl_expression, 2)
+DEF_TREE_CODE (SRIGTH_EXPR, "sright_expr", tcl_expression, 2)
 DEF_TREE_CODE (UMINUS_EXPR, "uminus_exp", tcl_expression, 1)
+DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2)
+DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2)
+DEF_TREE_CODE (NOT_EXPR, "not_expr", tcl_expression, 1)
+DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2)
+
+DEF_TREE_CODE (LOWER, "lower_expr", tcl_expression, 2)
 
 /* Comparison  */
 DEF_TREE_CODE (EQ_EXPR, "eq_expr", tcl_expression, 2)

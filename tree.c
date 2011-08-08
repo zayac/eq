@@ -118,7 +118,7 @@ make_tree (enum tree_code code)
       break;
 
     case tcl_expression:
-      if (code == UMINUS_EXPR || code == TRUTH_NOT_EXPR)
+      if (code == UMINUS_EXPR || code == NOT_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_unary_expr_node));
       else if (code == COND_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_trinary_expr_node));
@@ -288,7 +288,7 @@ free_tree (tree node)
       break;
 
     case tcl_expression:
-      if (code == UMINUS_EXPR || code == TRUTH_NOT_EXPR)
+      if (code == UMINUS_EXPR || code == NOT_EXPR)
         break;
       else
         break;
@@ -402,13 +402,29 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
   
   //printf ("-- %s enter with code %s\n", __func__, TREE_CODE_NAME (code));
   assert (TREE_CODE_CLASS (code) == tcl_expression
-          && code != UMINUS_EXPR && code != TRUTH_NOT_EXPR,
+          && code != UMINUS_EXPR && code != NOT_EXPR,
           "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, lhs);
   TREE_OPERAND_SET (t, 1, rhs);
-  TREE_LOCATION (t) = TREE_LOCATION (lhs);
+  if (lhs != NULL)
+    TREE_LOCATION (t) = TREE_LOCATION (lhs);
   return t;
+}
+
+tree
+make_unary_op (enum tree_code code, tree val)
+{
+  tree t;
+  assert (TREE_CODE_CLASS(code) == tcl_expression
+         && (code == UMINUS_EXPR || code == NOT_EXPR),
+           "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
+  t = make_tree (code);
+  TREE_OPERAND_SET (t, 0, val);
+  if (val != NULL)
+    TREE_LOCATION (t) = TREE_LOCATION(val);
+  return t;
+
 }
 
 tree

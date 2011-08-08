@@ -407,6 +407,7 @@ tree make_integer_tok (struct token *);
 tree make_tree_list ();
 bool tree_list_append (tree, tree);
 tree make_binary_op (enum tree_code, tree, tree);
+tree make_unary_op (enum tree_code, tree);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
 void free_list (tree);
