@@ -2,46 +2,6 @@
 % Definition of BNF syntax rules. 
 %
 
-\newcommand{\BnfPrg}{
-\bHead{prg}
-  header \bStar{function} footer
-\bEnd
-}
-\newcommand{\BnfHeader}{
-\bHead{header}
-  documentclass
-  usepackage
-  begindocument
-\bEnd
-}
-
-\newcommand{\BnfDocumentClass}{
-\bHead{documentclass}
-  \bToken{\bs documentclass} \bSymb{\{} \bSpecial{num} \bSpecial{id} \bSymb{,}
-  \bSpecial{id} \bSymb{\}} \bSymb{\{}
-  \bSpecial{id} \bSymb{\}}
-\bEnd
-}
-
-\newcommand{\BnfUsePackage}{
-\bHead{usepackage}
-  \bToken{\bs usepackage} \bSymb{\{} \bSpecial{id} \bSymb{\}}
-\bEnd
-}
-
-\newcommand{\BnfBeginDocument}{
-\bHead{begindocument}
-  \bToken{\bs begin} \bSymb{\{} \bToken{document} \bSymb{\}}
-\bEnd
-}
-
-
-\newcommand{\BnfFooter}{
-\bHead{footer}
-  \bToken{\bs end} \bSymb{\{} \bToken{document} \bSymb{\}}
-\bEnd
-}
-
 \newcommand{\BnfFunction}{
 \bHead{function}
   \bToken{\bs begin} \bSymb{\{} \bToken{eqcode} \bSymb{\}} \bSymb{\{}
@@ -55,25 +15,27 @@
 
 \newcommand{\BnfIdx}{
 \bHead{idx}
-  \bSpecial{id} \bOpt{upper} \bOpt{lower}
+  \bSpecial{id} \bOpt{upper} \bOpt{lower} \bOr
+  \bToken{num}
 \bEnd
 }
 
 \newcommand{\BnfUpper}{
 \bHead{upper}
-  \bSymb{\^} \bSymb{\{} \bOpt{\bAlt{\bSymb{[} linear \bSymb{]}}{linear}} \bSymb{\}}
+  \bSymb{\^} \bSymb{\{} \bAlt{\bSymb{[} linear \bSymb{]}}{linear} \bSymb{\}}
 \bEnd
 }
 
 \newcommand{\BnfLinear}{
 \bHead{linear}
- \bSpecial{id} \bOpt{\bAlt{\bSymb{+}}{\bSymb{-}} \bSpecial{num}}
+ \bSpecial{id} \bOpt{\bAlt{\bSymb{+}}{\bSymb{-}} \bSpecial{num}} \bOr
+ \bToken{num}
 \bEnd
 }
 
 \newcommand{\BnfLower}{
 \bHead{lower}
-  \bSymb{\_} \bSymb{\{} expr \bStar{\bSymb{,} expr} \bSymb{\}}
+  \bSymb{\_} \bSymb{\{} sexpr \bStar{\bSymb{,} sexpr} \bSymb{\}}
 \bEnd
 }
 
@@ -116,7 +78,6 @@
 \bHead{boolop}
   \bToken{\bs land} \bOr
   \bToken{\bs lor} \bOr
-  \bToken{\bs lnot} \bOr
   \bToken{\bs oplus}
 \bEnd
 }
@@ -143,15 +104,15 @@
 \newcommand{\BnfFunctionCall}{
 \bHead{function\_call}
   \bToken{\bs call} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSymb{\{} \bOpt{idx
-  \bStar{\bSymb{,} id }} \bSymb{\}}
+  \bStar{\bSymb{,} idx }} \bSymb{\}}
 \bEnd
 }
 
 \newcommand{\BnfSExpr}{
 \bHead{sexpr}
-  \bAltBegin \bSpecial{idx} \bDAlt \bSpecial{num} \bDAlt function\_call \bAltEnd
-  \bStar{\bAlt{binop}{boolop} \bSkip \bAltBegin \bSpecial{idx} \bDAlt \bSpecial{num}
-  \bDAlt function\_call \bAltEnd}
+  \bAlt{\bToken{\bs lnot}}{\bSymb{-}} \bAlt{\bSpecial{idx}}{ function\_call}
+  \bStar{\bAlt{binop}{boolop} \bSkip \bAlt{\bSpecial{idx}}{function\_call}} \bOr
+  \bSymb{(} sexpr \bSymb{)}
 \bEnd
 }
 
@@ -166,7 +127,7 @@
 
 \newcommand{\BnfGenArray}{
 \bHead{genarray}
- \bToken{\bs GenAr} \bToken{\bs limits} \bSymb{\^} \bSymb{\{} expr \bSymb{\}}
+ \bToken{\bs genar} \bToken{\bs limits} \bSymb{\^} \bSymb{\{} expr \bSymb{\}}
  \bSymb{(} sexpr \bSymb{)}
 \bEnd
 }
