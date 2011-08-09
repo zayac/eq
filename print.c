@@ -72,6 +72,14 @@ print_expression (FILE *f, tree exp)
           print_expression(f, TREE_OPERAND(exp, 1));
           return fprintf(f, "}");
         }
+    case DIV_EXPR:
+        {
+          fprintf(f, "\\frac{");
+          print_expression(f, TREE_OPERAND(exp, 0));
+          fprintf(f, "}{");
+          print_expression(f, TREE_OPERAND(exp, 1));
+          return fprintf(f, "}");
+        }
     case BEGIN:
         {
           fprintf(f, "\\begin{");
@@ -128,7 +136,6 @@ print_expression (FILE *f, tree exp)
           case PLUS_EXPR: opcode = "+"; break;
           case MINUS_EXPR: opcode = "-"; break;
           case MULT_EXPR: opcode = "\\cdot"; break;
-          case DIV_EXPR: opcode = "/"; break;
           case MOD_EXPR: opcode = "\\mod"; break;
           case EQ_EXPR: opcode = "=="; break;
           case GT_EXPR: opcode = ">"; break;

@@ -72,11 +72,10 @@ tree handle_idx_or_idx_list (struct parser *);
 tree handle_function_call (struct parser *);
 tree handle_upper (struct parser *);
 tree handle_linear (struct parser *);
-tree handle_binop (struct parser *);
-tree handle_boolop (struct parser *);
 tree handle_sexpr_op (struct parser *);
 tree handle_sexpr (struct parser *);
 tree handle_lower (struct parser *);
+tree handle_divide (struct parser *);
 
 int parse(struct parser *);
 
@@ -273,9 +272,10 @@ parser_token_alternative_tval (struct parser *parser, enum token_kind first, enu
 {
   struct token* tok = parser_get_token (parser);
  
-  if (token_class(tok) && ((token_value(tok) == first) || (token_value(tok) == second)))
+  if ((token_value(tok) == first) || (token_value(tok) == second))
+  {
     return tok;
-
+  }
 
   parser_unget (parser);
   return NULL;
@@ -371,7 +371,7 @@ parser_finalize (struct parser *parser)
 
 /*
  * idx:
- * ( <num> | <id> [ upper ] [ lower ] )
+ * ( divide | <num> | <id> [ upper ] [ lower ] )
  * TODO: lower is not being parsed at the moment
  */
 tree
@@ -380,15 +380,20 @@ handle_idx (struct parser* parser)
   tree idx, t;
   struct token* tok;
     
-  if (!(tok = parser_token_alternative_tclass(parser, tok_id, tok_number)))
-    return error_mark_node;
-  else
+  tok = parser_get_token (parser);
+  
+  if (token_class(tok) == tok_id) 
+    t = make_identifier_tok (tok);
+  else if (token_class(tok) == tok_number)
+    t = make_integer_tok (tok);
+  else if (   token_value(tok) == tv_frac 
+           || token_value(tok) == tv_dfrac)
   {
-    if (token_class(tok) == tok_id) 
-      t = make_identifier_tok (tok);
-    else
-      t = make_integer_tok (tok);
+    parser_unget(parser);
+    t = handle_divide (parser);
   }
+  else 
+    return error_mark_node;
 
   tok = parser_get_token(parser);
 
@@ -716,57 +721,57 @@ handle_linear (struct parser* parser)
 }
 
 /*
- * binop:
- * + | - | \cdot | divide | \ll | \gg | \mod
+ * ( \frac | \dfrac) { sexpr } { sexpr }
  */
-tree
-handle_binop (struct parser * parser)
+tree handle_divide (struct parser * parser)
 {
-  struct token * tok = parser_get_token (parser);
+  tree t = NULL, l = NULL, r = NULL;
 
-  if (token_value (tok) == tv_plus)
+  struct token * tok = parser_token_alternative_tval(parser, tv_frac, tv_dfrac);
+  
+  if(tok == NULL)
   {
-    return make_binary_op (PLUS_EXPR, NULL, NULL);
+    error_loc (token_location (tok), "unexpected token `%s` ", token_as_string(tok));
+    goto error_shift_one;
   }
-  if (token_value (tok) == tv_minus)
-    return make_binary_op (MINUS_EXPR, NULL, NULL);
-  if (token_value (tok) == tv_cdot)
-    return make_binary_op (MULT_EXPR, NULL, NULL);
-  if (token_value (tok) ==tv_ll)
-    return make_binary_op (SLEFT_EXPR, NULL, NULL);
-  if (token_value (tok) == tv_gg)
-    return make_binary_op (SRIGHT_EXPR, NULL, NULL);
-  if (token_value (tok) == tv_mod)
-    return make_binary_op (MOD_EXPR, NULL, NULL);
+  
+  if(!(tok = parser_forward_tval(parser, tv_lbrace)))
+    goto error_shift_one;
 
-  error_loc (token_location (tok), "unexpected token `%s` ", token_as_string (tok));
-  return NULL;
-}
+  l = handle_sexpr(parser);
+  if (l == NULL || l == error_mark_node)
+    goto error_shift_one;
+  
+  if(!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error_shift_two;
 
-/*
- * boolop:
- * \land | \lor | \oplus
- */
-tree
-handle_boolop (struct parser * parser)
-{
-  struct token * tok = parser_get_token (parser);
+  if(!(tok = parser_forward_tval(parser, tv_lbrace)))
+    goto error_shift_two;
 
-  if (token_value(tok) == tv_land)
-    return make_binary_op (AND_EXPR, NULL, NULL);
-  if (token_value(tok) == tv_lor)
-    return make_binary_op (OR_EXPR, NULL, NULL);
-  if (token_value(tok) == tv_oplus)
-    return make_binary_op (XOR_EXPR, NULL, NULL);
+  r = handle_sexpr(parser);
+  if (r == NULL || r == error_mark_node)
+    goto error_shift_two;
 
-  error_loc (token_location (tok), "unexpected token `%s` ", token_as_string (tok));
+  t = make_binary_op(DIV_EXPR, l, r);
+
+  if(!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error;
+
+  return t;
+error_shift_one:
+  parser_get_until_tval(parser, tv_rbrace);
+error_shift_two:
+  parser_get_until_tval(parser, tv_rbrace);
+error:
+  free_tree(l);
+  free_tree(r);
   return error_mark_node;
- 
 }
 
 /* sexpr:
  * (sexpr) |
- * sexpr_op [ ( binop | boolop ) sexpr_op ]*
+ * sexpr_op [ ( \land | \lor | \oplus | + | - | \cdot | divide | \ll | \gg |
+ * \mod ) sexpr_op ]*
  */
 
 tree handle_sexpr (struct parser * parser)
@@ -931,15 +936,6 @@ handle_sexpr_op (struct parser * parser)
   struct token * tok = parser_get_token (parser);
   bool prefix = false;
 
-  if (   token_value(tok) != tv_minus
-      && token_value(tok) != tv_lnot
-      && token_class(tok) != tok_number
-      && token_class(tok) != tok_id
-      && token_value(tok) != tv_call)
-  {
-    error_loc (token_location (tok), "unexpected token `%s` ", token_as_string(tok));
-    return error_mark_node;
-  }
   if (token_value(tok) == tv_minus)
   {
     t = make_unary_op (UMINUS_EXPR,  NULL);
@@ -955,7 +951,7 @@ handle_sexpr_op (struct parser * parser)
     tok = parser_get_token (parser);
 
 
-  if (token_class(tok) == tok_number || token_class(tok) == tok_id)
+  if (token_class(tok) == tok_number || token_class(tok) == tok_id || token_value(tok) == tv_frac || token_value(tok) == tv_dfrac)
   {
     parser_unget (parser);
     t1 = handle_idx(parser);
