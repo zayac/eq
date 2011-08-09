@@ -115,10 +115,10 @@ print_expression (FILE *f, tree exp)
       }
     case UMINUS_EXPR:
       fprintf (f, " -");
-      return print_expression (f, TREE_OPERAND (exp, 1));
+      return print_expression (f, TREE_OPERAND (exp, 0));
     case NOT_EXPR:
-      fprintf (f, " \\lnot");
-      return print_expression (f, TREE_OPERAND (exp, 1));
+      fprintf (f, " \\lnot ");
+      return print_expression (f, TREE_OPERAND (exp, 0));
 
     default:
       {

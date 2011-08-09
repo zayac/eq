@@ -94,18 +94,6 @@ struct tree_function_type_node
   tree operands[2];
 };
 
-struct tree_documentclass_node
-{
-  struct tree_base base;
-  tree operands[4];
-};
-
-struct tree_usepackage_node
-{
-  struct tree_base base;
-  tree operands[1];
-};
-
 struct tree_begin_node
 {
   struct tree_base base;
@@ -219,8 +207,6 @@ union tree_node
   struct tree_trinary_expr_node     trinary_expr_node;
   struct tree_three_op_stmt_node    three_op_stmt_node;
   struct tree_stmt_list_node        stmt_list_node;
-  struct tree_documentclass_node    documentclass_node;
-  struct tree_usepackage_node       usepackage_node;
   struct tree_begin_node            begin_node;
   struct tree_end_node              end_node;
   struct tree_circumflex_node       circumflex_node; 
@@ -275,11 +261,7 @@ get_tree_operand (tree node, int idx)
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
-      if (code == DOCUMENTCLASS)
-        return node->documentclass_node.operands[idx];
-      else if (code == USEPACKAGE)
-        return node->usepackage_node.operands[idx];
-      else if (code == BEGIN)
+      if (code == BEGIN)
         return node->begin_node.operands[idx];
       else if (code == END)
         return node->end_node.operands[idx];
@@ -321,11 +303,7 @@ set_tree_operand (tree node, int idx, tree value)
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
-      if (code == DOCUMENTCLASS)
-        node->documentclass_node.operands[idx] = value;
-      else if (code == USEPACKAGE)
-        node->usepackage_node.operands[idx] = value;
-      else if (code == BEGIN)
+      if (code == BEGIN)
         node->begin_node.operands[idx] = value;
       else if (code == END)
         node->end_node.operands[idx] = value;

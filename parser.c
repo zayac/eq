@@ -67,11 +67,6 @@ bool parser_expect_tclass (struct parser *, enum token_class);
 bool parser_init (struct parser *, struct lexer *);
 bool parser_finalize (struct parser *);
 
-tree handle_documentclass (struct parser *);
-tree handle_usepackage (struct parser *);
-tree handle_begindocument (struct parser *);
-tree handle_footer (struct parser *);
-static inline void handle_header (struct parser *);
 tree handle_idx (struct parser *);
 tree handle_idx_or_idx_list (struct parser *);
 tree handle_function_call (struct parser *);
@@ -373,216 +368,6 @@ parser_finalize (struct parser *parser)
   return true;
 }
 
-/* documentclass:
-   \documentclass { <num> <id>, <id> } { <id> }
-   FIXME: In LaTeX the first argument should be <num><id>, i.e. 12pt,
-   where spaces have to be missing. However, in this grammar spaces 
-   are acceptable.
- */
-tree
-handle_documentclass (struct parser *parser)
-{
-  tree t;
-  struct token * tok;
-
-  if (!(tok = parser_forward_tval(parser, tv_documentclass)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node;
-  }
-
-  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node;
-  }
-  
-  t = make_tree (DOCUMENTCLASS);
-
-  if (!(tok = parser_forward_tclass(parser, tok_number)))
-    goto error_shift_one;
-  else
-    TREE_OPERAND_SET(t, 0, make_integer_tok(tok));
-  
-  if (!(tok = parser_forward_tclass(parser, tok_id)))
-    goto error_shift_one;
-  else
-    TREE_OPERAND_SET(t, 1, make_string_cst_tok (tok));
-
-  if (!(tok = parser_forward_tval(parser, tv_comma)))
-    goto error_shift_one;
-
-  if (!(tok = parser_forward_tclass(parser, tok_id)))
-    goto error_shift_one;
-  else
-    TREE_OPERAND_SET(t, 2, make_string_cst_tok (tok));
-
-  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
-    goto error_shift_two;
-  
-  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
-    goto error_shift_two;
-
-  if (!(tok = parser_forward_tclass(parser, tok_id)))
-    goto error_shift_two;
-  else
-    TREE_OPERAND_SET(t, 3, make_string_cst_tok (tok));
-
-  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
-  {
-    parser_unget(parser);
-    goto error;
-  }
- 
-  return t;
-
-error_shift_one:
-  parser_get_until_tval(parser, tv_rbrace);
-error_shift_two:
-  parser_get_until_tval(parser, tv_rbrace);
-error:
-    free_tree(t);
-    return error_mark_node;
-}
-
-/* usepackage:
-   \usepackage { <id> }
- */
-tree
-handle_usepackage (struct parser *parser)
-{
-  tree t;
-  struct token * tok;
-
-  if (!(tok = parser_forward_tval(parser, tv_usepackage)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node; 
-  }
-  
-  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node;
-  }
-
-  t = make_tree (USEPACKAGE);
-
-  if (!(tok = parser_forward_tval(parser, tv_eqcode)))
-    goto error_shift;
-  else
-    TREE_OPERAND_SET(t, 0, make_string_cst_tok (tok));
-
-  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
-  {
-    parser_unget (parser);
-    goto error;
-  }
-  return t;
-
-error_shift:
-  parser_get_until_tval(parser, tv_rbrace);
-error:
-    free_tree(t);
-    return error_mark_node;
-}
-
-/* begindocument:
- * \begin{ document }
- */
-tree
-handle_begindocument (struct parser *parser)
-{
-  tree t;
-  struct token * tok;
-
-  if (!(tok = parser_forward_tval(parser, tv_begin)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node; 
-  }
-
-  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node;
-  }
-  t = make_tree (BEGIN);
-
-  if (!(tok = parser_forward_tval(parser, tv_document)))
-    goto error_shift;
-  else
-    TREE_OPERAND_SET(t, 0, make_string_cst_tok (tok));
-
-  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
-  {
-    parser_unget (parser);
-    goto error;
-  }
-
-  return t;
-
-error_shift:
-  parser_get_until_tval(parser, tv_rbrace);
-error:
-    free_tree(t);
-    return error_mark_node;
-}
-
-/* footer:
- * \end { document }
- */
-tree
-handle_footer (struct parser *parser)
-{
-  tree t;
-  struct token * tok;
-
-  if (!(tok = parser_forward_tval(parser, tv_begin)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node;
-  }
-  
-  if (!(tok = parser_forward_tval(parser, tv_lbrace)))
-  {
-    parser_get_until_tval(parser, tv_rbrace);
-    return error_mark_node;
-  }
-
-  t = make_tree (END);
-
-  if (!(tok = parser_forward_tval(parser, tv_document)))
-    goto error_shift;
-  else
-    TREE_OPERAND_SET(t, 0, make_string_cst_tok (tok));
-
-  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
-  {
-    parser_unget (parser);
-    goto error;
-  }
-  
-  return t;
-
-error_shift:
-  parser_get_until_tval(parser, tv_rbrace);
-
-error:
-  free_tree(t);
-  return error_mark_node;
-}
-
-
-/* header:
- * documentclass usepackage begindocument
- */
-static inline void handle_header (struct parser* parser)
-{
-  handle_documentclass (parser);
-  handle_usepackage (parser);
-  handle_begindocument (parser);
-}
 
 /*
  * idx:
@@ -980,80 +765,158 @@ handle_boolop (struct parser * parser)
 }
 
 /* sexpr:
+ * (sexpr) |
  * sexpr_op [ ( binop | boolop ) sexpr_op ]*
  */
 
 tree handle_sexpr (struct parser * parser)
 {
-  tree t, l, r;
-  struct token * tok = parser_get_token (parser);
-  bool flag = false;
+  tree t;
+  struct token * tok;
+  enum prec {
+    prec_none,
+    prec_logor,
+    prec_logand,
+    prec_eq,
+    prec_rel,
+    prec_shift,
+    prec_add,
+    prec_mult,
+    num_precs
+  };
 
-  if (   token_value(tok) == tv_minus
-      || token_value(tok) == tv_lnot
-      || token_class(tok) == tok_number
-      || token_class(tok) == tok_id
-      || token_value(tok) == tv_call)
+  struct {
+    tree expr;
+    enum prec prec;
+    enum tree_code op;
+  } stack [num_precs];
+
+  int sp = 0;
+
+  tok = parser_get_token(parser);
+  if (token_value(tok) == tv_lparen)
+  {
+    t = handle_sexpr(parser);
+    parser_expect_tval(parser, tv_rparen);
+    parser_get_token(parser);
+  }
+  else
   {
     parser_unget (parser);
-    l = handle_sexpr_op (parser); 
-  }
-  else
-  {
-    error_loc (token_location (tok), "unexpected token `%s` ", token_as_string(tok));
-    return error_mark_node;
+    t = handle_sexpr_op (parser);
   }
 
-  if (l == NULL || l == error_mark_node)
-    return error_mark_node;
+  
+  if (t == NULL || t == error_mark_node)
+    return error_mark_node; 
 
-  while((tok = parser_get_token (parser)))
+  stack[0].expr = t;
+  stack[0].prec = prec_none;
+
+  while (true)
   {
-    if (   token_value(tok) == tv_plus
-        || token_value(tok) == tv_minus
-        || token_value(tok) == tv_cdot
-        || token_value(tok) == tv_ll
-        || token_value(tok) == tv_gg
-        || token_value(tok) == tv_mod)
-    {
-      parser_unget (parser);
-      t = handle_binop (parser);
-      TREE_OPERAND_SET(t, 0, l);
+    enum prec oprec;
+    enum tree_code ocode;
 
-    }
-    else if (   token_value(tok) == tv_land
-             || token_value(tok) == tv_lor
-             || token_value(tok) == tv_oplus)
+    tok = parser_get_token (parser);
+
+    if (token_class(tok) == tok_operator)
     {
-      parser_unget(parser);
-      t = handle_boolop (parser);
-      TREE_OPERAND_SET(t, 0, l);
+      switch (token_value (tok))
+      {
+        case tv_cdot:
+          oprec = prec_mult;
+          ocode = MULT_EXPR;
+          break;
+        case tv_mod:
+          oprec = prec_mult;
+          ocode = MOD_EXPR;
+          break;
+        case tv_plus:
+          oprec = prec_add;
+          ocode = PLUS_EXPR;
+          break;
+        case tv_minus:
+          oprec = prec_add;
+          ocode = MINUS_EXPR;
+          break;
+        case tv_ll:
+          oprec = prec_shift;
+          ocode = SLEFT_EXPR;
+          break;
+        case tv_gg:
+          oprec = prec_shift;
+          ocode = SRIGHT_EXPR;
+          break;
+        case tv_land:
+          oprec = prec_rel;
+          ocode = AND_EXPR;
+          break;
+        case tv_lor:
+          oprec = prec_rel;
+          ocode = OR_EXPR;
+          break;
+        case tv_oplus:
+          oprec = prec_rel;
+          ocode = XOR_EXPR;
+          break;
+        default:
+          parser_unget (parser);
+          goto out;
+      }
+
+      while (oprec <= stack[sp].prec)
+      {
+        stack[sp-1].expr = make_binary_op ( stack[sp].op,
+                                            stack[sp-1].expr,
+                                            stack[sp].expr);
+        sp--;
+      }
+
+      tok = parser_get_token (parser);
+      if (token_value (tok) == tv_lparen)
+      {
+        t = handle_sexpr (parser);
+        parser_expect_tval(parser, tv_rparen);
+        parser_get_token(parser);
+      }
+      else
+      {
+        parser_unget (parser);
+        t = handle_sexpr_op (parser);
+      }
+
+      if (t == NULL || t == error_mark_node)
+      {
+        while (sp >= 0)
+        {
+          free_tree(stack[sp--].expr);
+          return error_mark_node;
+        }
+      }
+
+      sp++;
+      stack[sp].expr = t;
+      stack[sp].prec = oprec;
+      stack[sp].op = ocode;
     }
     else
+    {
+      parser_unget (parser);
       break;
-      
-    r = handle_sexpr_op (parser);
-    
-    if (t == NULL || t == error_mark_node || r == NULL || r == error_mark_node )
-      goto error;
-
-    TREE_OPERAND_SET(t, 1, r);
-
-    flag = true;
-    l = t;
+    }
   }
 
-  parser_unget(parser);
+out:
+  while (sp > 0)
+  {
+    stack[sp-1].expr = make_binary_op(  stack[sp].op, 
+                                        stack[sp-1].expr,
+                                        stack[sp].expr);
+    sp--;
+  }
+  return stack[0].expr;
 
-  if (!flag)
-    return l;
-  else
-    return t;
-error:
-    free_tree (t);
-    free_tree (l);
-    free_tree (r);
-    return error_mark_node;
 }
 
 /*
@@ -1068,6 +931,15 @@ handle_sexpr_op (struct parser * parser)
   struct token * tok = parser_get_token (parser);
   bool prefix = false;
 
+  if (   token_value(tok) != tv_minus
+      && token_value(tok) != tv_lnot
+      && token_class(tok) != tok_number
+      && token_class(tok) != tok_id
+      && token_value(tok) != tv_call)
+  {
+    error_loc (token_location (tok), "unexpected token `%s` ", token_as_string(tok));
+    return error_mark_node;
+  }
   if (token_value(tok) == tv_minus)
   {
     t = make_unary_op (UMINUS_EXPR,  NULL);
@@ -1101,9 +973,10 @@ handle_sexpr_op (struct parser * parser)
 
   if (prefix)
   {
-
     if (t1 != NULL && t1 != error_mark_node)
+    {
       TREE_OPERAND_SET(t, 0, t1);
+    }
     else
       goto error;
   }
@@ -1143,10 +1016,6 @@ parse (struct parser *parser)
                 parser_unget (parser);
                 handle_sexpr_op(parser);
                 break;
-              //case tv_documentclass:
-              //parser_unget (parser);
-              //handle_header (parser);
-              //break;
             default:
               error_loc( token_location (tok), "keyword `%s` is not expected here",
                   token_as_string(tok));
@@ -1168,6 +1037,7 @@ parse (struct parser *parser)
       parser_unget(parser);
       print_expression(stdout, handle_sexpr(parser));
       printf("\n");
+      //handle_sexpr (parser);
     }
 
             

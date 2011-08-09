@@ -66,10 +66,6 @@ make_tree (enum tree_code code)
         ret = (tree) malloc (size = sizeof (struct tree_identifier_node));
       else if (code == LIST)
         ret = (tree) malloc (size = sizeof (struct tree_list_node));
-      else if (code == DOCUMENTCLASS)
-        ret = (tree) malloc (size = sizeof (struct tree_documentclass_node));
-      else if (code == USEPACKAGE)
-        ret = (tree) malloc (size = sizeof (struct tree_usepackage_node));
       else if (code == BEGIN)
         ret = (tree) malloc (size = sizeof (struct tree_begin_node));
       else if (code == END)
