@@ -18,8 +18,8 @@
 
 KEYWORD (boolean, keyword, "B")
 KEYWORD (natural, keyword, "N")
-KEYWORD (rational, keyword, "R")
-KEYWORD (whole, keyword, "Z")
+KEYWORD (real, keyword, "R")
+KEYWORD (integer, keyword, "Z")
 KEYWORD (alpha, id, "\\alpha")
 KEYWORD (begin, keyword, "\\begin")
 KEYWORD (beta, id, "\\beta")

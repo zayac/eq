@@ -80,13 +80,6 @@ struct tree_list_node
   struct tree_list list;
 };
 
-struct tree_type_node
-{
-  struct tree_base base;
-  tree name;
-  tree size;
-};
-
 struct tree_function_type_node
 {
   struct tree_base base;
@@ -94,17 +87,16 @@ struct tree_function_type_node
   tree operands[2];
 };
 
-struct tree_begin_node
+struct tree_function_node
 {
   struct tree_base base;
-  tree operands[1];
+  tree name;
+  tree args;
+  tree args_types;
+  tree ret;
+  tree instr_list;
 };
 
-struct tree_end_node
-{
-  struct tree_base base;
-  tree operands[1];
-};
 struct tree_circumflex_node
 {
   struct tree_base base;
@@ -183,13 +175,12 @@ struct tree_stmt_list_node
   tree vars;
 };
 
-/*struct tree_one_op_stmt_node
+struct tree_type_node
 {
   struct tree_base base;
-  tree name;
-};*/
-
-
+  tree dim;
+  tree shape;
+};
 
 union tree_node
 {
@@ -198,6 +189,7 @@ union tree_node
   struct tree_list_node             list_node;
   struct tree_type_node             type_node;
   struct tree_function_type_node    function_type_node;
+  struct tree_function_node         function_node;
   struct tree_string_cst_node       string_cst_node;
   struct tree_int_cst_node          int_cst_node;
   struct tree_list_cst_node         list_cst_node;
@@ -207,8 +199,6 @@ union tree_node
   struct tree_trinary_expr_node     trinary_expr_node;
   struct tree_three_op_stmt_node    three_op_stmt_node;
   struct tree_stmt_list_node        stmt_list_node;
-  struct tree_begin_node            begin_node;
-  struct tree_end_node              end_node;
   struct tree_circumflex_node       circumflex_node; 
   struct tree_function_call_node    function_call_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
@@ -220,25 +210,24 @@ extern tree global_tree[];
 enum tree_global_code
 {
   TG_ERROR_MARK,
-  TG_INTEGER_TYPE,
-  TG_STRING_TYPE,
-  TG_LIST_TYPE,
-  TG_VOID_TYPE,
+  TG_B_TYPE,
+  TG_N_TYPE,
+  TG_Z_TYPE,
+  TH_R_TYPE,
   TG_MAX
 };
 
 #define error_mark_node     global_tree[TG_ERROR_MARK]
-#define integer_type_node   global_tree[TG_INTEGER_TYPE]
-#define string_type_node    global_tree[TG_STRING_TYPE]
-#define list_type_node      global_tree[TG_LIST_TYPE]
-#define void_type_node      global_tree[TG_VOID_TYPE]
+#define b_type_node         global_tree[TG_B_TYPE]
+#define n_type_node         global_tree[TG_N_TYPE]
+#define z_type_node         global_tree[TG_Z_TYPE]
+#define r_type_node         global_tree[TG_R_TYPE]
 
 #define TREE_CODE(node) ((enum tree_code) (node)->base.code)
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
 #define TREE_TYPE(node) ((node)->typed.type)
-#define TREE_TYPE_NAME(node)  ((node)->type_node.name)
 #define TREE_CONSTANT(node) ((node)->typed.is_constant)
 
 /* Checks if it is possible to access the operand number IDX
@@ -261,18 +250,10 @@ get_tree_operand (tree node, int idx)
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
-      if (code == BEGIN)
-        return node->begin_node.operands[idx];
-      else if (code == END)
-        return node->end_node.operands[idx];
-      else
-        unreachable("node `%s` of tcl_misc doesn't have operands", TREE_CODE_NAME (code));
+      unreachable("node `%s` of tcl_misc doesn't have operands", TREE_CODE_NAME (code));
       break;
     case tcl_type:
-      if (code == FUNCTION_TYPE)
-        return node->function_type_node.operands[idx];
-      else
-        unreachable ("node `%s' of tcl_type do not have operands", 
+      unreachable ("node `%s' of tcl_type do not have operands", 
                      TREE_CODE_NAME (code));
       break;
 
@@ -303,19 +284,11 @@ set_tree_operand (tree node, int idx, tree value)
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
-      if (code == BEGIN)
-        node->begin_node.operands[idx] = value;
-      else if (code == END)
-        node->end_node.operands[idx] = value;
-      else
-        unreachable ("nod `%s` of tcl_misc does not have operands",
+      unreachable ("nod `%s` of tcl_misc does not have operands",
                     TREE_CODE_NAME (code));
       break;
     case tcl_type:
-      if (code == FUNCTION_TYPE)
-        node->function_type_node.operands[idx] = value;
-      else
-        unreachable ("node `%s' of tcl_type do not have operands", 
+      unreachable ("node `%s' of tcl_type do not have operands", 
                      TREE_CODE_NAME (code));
       break;
 
@@ -357,6 +330,16 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_FUNC_TYPE_NAME(node) ((node)->function_type_node.name)
 
+#define TREE_FUNC_NAME(node) ((node)->function_node.name)
+#define TREE_FUNC_ARGS(node) ((node)->function_node.args)
+#define TREE_FUNC_ARGS_TYPES(node) ((node)->function_node.args_types)
+#define TREE_FUNC_RET_TYPE(node) ((node)->function_node.ret)
+#define TREE_FUNC_INSTRS(node) ((node)->function_node.instr_list)
+
+
+#define TREE_TYPE_DIM(node) ((node)->type_node.dim)
+#define TREE_TYPE_SHAPE(node) ((node)->type_node.shape)
+
 static inline bool
 is_assignment_operator (enum token_kind tk)
 {
@@ -380,6 +363,8 @@ tree make_identifier_tok (struct token *);
 tree make_integer_tok (struct token *);
 tree make_tree_list ();
 bool tree_list_append (tree, tree);
+tree make_function(tree, tree, tree, tree, tree);
+tree make_type (enum tree_code);
 tree make_binary_op (enum tree_code, tree, tree);
 tree make_unary_op (enum tree_code, tree);
 tree make_assign (enum token_kind, tree, tree);

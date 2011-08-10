@@ -16,13 +16,7 @@
 
 /* Tree nodes are defined in this file.  */
 
-/* Header related productions */
-DEF_TREE_CODE (DOCUMENTCLASS, "documentclass_node", tcl_misc, 4)
-DEF_TREE_CODE (USEPACKAGE, "usepackage_node", tcl_misc, 1)
-DEF_TREE_CODE (BEGIN, "begin_node", tcl_misc,1)
-
-/* Footer */
-DEF_TREE_CODE (END, "end", tcl_misc, 1)
+DEF_TREE_CODE (FUNCTION, "function_node", tcl_misc, 0)
 
 /* Used when freeing atomic objects.  */
 DEF_TREE_CODE (EMPTY_MARK, "error_mark", tcl_misc, 0)
@@ -41,32 +35,12 @@ DEF_TREE_CODE (LIST, "tree_list", tcl_expression, 0)
    that list.  */
 DEF_TREE_CODE (STMT_LIST, "statement_list", tcl_misc, 0)
 
-
-
 /* Type nodes.  */
 
-/* Type that represent integer.  */
-DEF_TREE_CODE (INTEGER_TYPE, "integer_type", tcl_type, 0)
-
-/* Type to represent strings.  */
-DEF_TREE_CODE (STRING_TYPE, "string_type", tcl_type, 0)
-
-/* Type to represent generic lists.  */
-DEF_TREE_CODE (LIST_TYPE, "lsit_type", tcl_type, 0)
-
-/* Type to represent void functions.  */
-DEF_TREE_CODE (VOID_TYPE, "void_type", tcl_type, 0)
-
-/* Type to represent void functions.  */
-DEF_TREE_CODE (USER_TYPE, "user_type", tcl_type, 0)
-
-/* Fucntion type.  
-   Tree operands:
-        1 -- return type
-        2 -- list of argumnts types  */
-DEF_TREE_CODE (FUNCTION_TYPE, "function_type", tcl_type, 2)
-
-
+DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 0)
+DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 0)
+DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 0)
+DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 0)
 
 /* Constant nodes.  */
 

@@ -64,12 +64,10 @@ make_tree (enum tree_code code)
     case tcl_misc:
       if (code == IDENTIFIER)
         ret = (tree) malloc (size = sizeof (struct tree_identifier_node));
+      else if (code == FUNCTION)
+        ret = (tree) malloc (size = sizeof (struct tree_function_node));
       else if (code == LIST)
         ret = (tree) malloc (size = sizeof (struct tree_list_node));
-      else if (code == BEGIN)
-        ret = (tree) malloc (size = sizeof (struct tree_begin_node));
-      else if (code == END)
-        ret = (tree) malloc (size = sizeof (struct tree_end_node));
       else if (code == STMT_LIST)
         ret = (tree) malloc (size = sizeof (struct tree_stmt_list_node));
       else if (code == ERROR_MARK)
@@ -82,9 +80,7 @@ make_tree (enum tree_code code)
       break;
     
     case tcl_type:
-      if (code == FUNCTION_TYPE)
-        ret = (tree) malloc (size = sizeof (struct tree_function_type_node));
-      else if (code == USER_TYPE)
+       if (code == B_TYPE || code == N_TYPE || code == Z_TYPE || code == R_TYPE)
         ret = (tree) malloc (size = sizeof (struct tree_type_node));
       else
         {
@@ -232,10 +228,6 @@ free_tree (tree node)
                 }
             }
         }
-      else if (code == DOCUMENTCLASS || code == USEPACKAGE || code == BEGIN || code == END )
-        {
-
-        }
       else if (code == STMT_LIST)
         {
           free_tree (TREE_STMT_LIST_STMTS (node));
@@ -246,19 +238,11 @@ free_tree (tree node)
       break;
     
     case tcl_type:
-      if (code == FUNCTION_TYPE)
-        {
-          free_tree (TREE_FUNC_TYPE_NAME (node));
-          TREE_FUNC_TYPE_NAME (node) = NULL;
-          TREE_CODE_SET (node, EMPTY_MARK);
-        }
-      else /* if (code == USER_TYPE) */
-        {
-          free_tree (TREE_TYPE_NAME (node));
-          TREE_TYPE_NAME (node) = NULL;
-          TREE_CODE_SET (node, EMPTY_MARK);
-        }
-
+      free_tree (TREE_TYPE_DIM (node));
+      TREE_TYPE_DIM (node) = NULL;
+      free_tree (TREE_TYPE_SHAPE (node));
+      TREE_TYPE_SHAPE (node) = NULL;
+      TREE_CODE_SET (node, EMPTY_MARK);
       break;
 
     case tcl_constant:
@@ -306,6 +290,18 @@ free_tree (tree node)
 }
 
 tree
+make_function (tree name, tree args, tree args_types, tree ret, tree instrs)
+{
+  tree t = make_tree(FUNCTION);
+  TREE_FUNC_NAME(t) = name;
+  TREE_FUNC_ARGS(t) = args;
+  TREE_FUNC_ARGS_TYPES(t) = args_types;
+  TREE_FUNC_RET_TYPE(t) = ret;
+  TREE_FUNC_INSTRS(t) = instrs;
+  return t;
+}
+
+tree
 make_string_cst_str (const char * value)
 {
   tree t;
@@ -319,7 +315,6 @@ make_string_cst_str (const char * value)
   
   return t;
 }
-
 
 tree
 make_string_cst_tok (struct token *tok)
@@ -387,6 +382,16 @@ tree_list_append (tree list, tree elem)
 
   TAILQ_INSERT_TAIL (&TREE_LIST_QUEUE (list), tel, entries);
   return true;
+}
+
+tree
+make_type (enum tree_code code)
+{
+  tree t;
+  assert (TREE_CODE_CLASS (code) == tcl_type,
+          "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
+  t = make_tree(code);
+  return t;
 }
 
 tree
