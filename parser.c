@@ -67,16 +67,23 @@ bool parser_expect_tclass (struct parser *, enum token_class);
 bool parser_init (struct parser *, struct lexer *);
 bool parser_finalize (struct parser *);
 
+tree handle_type (struct parser *);
+tree handle_ext_type (struct parser *);
+tree handle_list (struct parser *, tree (*)(struct parser*));
+tree handle_ext_type_or_ext_type_list (struct parser*);
+tree handle_sexpr_or_sexpr_list (struct parser*);
+tree handle_id (struct parser *);
 tree handle_idx (struct parser *);
 tree handle_idx_or_idx_list (struct parser *);
-tree handle_function_call (struct parser *);
-tree handle_upper (struct parser *);
-tree handle_linear (struct parser *);
-tree handle_sexpr_op (struct parser *);
-tree handle_sexpr (struct parser *);
 tree handle_lower (struct parser *);
+tree handle_upper (struct parser *);
+tree handle_function (struct parser *);
+tree handle_function_call (struct parser *);
+tree handle_linear (struct parser *);
 tree handle_divide (struct parser *);
-tree handle_type (struct parser *);
+tree handle_sexpr (struct parser *);
+tree handle_sexpr_op (struct parser *);
+tree handle_condition (struct parser *);
 
 int parse(struct parser *);
 
@@ -397,6 +404,8 @@ handle_type (struct parser* parser)
   else
     goto error;
 
+  TREE_TYPE_DIM(t) = NULL;
+  TREE_TYPE_SHAPE(t) = NULL;
   TREE_LOCATION(t) = token_location(tok);
 
   if(!(tok = parser_forward_tval (parser, tv_rbrace)))
@@ -410,7 +419,7 @@ error:
 
 /*
  * ext_type:
- * type [ ^ { idx } [ _ { idx [ , idx ]* } ] ]
+ * type [ ^ { sexpr } [ _ { sexpr [ , sexpr ]* } ] ]
  */
 tree
 handle_ext_type (struct parser * parser)
@@ -419,7 +428,7 @@ handle_ext_type (struct parser * parser)
 
   tree t = handle_type (parser);
   tree dim, shape;
- 
+
   tok = parser_get_token(parser);
   if (token_value(tok) != tv_circumflex)
   {
@@ -430,34 +439,39 @@ handle_ext_type (struct parser * parser)
   if (!(tok = parser_forward_tval (parser, tv_lbrace)))
     goto error_shift;
 
-  dim = handle_idx(parser);
+  dim = handle_sexpr(parser);
 
   if (dim == NULL || dim == error_mark_node)
     goto error_shift;
+  else
+    TREE_TYPE_DIM(t) = dim;
+  
+  if(!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error_shift;
 
   tok = parser_get_token (parser);
+
   if (token_value(tok) != tv_lower_index)
   {
-    parser_unget (parser);
+    parser_unget(parser);
     return t;
   }
 
   if (!(tok = parser_forward_tval(parser, tv_lbrace)))
     goto error_shift;
 
-  shape = handle_idx_or_idx_list (parser);
+  shape = handle_sexpr_or_sexpr_list (parser);
 
   if (shape == NULL || shape == error_mark_node)
     goto error;
+  else
+    TREE_TYPE_SHAPE(t) = shape;
 
   if(!(tok = parser_forward_tval(parser, tv_rbrace)))
   {
     goto error;
   }
-
-  TREE_TYPE_DIM(t) = dim;
-  TREE_TYPE_SHAPE(t) = shape;
-
+  
   return t;
 error_shift:
   parser_get_until_tval(parser, tv_rbrace);
@@ -466,6 +480,16 @@ error:
   free_tree(dim);
   free_tree(shape);
   return error_mark_node;
+}
+
+tree
+handle_id (struct parser * parser)
+{
+  struct token * tok;
+  if(!(tok = parser_forward_tclass(parser, tok_id)))
+    return error_mark_node;
+  else
+    return make_identifier_tok (tok);
 }
 
 /*
@@ -979,6 +1003,229 @@ error:
   return error_mark_node;
 }
 
+/* relations:
+ * sexpr rel sexpr [ rel sexpr ]
+ */
+tree handle_relations (struct parser * parser)
+{
+  tree t1;
+  tree t2, t3;
+  tree rel1, rel2;
+  struct token * tok;
+
+  t1 = handle_sexpr (parser);
+  if (t1 == NULL || t1 == error_mark_node)
+    goto error;
+
+  tok = parser_get_token(parser);
+  
+  if (token_class(tok) == tok_operator)
+  {
+    switch (token_value(tok))
+    {
+      case tv_lt:
+        rel1 = make_binary_op(LT_EXPR, t1, NULL);
+        break;
+      case tv_gt:
+        rel1 = make_binary_op(GT_EXPR, t1, NULL);
+        break;
+      case tv_geq:
+        rel1 = make_binary_op(GE_EXPR, t1, NULL);
+        break;
+      case tv_leq:
+        rel1 = make_binary_op(LE_EXPR, t1, NULL);
+        break;
+      case tv_not:
+        if (!parser_forward_tval(parser, tv_eq))
+          goto error;
+        rel1 = make_binary_op(NE_EXPR, t1, NULL);
+        break;
+      case tv_eq:
+        rel1 = make_binary_op(EQ_EXPR, t1, NULL);
+        break;
+      default:
+        goto error;
+    }
+  }
+  else
+    goto error;
+
+  t2 = handle_sexpr (parser);
+  if (t2 == NULL || t2 == error_mark_node)
+    goto error;
+  
+  TREE_OPERAND_SET(rel1, 1, t2);
+
+  tok = parser_get_token(parser);
+
+  if (token_class(tok) == tok_operator)
+  {
+    switch (token_value(tok))
+    {
+      case tv_lt:
+        rel2 = make_binary_op(LT_EXPR, t2, NULL);
+        break;
+      case tv_gt:
+        rel2 = make_binary_op(GT_EXPR, t2, NULL);
+        break;
+      case tv_geq:
+        rel2 = make_binary_op(GE_EXPR, t2, NULL);
+        break;
+      case tv_leq:
+        rel2 = make_binary_op(LE_EXPR, t2, NULL);
+        break;
+      case tv_not:
+        if (!parser_forward_tval(parser, tv_eq))
+          goto error;
+        rel2 = make_binary_op(NE_EXPR, t2, NULL);
+        break;
+      case tv_eq:
+        rel2 = make_binary_op(EQ_EXPR, t2, NULL);
+        break;
+      default:
+        parser_unget(parser);
+        return rel1;
+    }
+  }
+  else
+  {
+    parser_unget (parser);
+    return rel1;
+  }
+
+  t3 = handle_sexpr (parser);
+
+  if (t3 == NULL || t3 == error_mark_node)
+    goto error;
+
+  TREE_OPERAND_SET(rel2, 1, t3);
+  return make_binary_op(AND_EXPR, rel1, rel2);
+
+error:
+  free_tree(t1);
+  free_tree(t2);
+  free_tree(t3);
+  free_tree(rel1);
+  free_tree(rel2);
+  return error_mark_node;
+}
+
+tree handle_cond_block (struct parser * parser)
+{
+  tree t;
+  struct token * tok;
+  enum prec {
+    prec_none,
+    prec_logor,
+    prec_logand,
+    num_precs
+  };
+
+  struct {
+    tree expr;
+    enum prec prec;
+    enum tree_code op;
+  } stack [num_precs];
+
+  int sp = 0;
+ 
+  tok = parser_get_token(parser);
+  if (token_value(tok) == tv_lparen)
+  {
+    t = handle_cond_block(parser);
+    parser_expect_tval(parser, tv_rparen);
+    parser_get_token(parser);
+  }
+  else
+  {
+    parser_unget (parser);
+    t = handle_relations (parser);
+  }
+
+  
+  if (t == NULL || t == error_mark_node)
+    return error_mark_node; 
+
+  stack[0].expr = t;
+  stack[0].prec = prec_none;
+
+  while (true)
+  {
+    enum prec oprec;
+    enum tree_code ocode;
+
+    tok = parser_get_token (parser);
+
+    if (token_class(tok) == tok_operator)
+    {
+      switch (token_value (tok))
+      {
+        case tv_land:
+          oprec = prec_logand;
+          ocode = AND_EXPR;
+          break;
+        case tv_lor:
+          oprec = prec_logor;
+          ocode = OR_EXPR;
+          break;
+        default:
+          parser_unget (parser);
+          goto out;
+      }
+
+      while (oprec <= stack[sp].prec)
+      {
+        stack[sp-1].expr = make_binary_op ( stack[sp].op,
+                                            stack[sp-1].expr,
+                                            stack[sp].expr);
+        sp--;
+      }
+
+      tok = parser_get_token (parser);
+      if (token_value (tok) == tv_lparen)
+      {
+        t = handle_cond_block (parser);
+        parser_expect_tval(parser, tv_rparen);
+        parser_get_token(parser);
+      }
+      else
+      {
+        parser_unget (parser);
+        t = handle_relations (parser);
+      }
+
+      if (t == NULL || t == error_mark_node)
+      {
+        while (sp >= 0)
+        {
+          free_tree(stack[sp--].expr);
+          return error_mark_node;
+        }
+      }
+
+      sp++;
+      stack[sp].expr = t;
+      stack[sp].prec = oprec;
+      stack[sp].op = ocode;
+    }
+    else
+    {
+      parser_unget (parser);
+      break;
+    }
+  }
+
+out:
+  while (sp > 0)
+  {
+    stack[sp-1].expr = make_binary_op(  stack[sp].op, 
+                                        stack[sp-1].expr,
+                                        stack[sp].expr);
+    sp--;
+  }
+  return stack[0].expr;
+}
+
 /* sexpr:
  * (sexpr) |
  * sexpr_op [ ( \land | \lor | \oplus | + | - | \cdot | divide | \ll | \gg |
@@ -1203,29 +1450,77 @@ error:
   return error_mark_node;
 }
 
+/*
+ * generator:
+ * \forall <id> |
+ * <id> [ , <id> ]* : sexpr [ comp sexpr ]+ [set_op sexpr [ comp sexpr ]+ ]*
+ */
+tree
+handle_generator (struct parser* parser)
+{
+  struct token * tok = parser_get_token(parser);
+  tree t, t1, ret;
+
+  if(token_value(tok) == tv_forall)
+  {
+    t = handle_list(parser, handle_id);
+    if (t == error_mark_node)
+      goto shift;
+    else
+    {
+      ret = make_tree (FORALL);
+      TREE_OPERAND_SET(ret, 0, t);
+      return ret;
+    }
+  }
+  else
+  {
+    parser_unget (parser);
+    t = handle_list(parser, handle_id); 
+    if (t != error_mark_node)
+    {
+      ret = make_tree (GENERATOR);
+      TREE_OPERAND_SET(ret, 0, t);
+    }
+    else
+      goto shift;
+
+    if(!parser_forward_tval(parser,tv_colon))
+      goto error;
+
+    t1 = handle_cond_block(parser);
+
+    if (t1 == NULL || t1 == error_mark_node)
+      goto error;
+  
+    TREE_OPERAND_SET(ret, 1, t1);
+    return ret;
+  }
+shift:
+  parser_get_until_tval(parser, tv_colon);
+error:
+  free_tree(t);
+  free_tree(t1);
+  free_tree(ret);
+  return error_mark_node;
+}
+
 /* Top level function to parse the file.  */
 int
 parse (struct parser *parser)
 {
   struct token *  tok;
-  
+  struct tree_list_element * tle;
+
   error_count = warning_count = 0;
   while (token_class (tok = parser_get_token (parser)) != tok_eof)
     {
       parser_unget(parser);
       tree t = handle_function(parser);
       if (t != NULL)
-      {
         tree_list_append(function_list, t);
-        if (t != error_mark_node)
-        {
-          print_expression(stdout, t);
-          printf("\n");  
-        }
-      }
     }
-
-            
+           
   printf ("note: finished parsing.\n");
   if (error_count != 0)
     {
@@ -1233,6 +1528,19 @@ parse (struct parser *parser)
       return -3;
     }
 
+  printf("\n######### Output ########\n");
+  TAILQ_FOREACH (tle, &TREE_LIST_QUEUE(function_list), entries)
+  {
+    if (tle->element != error_mark_node)
+    {
+      print_expression(stdout, tle->element);
+      if (TAILQ_NEXT (tle, entries))
+        printf("\n");
+    }
+    else
+      printf("Errors in function\n\n");
+  }
+ 
   return 0;
 }
 

@@ -91,6 +91,7 @@ DEF_TREE_CODE (IF_STMT, "if_stmt", tcl_statement, 3)
         3 -- <stmt>  */
 DEF_TREE_CODE (FOR_STMT, "for_stmt", tcl_statement, 3)
 
+DEF_TREE_CODE (GENERATOR, "generator_stmt", tcl_statement, 2)
 
 
 /* Expressions.  */
@@ -117,8 +118,9 @@ DEF_TREE_CODE (MOD_EXPR, "mod_exp", tcl_expression, 2)
 
 DEF_TREE_CODE (UMINUS_EXPR, "uminus_exp", tcl_expression, 1)
 DEF_TREE_CODE (NOT_EXPR, "not_expr", tcl_expression, 1)
+DEF_TREE_CODE (FORALL, "forall_node", tcl_expression, 1)
+
 DEF_TREE_CODE (LOWER, "lower_expr", tcl_expression, 2)
-/* Used to distinguish upper index and power operation */
 DEF_TREE_CODE (CIRCUMFLEX, "circumflex_node", tcl_expression,  2)
 
 /* Function call */

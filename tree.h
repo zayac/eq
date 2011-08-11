@@ -154,6 +154,12 @@ struct tree_binary_expr_node
   tree operands[2];
 };
 
+struct tree_generator_node
+{
+  struct tree_base base;
+  tree operands[2];
+};
+
 struct tree_trinary_expr_node
 {
   //struct tree_base base;
@@ -201,6 +207,7 @@ union tree_node
   struct tree_stmt_list_node        stmt_list_node;
   struct tree_circumflex_node       circumflex_node; 
   struct tree_function_call_node    function_call_node;
+  struct tree_generator_node        generator_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
 

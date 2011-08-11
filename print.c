@@ -71,7 +71,8 @@ print_expression (FILE *f, tree exp)
           fprintf(f, "\\call{");
           print_expression(f, TREE_OPERAND(exp, 0));
           fprintf(f, "}{");
-          print_expression(f, TREE_OPERAND(exp, 1));
+          if (TREE_OPERAND(exp, 1) != NULL)
+            print_expression(f, TREE_OPERAND(exp, 1));
           return fprintf(f, "}");
         }
     case DIV_EXPR:
@@ -86,12 +87,14 @@ print_expression (FILE *f, tree exp)
         {
           struct tree_list_element * tle;
           assert(TREE_CODE(TREE_FUNC_INSTRS(exp)) == LIST, 0);
-          fprintf(f, "\\begin{eqcode}{ ");
+          fprintf(f, "\\begin{ eqcode }{ ");
           print_expression(f, TREE_FUNC_NAME(exp));
           fprintf(f, " }{ ");
-          print_expression(f, TREE_FUNC_ARGS(exp));
+          if (TREE_FUNC_ARGS(exp) != NULL)
+            print_expression(f, TREE_FUNC_ARGS(exp));
           fprintf(f, " }{ ");
-          print_expression(f, TREE_FUNC_ARGS_TYPES(exp));
+          if (TREE_FUNC_ARGS_TYPES(exp) != NULL)
+            print_expression(f, TREE_FUNC_ARGS_TYPES(exp));
           fprintf(f, " }{ ");
           print_expression(f, TREE_FUNC_RET_TYPE(exp));
           fprintf(f, " }\n");
@@ -101,7 +104,7 @@ print_expression (FILE *f, tree exp)
             print_expression(f, tle->element);
             fprintf(f," \\endl\n");
           }
-          return fprintf(f, "\\end{eqcode}\n");
+          return fprintf(f, "\\end{ eqcode }\n");
         }
     case B_TYPE:
     case N_TYPE:
@@ -117,6 +120,20 @@ print_expression (FILE *f, tree exp)
             fprintf(f, "Z");
           else
             fprintf(f, "R");
+          
+          if(TREE_TYPE_DIM(exp) != NULL)
+          {
+            fprintf(f, "^{ ");
+            print_expression(f, TREE_TYPE_DIM(exp));
+            fprintf(f, " }");
+            if(TREE_TYPE_SHAPE(exp) != NULL)
+            {
+              fprintf(f, "_{ ");
+              print_expression(f, TREE_TYPE_SHAPE(exp));
+            }
+            else
+              return fprintf(f, " }");
+          }
           return fprintf(f, " }");
         }
     case CALL_EXPR:

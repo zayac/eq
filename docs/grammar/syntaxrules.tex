@@ -49,8 +49,9 @@
 
 \newcommand{\BnfExtType}{
 \bHead{ext\_type}
-  type \bOpt{\bSymb{\^} \bSymb{\{} \bSpecial{num} \bSymb{\}} \bSkip \bOpt{\bSymb{\_} \bSymb{\{} \bSpecial{num} \bStar{\bSymb{,}
-  \bSpecial{num}} \bSymb{\}}}}
+  type \bOpt{\bSymb{\^} \bSymb{\{} sexpr \bSymb{\}} \bSkip \bOpt{\bSymb{\_}
+  \bSymb{\{} sexpr \bStar{\bSymb{,}
+  sexpr} \bSymb{\}}}}
 \bEnd
 }
 
@@ -88,7 +89,6 @@
   \bSymb{+} \bOr
   \bSymb{-} \bOr
   \bToken{\bs cdot} \bOr
-  divide \bOr
   \bToken{\bs ll} \bOr
   \bToken{\bs gg} \bOr
   \bToken{\bs mod}
@@ -122,7 +122,7 @@
   \bToken{\bs filter} \bSymb{\{} \bSpecial{id} \bSymb{\^} \bSpecial{\{}
   \bSymb{[} \bSpecial{id} \bSymb{]} \bSpecial{\}} \bSkip \bStar{\bSymb{,}
   \bSpecial{id} \bSymb{\^} \bSpecial{\{} \bSymb{[} \bSpecial{id} \bSymb{]}
-  \bSpecial{\}}} \bSkip \bSymb{|} extended\_condition \bSymb{\}}
+  \bSpecial{\}}} \bSkip \bSymb{|} condition \bSymb{\}}
 \bEnd
 }
 
@@ -169,9 +169,9 @@
 
 \newcommand{\BnfWithLoopWBr}{
 \bHead{with\_loop\_wbr}
-  idx \bSymb{|} extended\_condition \bSymb{=} \bSkip
+  idx \bSymb{|} condition \bSymb{=} \bSkip
   \bToken{\bs begin} \bSymb{\{} \bToken{cases} \bSymb{\}} \bSkip
-  \bPlus{expr \bSymb{\&} extended\_condition} \bSkip
+  \bPlus{expr \bSymb{\&} condition} \bSkip
   \bPlus{expr \bSymb{\&} \bToken{\bs otherwise}}\bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{cases} \bSymb{\}}
 \bEnd
@@ -179,12 +179,36 @@
 
 \newcommand{\BnfWithLoopWOBr}{
 \bHead{with\_loop\_wobr}
-  idx \bSymb{|} extended\_condition \bSymb{=} expr
+  idx \bSymb{|} condition \bSymb{=} expr
 \bEnd
 }
 
 \newcommand{\BnfReturn}{
 \bHead{return}
   \bToken{\bs return} \bSymb{\{} expr \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfCondition}{
+\bHead{condition}
+  \bToken{\bs forall} \bSpecial{id} \bOr
+  \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id}} \bSymb{:} sexpr \bPlus{comp
+  sexpr} \bSkip \bStar{set\_op sexpr \bPlus{comp sexpr}}
+\bEnd
+}
+
+\newcommand{\BnfComp}{
+\bHead{comp}
+  \bSymb{<} \bOr
+  \bSymb{>} \bOr
+  \bToken{\bs leq} \bOr
+  \bToken{\bs geq} \bOr
+  \bOpt{\bToken{\bs not}} \bSymb{=}
+\bEnd
+}
+
+\newcommand{\BnfSetOp}{
+\bHead{set\_op}
+  \bAlt{\bToken{\bs land}}{\bToken{\bs lor}}
 \bEnd
 }
