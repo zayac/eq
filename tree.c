@@ -106,7 +106,9 @@ make_tree (enum tree_code code)
       break;
 
     case tcl_expression:
-      if (code == UMINUS_EXPR || code == NOT_EXPR)
+      if (code == FILTER_EXPR)
+        ret = (tree) malloc (size = sizeof (struct tree_filter_node));
+      else if (code == UMINUS_EXPR || code == NOT_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_unary_expr_node));
       else if (code == FUNCTION_CALL)
         ret = (tree) malloc (size = sizeof (struct tree_function_call_node));

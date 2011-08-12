@@ -167,6 +167,11 @@ struct tree_trinary_expr_node
   tree operands[3];
 };
 
+struct tree_filter_node
+{
+  struct tree_base base;
+  tree operands[2];
+};
 
 struct tree_three_op_stmt_node
 {
@@ -208,6 +213,7 @@ union tree_node
   struct tree_circumflex_node       circumflex_node; 
   struct tree_function_call_node    function_call_node;
   struct tree_generator_node        generator_node;
+  struct tree_filter_node           filter_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
 

@@ -106,6 +106,9 @@ DEF_TREE_CODE (C_CALL_EXPR, "ccall_expr", tcl_expression, 2)
    NOTE this is an expression with 3 operators!  */
 DEF_TREE_CODE (COND_EXPR, "cond_expr", tcl_expression, 3)
 
+/* Filter */
+DEF_TREE_CODE (FILTER_EXPR, "filter_expr", tcl_expression, 2)
+
 /* Assignment.  */
 DEF_TREE_CODE (ASSIGN_EXPR, "assign_expr", tcl_expression, 2)
 

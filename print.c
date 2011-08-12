@@ -136,6 +136,10 @@ print_expression (FILE *f, tree exp)
           }
           return fprintf(f, " }");
         }
+    case FILTER_EXPR:
+        {
+          return fprintf(f, "\\filter");
+        }
     case CALL_EXPR:
       {
         tree name = TREE_OPERAND (exp, 0);

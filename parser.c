@@ -84,6 +84,7 @@ tree handle_divide (struct parser *);
 tree handle_sexpr (struct parser *);
 tree handle_sexpr_op (struct parser *);
 tree handle_condition (struct parser *);
+tree handle_filter (struct parser *);
 
 int parse(struct parser *);
 
@@ -763,11 +764,13 @@ tree handle_function ( struct parser * parser )
       }
       parser_unget(parser);
     }
-    tree_list_append(instrs, handle_sexpr(parser));
+
+    tree_list_append(instrs, handle_filter(parser));
+    
     if(parser_expect_tval(parser, tv_endl));
       parser_get_token(parser);
   }
-
+  
   return make_function(name, args, arg_types, ret, instrs);
 
 error:
@@ -1502,6 +1505,94 @@ error:
   free_tree(t);
   free_tree(t1);
   free_tree(ret);
+  return error_mark_node;
+}
+
+/*
+ * filter_op:
+ * <id> ^ { [ <id> ] }
+ */
+tree
+handle_filter_op (struct parser * parser)
+{
+  tree id = NULL, pow = NULL, ret = NULL;
+  struct token * tok;
+
+  if (!(tok = parser_forward_tclass(parser, tok_id)))
+    goto error;
+  else
+    id = make_identifier_tok (tok);
+
+  if(!parser_forward_tval(parser, tv_circumflex))
+    goto error;
+  if(!parser_forward_tval(parser, tv_lbrace))
+    goto error;
+  if(!parser_forward_tval(parser, tv_lsquare))
+    goto error;
+
+  if(!(tok = parser_forward_tclass(parser, tok_id)))
+    goto error;
+  else
+    pow = make_identifier_tok (tok);
+
+  if(!parser_forward_tval (parser, tv_rsquare))
+    goto error;
+  if(!(parser_forward_tval (parser, tv_rbrace)))
+  {
+    parser_unget (parser);  
+    goto error;
+  }
+
+  ret = make_tree (CIRCUMFLEX);
+  TREE_OPERAND_SET(ret, 0, id);
+  TREE_OPERAND_SET(ret, 1, pow);
+  ret->circumflex_node.is_index = true;
+  return ret;
+
+error:
+  free_tree(id);
+  free_tree(pow);
+  free_tree(ret);
+  parser_get_until_tval(parser, tv_rbrace);
+  return error_mark_node;
+}
+
+/*
+ * filter:
+ * \filter { <id> ^ { [ <id> ] } [ , <id> ^ { [ <id> ] } ]* | generator }
+ */
+tree
+handle_filter (struct parser * parser)
+{
+  tree ids = NULL, gen = NULL, ret = NULL;
+
+  if (!(parser_forward_tval(parser, tv_filter)))
+    goto error;
+  if(!parser_forward_tval(parser, tv_lbrace))
+    goto error;
+  else
+    ids = handle_list(parser, handle_filter_op);
+
+  if(!parser_forward_tval(parser, tv_vertical))
+    goto error;
+
+  gen = handle_generator (parser);
+
+  if (!parser_forward_tval(parser, tv_rbrace))
+  {
+    parser_unget(parser);
+    goto error;
+  }
+  ret = make_tree (FILTER_EXPR);
+  TREE_OPERAND_SET(ret, 0, ids);
+  TREE_OPERAND_SET(ret, 1, gen);
+
+  return ret;
+error:
+  parser_forward_tval(parser, tv_rbrace);
+  free_tree(ret);
+  free_tree(ids);
+  free_tree(gen);
   return error_mark_node;
 }
 
