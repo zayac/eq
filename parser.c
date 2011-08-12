@@ -21,7 +21,7 @@
 #include "global.h"
 #include "print.h"
 
-
+/* TEST  */
 struct parser 
 {
   struct lexer *lex;
