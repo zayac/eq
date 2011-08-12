@@ -487,10 +487,13 @@ tree
 handle_id (struct parser * parser)
 {
   struct token * tok;
+  tree t;
+
   if(!(tok = parser_forward_tclass(parser, tok_id)))
     return error_mark_node;
   else
-    return make_identifier_tok (tok);
+    t = make_identifier_tok ( tok);
+  return t;
 }
 
 /*
@@ -568,6 +571,7 @@ tree handle_list (struct parser * parser, tree (*handler)(struct parser*))
 
   if(token_value(tok = parser_get_token(parser)) != tv_comma)
   {
+
     ret = t;
   }
   else
@@ -589,7 +593,7 @@ tree handle_list (struct parser * parser, tree (*handler)(struct parser*))
     ret = list;
   }
   parser_unget(parser);
-
+  
   return ret;
 }
 
@@ -715,7 +719,7 @@ tree handle_function ( struct parser * parser )
     parser_unget(parser);
     args = NULL;
   }
- 
+
   if (!(tok = parser_forward_tval(parser, tv_rbrace)))
     goto error;
 
@@ -770,7 +774,6 @@ tree handle_function ( struct parser * parser )
     if(parser_expect_tval(parser, tv_endl));
       parser_get_token(parser);
   }
-  
   return make_function(name, args, arg_types, ret, instrs);
 
 error:
@@ -1480,10 +1483,11 @@ handle_generator (struct parser* parser)
   {
     parser_unget (parser);
     t = handle_list(parser, handle_id); 
+  
     if (t != error_mark_node)
     {
-      ret = make_tree (GENERATOR);
-      TREE_OPERAND_SET(ret, 0, t);
+      ret = make_binary_op (GENERATOR, t, NULL);
+  
     }
     else
       goto shift;
@@ -1543,7 +1547,7 @@ handle_filter_op (struct parser * parser)
     goto error;
   }
 
-  ret = make_tree (CIRCUMFLEX);
+  ret = make_tree(CIRCUMFLEX);
   TREE_OPERAND_SET(ret, 0, id);
   TREE_OPERAND_SET(ret, 1, pow);
   ret->circumflex_node.is_index = true;
@@ -1583,10 +1587,9 @@ handle_filter (struct parser * parser)
     parser_unget(parser);
     goto error;
   }
-  ret = make_tree (FILTER_EXPR);
-  TREE_OPERAND_SET(ret, 0, ids);
-  TREE_OPERAND_SET(ret, 1, gen);
-
+  
+  ret = make_binary_op (FILTER_EXPR, ids, gen);
+  
   return ret;
 error:
   parser_forward_tval(parser, tv_rbrace);

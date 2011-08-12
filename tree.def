@@ -91,7 +91,7 @@ DEF_TREE_CODE (IF_STMT, "if_stmt", tcl_statement, 3)
         3 -- <stmt>  */
 DEF_TREE_CODE (FOR_STMT, "for_stmt", tcl_statement, 3)
 
-DEF_TREE_CODE (GENERATOR, "generator_stmt", tcl_statement, 2)
+DEF_TREE_CODE (GENERATOR, "generator_expr", tcl_expression, 2)
 
 
 /* Expressions.  */

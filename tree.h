@@ -154,23 +154,11 @@ struct tree_binary_expr_node
   tree operands[2];
 };
 
-struct tree_generator_node
-{
-  struct tree_base base;
-  tree operands[2];
-};
-
 struct tree_trinary_expr_node
 {
   //struct tree_base base;
   struct tree_type_base typed;
   tree operands[3];
-};
-
-struct tree_filter_node
-{
-  struct tree_base base;
-  tree operands[2];
 };
 
 struct tree_three_op_stmt_node
@@ -212,8 +200,6 @@ union tree_node
   struct tree_stmt_list_node        stmt_list_node;
   struct tree_circumflex_node       circumflex_node; 
   struct tree_function_call_node    function_call_node;
-  struct tree_generator_node        generator_node;
-  struct tree_filter_node           filter_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
 
@@ -276,6 +262,8 @@ get_tree_operand (tree node, int idx)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         return node->unary_expr_node.operands[idx];
+      else if (code == CIRCUMFLEX)
+        return node->circumflex_node.operands[idx];
       else if (code == FUNCTION_CALL)
         return node->function_call_node.operands[idx];
       else
@@ -312,6 +300,8 @@ set_tree_operand (tree node, int idx, tree value)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         node->unary_expr_node.operands[idx] = value;
+      else if (code == CIRCUMFLEX)
+        node->circumflex_node.operands[idx] = value;
       else if (code == FUNCTION_CALL)
         node->function_call_node.operands[idx] = value;
       else

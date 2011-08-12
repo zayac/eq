@@ -83,6 +83,17 @@ print_expression (FILE *f, tree exp)
           print_expression(f, TREE_OPERAND(exp, 1));
           return fprintf(f, "}");
         }
+    case CIRCUMFLEX:
+        {
+          print_expression(f, TREE_OPERAND(exp, 0));
+          fprintf(f, " ^ { ");
+          if(exp->circumflex_node.is_index)
+            fprintf(f, " [ ");
+          print_expression(f, TREE_OPERAND(exp, 1));
+          if(exp->circumflex_node.is_index)
+            fprintf(f, " ] ");
+          return fprintf(f, " } ");
+        }
     case FUNCTION:
         {
           struct tree_list_element * tle;
@@ -138,7 +149,11 @@ print_expression (FILE *f, tree exp)
         }
     case FILTER_EXPR:
         {
-          return fprintf(f, "\\filter");
+          fprintf(f, "\\filter { ");
+          print_expression (f, TREE_OPERAND(exp, 0));
+          fprintf(f, " | ");
+          print_expression (f, TREE_OPERAND(exp, 1));
+          return fprintf(f, " } ");
         }
     case CALL_EXPR:
       {
@@ -175,7 +190,9 @@ print_expression (FILE *f, tree exp)
     case NOT_EXPR:
       fprintf (f, " \\lnot ");
       return print_expression (f, TREE_OPERAND (exp, 0));
-
+    case FORALL:
+      fprintf (f, "\\forall ");
+      return print_expression(f, TREE_OPERAND (exp, 0));
     default:
       {
         const char *opcode;
@@ -197,8 +214,8 @@ print_expression (FILE *f, tree exp)
           case SRIGHT_EXPR: opcode = "\\ll"; break;
           case SLEFT_EXPR: opcode = "\\gg"; break;
           case ASSIGN_EXPR: opcode = "="; break;
-          case CIRCUMFLEX: opcode = "^"; break;
           case LOWER: opcode = "_"; break;
+          case GENERATOR: opcode = ":"; break;
           default:
             unreachable (0);
           }
