@@ -562,7 +562,8 @@ handle_idx (struct parser* parser)
   return idx;
 }
 
-tree handle_list (struct parser * parser, tree (*handler)(struct parser*))
+tree 
+handle_list (struct parser * parser, tree (*handler)(struct parser*))
 {
   tree ret, t;
   struct token * tok;
@@ -600,7 +601,8 @@ tree handle_list (struct parser * parser, tree (*handler)(struct parser*))
  * Read ext_type or ext_type
  * ext_type [ , ext_type ]*
  */
-tree handle_ext_type_or_ext_type_list (struct parser * parser)
+tree 
+handle_ext_type_or_ext_type_list (struct parser * parser)
 {
   return handle_list (parser, handle_ext_type);
 }
@@ -609,7 +611,8 @@ tree handle_ext_type_or_ext_type_list (struct parser * parser)
  * Read sexp or sexpr list
  * sexpr [ , sexpr ]*
  */
-tree handle_sexpr_or_sexpr_list (struct parser * parser)
+tree 
+handle_sexpr_or_sexpr_list (struct parser * parser)
 {
   return handle_list (parser, handle_sexpr);
 }
@@ -618,7 +621,8 @@ tree handle_sexpr_or_sexpr_list (struct parser * parser)
  * Read idx or idx list
  * idx  [ , idx ]*
  */
-tree handle_idx_or_idx_list (struct parser * parser)
+tree 
+handle_idx_or_idx_list (struct parser * parser)
 {
   return handle_list(parser, handle_idx);
 }
@@ -627,7 +631,8 @@ tree handle_idx_or_idx_list (struct parser * parser)
  *  lower
  *  _ { sexpr [ , sexpr ]* }
  */
-tree handle_lower (struct parser* parser)
+tree 
+handle_lower (struct parser* parser)
 {
   tree lower, t;
   struct token * tok;
@@ -677,7 +682,8 @@ error:
  * instr_list
  * \end { eqcode}
  */
-tree handle_function ( struct parser * parser )
+tree 
+handle_function ( struct parser * parser )
 {
   tree name = NULL, args = NULL, arg_types = NULL, ret = NULL, instrs = NULL, t = NULL;
   struct token* tok;
@@ -748,7 +754,11 @@ tree handle_function ( struct parser * parser )
   if(ret == NULL || ret == error_mark_node)
     goto error;
 
+  if (!(tok = parser_forward_tval(parser, tv_rbrace)))
+    goto error;
+
   instrs = make_tree_list (); 
+  
   while(true)
   {
     if (token_value(parser_get_token(parser)) == tv_end)
@@ -767,12 +777,14 @@ tree handle_function ( struct parser * parser )
       }
       parser_unget(parser);
     }
-
-    tree_list_append(instrs, handle_filter(parser));
+    parser_unget(parser);
     
-    if(parser_expect_tval(parser, tv_endl));
+    tree_list_append(instrs, handle_filter(parser));
+   
+    if(parser_expect_tval(parser, tv_endl))
       parser_get_token(parser);
   }
+  
   return make_function(name, args, arg_types, ret, instrs);
 
 error:
@@ -800,7 +812,8 @@ error:
  * function_call:
  * \call { <id> } { [ idx [, idx ]* ] }
  */
-tree handle_function_call (struct parser* parser)
+tree 
+handle_function_call (struct parser* parser)
 {
   tree t = NULL, args = NULL;
   struct token * tok;
@@ -963,7 +976,8 @@ handle_linear (struct parser* parser)
 /*
  * ( \frac | \dfrac) { sexpr } { sexpr }
  */
-tree handle_divide (struct parser * parser)
+tree 
+handle_divide (struct parser * parser)
 {
   tree t = NULL, l = NULL, r = NULL;
 
@@ -1011,7 +1025,8 @@ error:
 /* relations:
  * sexpr rel sexpr [ rel sexpr ]
  */
-tree handle_relations (struct parser * parser)
+tree 
+handle_relations (struct parser * parser)
 {
   tree t1;
   tree t2, t3;
@@ -1115,7 +1130,8 @@ error:
   return error_mark_node;
 }
 
-tree handle_cond_block (struct parser * parser)
+tree 
+handle_cond_block (struct parser * parser)
 {
   tree t;
   struct token * tok;
@@ -1237,7 +1253,8 @@ out:
  * \mod ) sexpr_op ]*
  */
 
-tree handle_sexpr (struct parser * parser)
+tree 
+handle_sexpr (struct parser * parser)
 {
   tree t;
   struct token * tok;
@@ -1520,7 +1537,6 @@ handle_filter_op (struct parser * parser)
 {
   tree id = NULL, pow = NULL, ret = NULL;
   struct token * tok;
-
   if (!(tok = parser_forward_tclass(parser, tok_id)))
     goto error;
   else
@@ -1571,6 +1587,7 @@ handle_filter (struct parser * parser)
 
   if (!(parser_forward_tval(parser, tv_filter)))
     goto error;
+  
   if(!parser_forward_tval(parser, tv_lbrace))
     goto error;
   else

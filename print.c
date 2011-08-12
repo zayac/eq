@@ -202,7 +202,7 @@ print_expression (FILE *f, tree exp)
           case MINUS_EXPR: opcode = "-"; break;
           case MULT_EXPR: opcode = "\\cdot"; break;
           case MOD_EXPR: opcode = "\\mod"; break;
-          case EQ_EXPR: opcode = "=="; break;
+          case EQ_EXPR: opcode = "="; break;
           case GT_EXPR: opcode = ">"; break;
           case GE_EXPR: opcode = ">="; break;
           case LT_EXPR: opcode = "<"; break;
