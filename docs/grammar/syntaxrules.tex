@@ -191,7 +191,7 @@
 
 \newcommand{\BnfCondition}{
 \bHead{condition}
-  \bToken{\bs forall} \bSpecial{id} \bOr
+  \bToken{\bs forall} \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id} } \bOr
   \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id}} \bSymb{:} sexpr \bPlus{comp
   sexpr} \bSkip \bStar{set\_op sexpr \bPlus{comp sexpr}}
 \bEnd

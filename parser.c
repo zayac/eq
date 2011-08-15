@@ -673,6 +673,27 @@ error:
 
 }
 
+bool
+is_end (struct parser * parser)
+{
+  if (token_value(parser_get_token(parser)) == tv_end)
+  {
+    if(token_value(parser_get_token(parser)) == tv_lbrace)
+    {
+      if(token_value(parser_get_token(parser)) == tv_eqcode)
+      {
+        if(token_value(parser_get_token(parser)) == tv_rbrace)
+        {
+          return true;
+        }
+        parser_unget(parser);
+      }
+    }
+    parser_unget(parser);
+  }
+  parser_unget(parser);
+  return false;
+}
 /*
  * function:
  * \begin { eqcode } { id }
@@ -761,30 +782,29 @@ handle_function ( struct parser * parser )
   
   while(true)
   {
-    if (token_value(parser_get_token(parser)) == tv_end)
-    {
-      if(token_value(parser_get_token(parser)) == tv_lbrace)
-      {
-        if(token_value(parser_get_token(parser)) == tv_eqcode)
-        {
-          if(token_value(parser_get_token(parser)) == tv_rbrace)
-          {
-            break;
-          }
-          parser_unget(parser);
-        }
-        parser_unget(parser);
-      }
+    tree t;
+
+    /* end of file check */
+    if (token_class(parser_get_token(parser)) == tok_eof)
+      break;
+    else
       parser_unget(parser);
-    }
-    parser_unget(parser);
     
-    tree_list_append(instrs, handle_filter(parser));
-   
+    /* \end{eqcode} check */
+    if (is_end(parser))
+      break;
+
+    t = handle_filter (parser);
+
+    if (t == error_mark_node)
+        continue;      
+    
+    tree_list_append(instrs, t);
+
     if(parser_expect_tval(parser, tv_endl))
       parser_get_token(parser);
+
   }
-  
   return make_function(name, args, arg_types, ret, instrs);
 
 error:
@@ -1608,7 +1628,7 @@ handle_filter (struct parser * parser)
   
   return ret;
 error:
-  parser_forward_tval(parser, tv_rbrace);
+  parser_get_until_tval(parser, tv_rbrace);
   free_tree(ret);
   free_tree(ids);
   free_tree(gen);
