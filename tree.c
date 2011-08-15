@@ -108,6 +108,14 @@ make_tree (enum tree_code code)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_unary_expr_node));
+      else if (code == RETURN_EXPR)
+        ret = (tree) malloc (size = sizeof (struct tree_return_node));
+      else if (code == MATRIX_EXPR)
+        ret = (tree) malloc (size = sizeof (struct tree_matrix_node));
+      else if (code == VECTOR_EXPR)
+        ret = (tree) malloc (size = sizeof (struct tree_vector_node));
+      else if (code == GENAR_EXPR)
+        ret = (tree) malloc (size = sizeof (struct tree_genar_node));
       else if (code == CIRCUMFLEX)
         ret = (tree) malloc (size = sizeof (struct tree_circumflex_node));
       else if (code == FUNCTION_CALL)
@@ -309,7 +317,7 @@ make_string_cst_str (const char * value)
   tree t;
   
   assert (value != NULL, 0);
-
+  
   t = make_tree (STRING_CST);
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
@@ -410,6 +418,47 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
   TREE_OPERAND_SET (t, 1, rhs);
   if (lhs != NULL)
     TREE_LOCATION (t) = TREE_LOCATION (lhs);
+  return t;
+}
+
+tree
+make_matrix (tree format, tree list, struct location loc)
+{
+  tree t;
+  t = make_tree (MATRIX_EXPR);
+  TREE_OPERAND_SET (t, 0, format);
+  TREE_OPERAND_SET (t, 1, list);
+  TREE_LOCATION (t) = loc;
+  return t;
+}
+
+tree
+make_vector (tree list, struct location loc)
+{
+  tree t;
+  t = make_tree (VECTOR_EXPR);
+  TREE_OPERAND_SET (t, 0, list);
+  TREE_LOCATION (t) = loc;
+  return t;
+}
+
+tree
+make_genar (tree a, tree b, struct location loc)
+{
+  tree t; 
+  t = make_tree (GENAR_EXPR);
+  TREE_OPERAND_SET (t, 0, a);
+  TREE_OPERAND_SET (t, 1, b);
+  TREE_LOCATION (t) = loc;
+  return t;
+}
+
+tree
+make_return (tree a, struct location loc)
+{
+  tree t = make_tree (RETURN_EXPR);
+  TREE_OPERAND_SET (t, 0, a);
+  TREE_LOCATION (t) = loc;
   return t;
 }
 

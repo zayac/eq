@@ -112,6 +112,9 @@ DEF_TREE_CODE (FILTER_EXPR, "filter_expr", tcl_expression, 2)
 /* Assignment.  */
 DEF_TREE_CODE (ASSIGN_EXPR, "assign_expr", tcl_expression, 2)
 
+/* Declaration */
+DEF_TREE_CODE (DECLARE_EXPR, "declare_expr", tcl_expression, 2)
+
 /* Arithmetic.  */
 DEF_TREE_CODE (PLUS_EXPR, "plus_expr", tcl_expression, 2)
 DEF_TREE_CODE (MINUS_EXPR, "minus_expr", tcl_expression, 2)
@@ -145,3 +148,16 @@ DEF_TREE_CODE (SRIGHT_EXPR, "sright_expr", tcl_expression, 2)
 DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2)
 DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2)
 DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2)
+
+/* Matrix */
+DEF_TREE_CODE (MATRIX_EXPR, "matrix_expr", tcl_expression, 2)
+
+/* Vector */
+DEF_TREE_CODE (VECTOR_EXPR, "vector_expr", tcl_expression, 1)
+
+/* Gen Array */
+DEF_TREE_CODE (GENAR_EXPR, "genar_expr", tcl_expression ,2)
+
+/* Return */
+DEF_TREE_CODE (RETURN_EXPR, "return_expr", tcl_expression, 1)
+

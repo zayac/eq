@@ -99,7 +99,7 @@ extern int warning_count;
 
 
 #define TOKEN_KIND(a, b) a,
-#define KEYWORD(a, b, c) tv_ ## a,
+#define KEYWORD(a, b, c, d) tv_ ## a,
 enum token_kind
 {
 #include "token_kind.def"
@@ -126,6 +126,7 @@ struct token
 {
     struct location loc;
     enum token_class tok_class;
+    bool uses_buf;
     union {
         char *cval;
         enum token_kind tval;
@@ -155,6 +156,7 @@ struct lexer
 
 extern const char *  token_class_name[];
 extern const char *  token_kind_name[];
+extern const bool    is_token_id[];
 
 #define token_kind_as_string(tkind) token_kind_name[(int) tkind]
 #define token_value(tok)            (tok)->value.tval
@@ -167,6 +169,7 @@ __BEGIN_DECLS
 
 bool lexer_init (struct lexer *, const char *);
 bool lexer_finalize (struct lexer *);
+bool is_id (struct token *);
 struct token *  lexer_get_token (struct lexer *);
 void token_free (struct token *);
 void token_print (struct token *);

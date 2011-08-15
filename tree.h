@@ -181,6 +181,30 @@ struct tree_type_node
   tree shape;
 };
 
+struct tree_matrix_node
+{
+  struct tree_base base;
+  tree operands[2];
+};
+
+struct tree_vector_node
+{
+  struct tree_base base;
+  tree operands[1];
+};
+
+struct tree_genar_node
+{
+  struct tree_base base;
+  tree operands[2];
+};
+
+struct tree_return_node
+{
+  struct tree_base base;
+  tree operands[1];
+};
+
 union tree_node
 {
   struct tree_base                  base;
@@ -200,6 +224,10 @@ union tree_node
   struct tree_stmt_list_node        stmt_list_node;
   struct tree_circumflex_node       circumflex_node; 
   struct tree_function_call_node    function_call_node;
+  struct tree_matrix_node           matrix_node;
+  struct tree_vector_node           vector_node;
+  struct tree_genar_node            genar_node;
+  struct tree_return_node           return_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
 
@@ -262,6 +290,14 @@ get_tree_operand (tree node, int idx)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         return node->unary_expr_node.operands[idx];
+      else if (code == RETURN_EXPR)
+        return node->return_node.operands[idx];
+      else if (code == MATRIX_EXPR)
+        return node->matrix_node.operands[idx];
+      else if (code == VECTOR_EXPR)
+        return node->vector_node.operands[idx];
+      else if (code == GENAR_EXPR)
+        return node->genar_node.operands[idx];
       else if (code == CIRCUMFLEX)
         return node->circumflex_node.operands[idx];
       else if (code == FUNCTION_CALL)
@@ -300,6 +336,14 @@ set_tree_operand (tree node, int idx, tree value)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         node->unary_expr_node.operands[idx] = value;
+      else if (code == RETURN_EXPR)
+        node->unary_expr_node.operands[idx] = value;
+      else if (code == MATRIX_EXPR)
+        node->matrix_node.operands[idx] = value;
+      else if (code == VECTOR_EXPR)
+        node->vector_node.operands[idx] = value;
+      else if (code == GENAR_EXPR)
+        node->genar_node.operands[idx] = value;
       else if (code == CIRCUMFLEX)
         node->circumflex_node.operands[idx] = value;
       else if (code == FUNCTION_CALL)
@@ -370,6 +414,10 @@ tree make_function(tree, tree, tree, tree, tree);
 tree make_type (enum tree_code);
 tree make_binary_op (enum tree_code, tree, tree);
 tree make_unary_op (enum tree_code, tree);
+tree make_matrix (tree, tree, struct location);
+tree make_vector (tree, struct location);
+tree make_genar (tree, tree, struct location);
+tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
 void free_list (tree);

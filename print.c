@@ -213,7 +213,8 @@ print_expression (FILE *f, tree exp)
           case XOR_EXPR: opcode = "\\oplus"; break;
           case SRIGHT_EXPR: opcode = "\\ll"; break;
           case SLEFT_EXPR: opcode = "\\gg"; break;
-          case ASSIGN_EXPR: opcode = "="; break;
+          case ASSIGN_EXPR: opcode = "\\gets"; break;
+          case DECLARE_EXPR: opcode = "\\in"; break;
           case LOWER: opcode = "_"; break;
           case GENERATOR: opcode = ":"; break;
           default:

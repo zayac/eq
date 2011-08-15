@@ -21,7 +21,7 @@
 #include "expand.h"
 
 #define TOKEN_KIND(a, b) b,
-#define KEYWORD(a, b, c) c,
+#define KEYWORD(a, b, c, d) d,
 const char *token_kind_name[] = 
 {
 #include "token_kind.def"
@@ -30,8 +30,15 @@ const char *token_kind_name[] =
 #undef TOKEN_KIND
 #undef KEYWORD
 
-#define KEYWORD(a, b, c) tok_ ## b,
+#define KEYWORD(a, b, c, d) tok_ ## b,
 const enum token_class keyword_type[] = 
+{
+#include "keywords.def"
+};
+#undef KEYWORD
+
+#define KEYWORD(a, b, c, d) c,
+const bool is_token_id[] = 
 {
 #include "keywords.def"
 };
@@ -211,6 +218,7 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
   buffer_add_char(buf, &index, size, 0);
 
   search = kw_bsearch (*buf, keywords, keywords_length);
+
   if (search != keywords_length)
     {
       if (*buf)
@@ -498,9 +506,8 @@ return_token:
   
   if (buf != NULL)
     tok->value.cval = buf;
-
+  
   tok->loc = loc;
-
   return tok;
 }
 
