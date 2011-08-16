@@ -169,7 +169,7 @@ __BEGIN_DECLS
 
 bool lexer_init (struct lexer *, const char *);
 bool lexer_finalize (struct lexer *);
-bool is_id (struct token *);
+bool is_id (struct token *, bool);
 struct token *  lexer_get_token (struct lexer *);
 void token_free (struct token *);
 void token_print (struct token *);

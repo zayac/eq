@@ -348,7 +348,7 @@ tree
 make_identifier_tok (struct token *tok)
 {
    tree t;
-   assert (token_class (tok) == tok_id, 
+   assert (is_id (tok, false), 
            "attempt to build identifier from %s", 
            token_class_as_string (token_class (tok)));
 

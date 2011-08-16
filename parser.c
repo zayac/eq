@@ -67,7 +67,7 @@ bool parser_expect_tval (struct parser *, enum token_kind);
 bool parser_expect_tclass (struct parser *, enum token_class);
 bool parser_init (struct parser *, struct lexer *);
 bool parser_finalize (struct parser *);
-bool is_id (struct token *);
+bool is_id (struct token *, bool);
 tree handle_type (struct parser *);
 tree handle_ext_type (struct parser *);
 tree handle_list (struct parser *, tree (*)(struct parser*), enum token_kind);
@@ -386,14 +386,18 @@ parser_finalize (struct parser *parser)
 
 /* Check either token is a valid id */
 bool
-is_id (struct token * tok)
+is_id (struct token * tok, bool error)
 {
+  int ret = false;
   if (token_class (tok) == tok_id)
     return true;
   if (token_class (tok) == tok_keyword)
-    return is_token_id [ (int) tok->value.tval ];
-
-  return false;
+  {
+    ret =  is_token_id [ (int) (tok->value.tval - tv_boolean)];
+  }
+  if (error && !ret)
+    error_loc (token_location (tok), "unexpected token `%s` ", token_as_string (tok));
+  return ret;
 }
 
 /*
@@ -445,10 +449,10 @@ tree
 handle_ext_type (struct parser * parser)
 {
   struct token * tok;
-
+    
   tree t = handle_type (parser);
   tree dim, shape;
-
+  
   tok = parser_get_token(parser);
   if (token_value(tok) != tv_circumflex)
   {
@@ -465,7 +469,7 @@ handle_ext_type (struct parser * parser)
     goto error_shift;
   else
     TREE_TYPE_DIM(t) = dim;
-  
+ 
   if(!(tok = parser_forward_tval(parser, tv_rbrace)))
     goto error_shift;
 
@@ -508,7 +512,7 @@ handle_id (struct parser * parser)
   struct token * tok;
   tree t;
 
-  if(!(tok = parser_forward_tclass(parser, tok_id)))
+  if (!is_id (tok = parser_get_token (parser), true))
     return error_mark_node;
   else
     t = make_identifier_tok ( tok);
@@ -528,7 +532,7 @@ handle_idx (struct parser* parser)
     
   tok = parser_get_token (parser);
   
-  if (token_class(tok) == tok_id) 
+  if (is_id (tok, false)) 
     t = make_identifier_tok (tok);
   else if (token_class(tok) == tok_number)
     t = make_integer_tok (tok);
@@ -740,7 +744,7 @@ handle_function ( struct parser * parser )
   if (!(tok = parser_forward_tval(parser, tv_lbrace)))
     goto error;
 
-  if (!(tok = parser_forward_tclass(parser, tok_id)))
+  if (!is_id (tok = parser_get_token (parser), true))
     goto error;
   else
   {
@@ -792,6 +796,7 @@ handle_function ( struct parser * parser )
     goto error;
 
   ret = handle_ext_type(parser);
+
   if(ret == NULL || ret == error_mark_node)
     goto error;
 
@@ -860,7 +865,7 @@ handle_function_call (struct parser* parser)
 {
   tree t = NULL, args = NULL;
   struct token * tok;
-
+  
   if (!(tok = parser_forward_tval(parser, tv_call)))
     goto error;
 
@@ -869,11 +874,11 @@ handle_function_call (struct parser* parser)
 
   t = make_tree (FUNCTION_CALL);
 
-  if (!(tok = parser_forward_tclass(parser, tok_id)))
+  if (!is_id (tok = parser_get_token (parser), true))
     goto error;
   else
     TREE_OPERAND_SET(t, 0, make_identifier_tok (tok));
-
+  
   if(!(tok = parser_forward_tval(parser, tv_rbrace)))
     goto error;
   if(!(tok = parser_forward_tval(parser, tv_lbrace)))
@@ -881,7 +886,7 @@ handle_function_call (struct parser* parser)
  
   TREE_OPERAND_SET(t, 1, NULL);
   tok = parser_get_token(parser);
-  if(token_class(tok) == tok_id || token_class(tok) == tok_number)
+  if (is_id (tok, false) || token_class(tok) == tok_number)
   {
     parser_unget (parser);
     args = handle_idx_or_idx_list (parser);
@@ -984,7 +989,7 @@ handle_linear (struct parser* parser)
   tree id;
   struct token* tok;
 
-  if (!(token_class(tok = parser_get_token (parser)) == tok_id))
+  if (!is_id (tok = parser_get_token (parser), false))
   {
     if(token_class(tok) != tok_number)
       return error_mark_node;
@@ -1473,8 +1478,7 @@ handle_sexpr_op (struct parser * parser)
   if (prefix)
     tok = parser_get_token (parser);
 
-
-  if (token_class(tok) == tok_number || token_class(tok) == tok_id || token_value(tok) == tv_frac || token_value(tok) == tv_dfrac)
+  if (token_class(tok) == tok_number || is_id (tok, false) || token_value(tok) == tv_frac || token_value(tok) == tv_dfrac)
   {
     parser_unget (parser);
     t1 = handle_idx(parser);
@@ -1580,7 +1584,7 @@ handle_filter_op (struct parser * parser)
 {
   tree id = NULL, pow = NULL, ret = NULL;
   struct token * tok;
-  if (!(tok = parser_forward_tclass(parser, tok_id)))
+  if (!is_id ( tok = parser_get_token (parser), true))
     goto error;
   else
     id = make_identifier_tok (tok);
@@ -1592,7 +1596,7 @@ handle_filter_op (struct parser * parser)
   if(!parser_forward_tval(parser, tv_lsquare))
     goto error;
 
-  if(!(tok = parser_forward_tclass(parser, tok_id)))
+  if (!is_id ( tok = parser_get_token (parser), true))
     goto error;
   else
     pow = make_identifier_tok (tok);
@@ -1684,8 +1688,13 @@ handle_matrix (struct parser * parser)
     goto shift;
   if(!parser_forward_tval (parser, tv_lbrace))
     goto shift;
-  if(!parser_expect_tclass (parser, tok_id))
+
+  if (!is_id ( parser_get_token (parser), true))
+  {
+    parser_unget (parser);
     goto shift;
+  }
+  parser_unget (parser);
 
   format = make_identifier_tok(parser_get_token(parser));
 
@@ -1924,9 +1933,14 @@ tree handle_assign (struct parser * parser)
 {
   tree id = NULL, expr = NULL;
 
-  if (!parser_expect_tclass (parser, tok_id))
+  if (!is_id ( parser_get_token (parser), true))
+  {
+    parser_unget (parser);
     goto error;
-  
+  }
+
+  parser_unget (parser);
+
   id = make_identifier_tok (parser_get_token (parser));
 
   if (!parser_forward_tval (parser, tv_gets))
@@ -1950,10 +1964,14 @@ tree handle_declare (struct parser * parser)
 {
   tree id = NULL, type = NULL;
   
-  if (!parser_expect_tclass (parser, tok_id))
+  if (!is_id ( parser_get_token (parser), true))
+  {
+    parser_unget (parser);
     goto error;
-    
+  }
   
+  parser_unget (parser);
+
   id = make_identifier_tok (parser_get_token (parser));
 
   if (!parser_forward_tval (parser, tv_in))
@@ -1982,7 +2000,7 @@ handle_instr ( struct parser * parser)
     parser_unget (parser);
     return handle_return (parser);
   }
-  else if (token_class(tok) == tok_id)
+  else if ( is_id (tok, false))
   {
     if (token_value (tok = parser_get_token (parser)) == tv_gets)
     {
