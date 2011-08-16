@@ -57,22 +57,28 @@
 
 \newcommand{\BnfInstrList}{
 \bHead{instr\_list}
-  \bStar{instr \bToken{\bs endl}}
+  \bStar{instr \bToken{\bs lend}}
 \bEnd
 }
 
 \newcommand{\BnfInstr}{
 \bHead{instr}
-  definition \bOr
-  declaration \bOr
+  assign \bOr
+  declare \bOr
   with\_loop \bOr
   return
 \bEnd
 }
 
-\newcommand{\BnfDefinition}{
-\bHead{definition}
-  \bPlus{idx} expr
+\newcommand{\BnfAssign}{
+\bHead{assign}
+  \bSpecial{id} \bToken{\bs gets} expr
+\bEnd
+}
+
+\newcommand{\BnfDeclare}{
+\bHead{declare}
+  \bSpecial{id} \bToken{\bs in} ext\_type
 \bEnd
 }
 
@@ -122,13 +128,13 @@
   \bToken{\bs filter} \bSymb{\{} \bSpecial{id} \bSymb{\^} \bSpecial{\{}
   \bSymb{[} \bSpecial{id} \bSymb{]} \bSpecial{\}} \bSkip \bStar{\bSymb{,}
   \bSpecial{id} \bSymb{\^} \bSpecial{\{} \bSymb{[} \bSpecial{id} \bSymb{]}
-  \bSpecial{\}}} \bSkip \bSymb{|} condition \bSymb{\}}
+  \bSpecial{\}}} \bSkip \bSymb{|} generator \bSymb{\}}
 \bEnd
 }
 
 \newcommand{\BnfGenArray}{
 \bHead{genarray}
- \bToken{\bs genar} \bToken{\bs limits} \bSymb{\^} \bSymb{\{} expr \bSymb{\}}
+ \bToken{\bs genar} \bToken{\bs limits} \bSymb{\^} \bSymb{\{} sexpr \bSymb{\}}
  \bSymb{(} sexpr \bSymb{)}
 \bEnd
 }
@@ -136,7 +142,7 @@
 \newcommand{\BnfVector}{
 \bHead{vector}
   \bToken{\bs begin} \bSymb{\{} \bToken{tvector} \bSymb{\}} \bSkip
-  \bPlus{sexpr\bToken{\bs endl}} \bSkip
+  \bPlus{sexpr\bToken{\bs lend}} \bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{tvector} \bSymb{\}}
 \bEnd
 }
@@ -144,8 +150,8 @@
 \newcommand{\BnfMatrix}{
 \bHead{matrix}
   \bToken{\bs begin} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}\bSymb{\{}
-  \bPlus{ \bSpecial{id} } \bSymb{\}} \bSkip
-  \bPlus{sexpr \bStar{ sexpr \bSymb{\&}} \bToken{\bs endl}} \bSkip
+  \bSpecial{id} \bSymb{\}} \bSkip
+  \bPlus{sexpr \bStar{ \bSymb{\&} sexpr } \bToken{\bs lend}} \bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}
 \bEnd
 }
@@ -162,24 +168,17 @@
 
 \newcommand{\BnfWithLoop}{
 \bHead{with\_loop}
-  with\_loop\_wbr \bOr
-  with\_loop\_wobr
+  \bSpecial{id} \bSymb{|} generator \bToken {\bs gets}
+  \bAlt {expr} {with\_loop\_cases}
 \bEnd
 }
 
-\newcommand{\BnfWithLoopWBr}{
-\bHead{with\_loop\_wbr}
-  idx \bSymb{|} condition \bSymb{=} \bSkip
+\newcommand{\BnfWithLoopCases}{
+\bHead{with\_loop\_cases}
   \bToken{\bs begin} \bSymb{\{} \bToken{cases} \bSymb{\}} \bSkip
-  \bPlus{expr \bSymb{\&} condition} \bSkip
+  \bPlus{expr \bSymb{\&} generator} \bSkip
   \bPlus{expr \bSymb{\&} \bToken{\bs otherwise}}\bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{cases} \bSymb{\}}
-\bEnd
-}
-
-\newcommand{\BnfWithLoopWOBr}{
-\bHead{with\_loop\_wobr}
-  idx \bSymb{|} condition \bSymb{=} expr
 \bEnd
 }
 
@@ -189,8 +188,8 @@
 \bEnd
 }
 
-\newcommand{\BnfCondition}{
-\bHead{condition}
+\newcommand{\BnfGenerator}{
+\bHead{generator}
   \bToken{\bs forall} \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id} } \bOr
   \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id}} \bSymb{:} sexpr \bPlus{comp
   sexpr} \bSkip \bStar{set\_op sexpr \bPlus{comp sexpr}}

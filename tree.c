@@ -108,6 +108,8 @@ make_tree (enum tree_code code)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_unary_expr_node));
+      else if (code == WITH_LOOP_EXPR)
+        ret = (tree) malloc (size = sizeof (struct tree_with_loop_node));
       else if (code == RETURN_EXPR)
         ret = (tree) malloc (size = sizeof (struct tree_return_node));
       else if (code == MATRIX_EXPR)
@@ -118,6 +120,8 @@ make_tree (enum tree_code code)
         ret = (tree) malloc (size = sizeof (struct tree_genar_node));
       else if (code == CIRCUMFLEX)
         ret = (tree) malloc (size = sizeof (struct tree_circumflex_node));
+      else if (code == OTHERWISE_EXPR)
+        ret = (tree) malloc (size = sizeof (struct tree_otherwise_node));
       else if (code == FUNCTION_CALL)
         ret = (tree) malloc (size = sizeof (struct tree_function_call_node));
       else if (code == COND_EXPR)
@@ -459,6 +463,18 @@ make_return (tree a, struct location loc)
   tree t = make_tree (RETURN_EXPR);
   TREE_OPERAND_SET (t, 0, a);
   TREE_LOCATION (t) = loc;
+  return t;
+}
+
+tree
+make_with_loop (tree idx, tree cond, tree expr, bool flag)
+{
+  tree t = make_tree (WITH_LOOP_EXPR);
+  TREE_OPERAND_SET (t, 0, idx);
+  TREE_OPERAND_SET (t, 1, cond);
+  TREE_OPERAND_SET (t, 2, expr);
+  t->with_loop_node.is_multirule = flag;
+  TREE_LOCATION (t) = TREE_LOCATION (idx);
   return t;
 }
 

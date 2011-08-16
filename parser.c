@@ -94,6 +94,9 @@ tree handle_return (struct parser *);
 tree handle_assign (struct parser *);
 tree handle_declare (struct parser *);
 tree handle_instr (struct parser *);
+tree handle_with_loop (struct parser *);
+tree handle_with_loop_cases (struct parser *);
+
 int parse(struct parser *);
 
 /* Get one token from the lexer or from the token buffer.
@@ -698,13 +701,13 @@ error:
 }
 
 bool
-is_end (struct parser * parser)
+is_end (struct parser * parser, enum token_kind tok)
 {
   if (token_value(parser_get_token(parser)) == tv_end)
   {
     if(token_value(parser_get_token(parser)) == tv_lbrace)
     {
-      if(token_value(parser_get_token(parser)) == tv_eqcode)
+      if(token_value(parser_get_token(parser)) == tok)
       {
         if(token_value(parser_get_token(parser)) == tv_rbrace)
         {
@@ -816,20 +819,20 @@ handle_function ( struct parser * parser )
       parser_unget(parser);
     
     /* \end{eqcode} check */
-    if (is_end(parser))
+    if (is_end(parser, tv_eqcode))
       break;
 
     t = handle_instr (parser);
 
     if (t == error_mark_node)
     {
-      parser_get_until_tval (parser, tv_endl);
+      parser_get_until_tval (parser, tv_lend);
       continue;      
     }
 
     tree_list_append(instrs, t);
 
-    if(parser_expect_tval(parser, tv_endl))
+    if(parser_expect_tval(parser, tv_lend))
       parser_get_token(parser);
 
   }
@@ -1665,7 +1668,7 @@ error:
 /*
   matrix:
   \begin { tmatrix } { id }
-    [ sexpr [ & sexpr ]* \endl ]+
+    [ sexpr [ & sexpr ]* \lend ]+
   \end { tmatrix }
 */
 tree
@@ -1707,7 +1710,7 @@ handle_matrix (struct parser * parser)
   {
     t = handle_list(parser, handle_sexpr, tv_delimiter);
     tree_list_append(list, t);
-  } while(token_value(tok = parser_get_token (parser)) == tv_endl);
+  } while(token_value(tok = parser_get_token (parser)) == tv_lend);
   
   if(token_value(tok) != tv_end)
     goto error;
@@ -1743,7 +1746,7 @@ error:
 /*
   vector:
   \begin { tvector }
-    [ sexpr \endl ]+
+    [ sexpr \lendl ]+
   \end { tvector }
 */
 tree
@@ -1770,7 +1773,7 @@ handle_vector (struct parser * parser)
   {
     t = handle_sexpr(parser);
     tree_list_append(list, t);
-  } while(token_value(tok = parser_get_token (parser)) == tv_endl);
+  } while(token_value(tok = parser_get_token (parser)) == tv_lend);
   
   if(token_value(tok) != tv_end)
     goto error;
@@ -1898,9 +1901,10 @@ handle_expr (struct parser * parser)
   return:
   \return { expr }
 */
-tree handle_return (struct parser * parser)
+tree 
+handle_return (struct parser * parser)
 {
-  tree t;
+  tree t, ret;
   struct token * tok;
   struct location loc;
 
@@ -1917,8 +1921,8 @@ tree handle_return (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
-  return make_return (t, loc);
-
+  ret =  make_return (t, loc);
+  return ret;
 shift:
   parser_get_until_tval (parser, tv_rbrace);
 error:
@@ -2014,11 +2018,124 @@ handle_instr ( struct parser * parser)
       parser_unget (parser);
       return handle_declare (parser);
     }
+    else if (token_value (tok) == tv_vertical)
+    {
+      parser_unget (parser);
+      parser_unget (parser);
+      return handle_with_loop (parser);
+    }
     else 
       parser_unget (parser);
   }
   
   error_loc (token_location (tok), "unexpected token `%s` ", token_as_string (tok));
+  return error_mark_node;
+}
+
+/*
+  with_loop:
+  idx | condition \gets ( expr | with_loop_cases )
+*/
+tree 
+handle_with_loop (struct parser * parser)
+{
+  tree t = NULL, idx = NULL, cond = NULL, expr = NULL;
+  
+  idx = handle_idx (parser); 
+  if (idx == NULL || idx == error_mark_node)
+    goto error;
+
+  if (!parser_forward_tval (parser, tv_vertical))
+    goto error;
+
+  cond = handle_generator (parser);
+  if (cond == NULL || cond == error_mark_node)
+    goto error;
+  
+  if (!parser_forward_tval (parser, tv_gets))
+    goto error;
+
+  if (token_value (parser_get_token (parser)) != tv_begin)
+  {
+    parser_unget (parser);
+    expr = handle_expr (parser);
+    if (cond == NULL || cond == error_mark_node)
+      goto error;
+    t = make_with_loop (idx, cond, expr, false);
+  }
+  else
+  {
+    parser_unget (parser);
+    expr = handle_with_loop_cases (parser);
+    t = make_with_loop (idx, cond, expr, true);
+  }
+  return t;
+error:
+  free_tree (idx);
+  free_tree (cond);
+  free_tree (expr);
+  free_tree (t);
+  return error_mark_node;
+}
+
+/*
+  with_loop_cases:
+*/
+tree
+handle_with_loop_cases (struct parser * parser)
+{
+  tree list = NULL, expr = NULL, gen = NULL;
+
+  if (!parser_forward_tval (parser, tv_begin))
+    goto error;
+  if (!parser_forward_tval (parser, tv_lbrace))
+    goto error;
+  if (!parser_forward_tval (parser, tv_cases))
+    goto error;
+  if (!parser_forward_tval (parser, tv_rbrace))
+    goto error;
+
+  list = make_tree_list();
+  while (true)
+  {
+    expr = handle_expr (parser);
+  
+    if (expr == NULL || expr == error_mark_node)
+      goto error;
+
+    if (!parser_forward_tval (parser, tv_delimiter))
+      goto error;
+    
+    if (token_value (parser_get_token (parser)) == tv_otherwise)
+    {
+      gen = make_tree (OTHERWISE_EXPR);
+    
+      if (token_value(parser_get_token (parser)) != tv_lend)
+        parser_unget (parser);
+      
+      tree_list_append (list, make_binary_op (CASE_EXPR, expr, gen));
+      break;
+    }
+    else
+    {
+      parser_unget (parser);
+      gen = handle_generator(parser);
+
+      if (!parser_forward_tval (parser, tv_lend))
+        goto error;
+      tree_list_append (list, make_binary_op (CASE_EXPR, expr, gen));
+    }
+  }
+  
+  if (is_end (parser, tv_cases))
+  {
+    return list;
+  }
+
+error:
+  free_tree (list);
+  free_tree (gen);
+  free_tree (expr);
   return error_mark_node;
 }
 
@@ -2034,6 +2151,7 @@ parse (struct parser *parser)
     {
       parser_unget(parser);
       tree t = handle_function(parser);
+      
       if (t != NULL)
         tree_list_append(function_list, t);
     }

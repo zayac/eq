@@ -190,9 +190,44 @@ print_expression (FILE *f, tree exp)
     case NOT_EXPR:
       fprintf (f, " \\lnot ");
       return print_expression (f, TREE_OPERAND (exp, 0));
+    case RETURN_EXPR:
+      fprintf (f, " \\return { ");
+      print_expression (f, TREE_OPERAND (exp, 0));
+      return fprintf(f, " } ");
     case FORALL:
       fprintf (f, "\\forall ");
       return print_expression(f, TREE_OPERAND (exp, 0));
+    case WITH_LOOP_EXPR:
+      {
+        struct tree_list_element *  tle;
+        print_expression (f, TREE_OPERAND (exp, 0));
+        fprintf(f, " | ");
+        print_expression (f, TREE_OPERAND (exp, 1));
+        fprintf(f, " = ");
+        if (exp->with_loop_node.is_multirule)
+        {
+          fprintf(f, "\n\\begin { cases }\n");
+          TAILQ_FOREACH (tle, &TREE_LIST_QUEUE (TREE_OPERAND (exp, 2)), entries)
+          {
+            fprintf(f, "\t");
+            print_expression (f, tle->element);
+            if (TAILQ_NEXT (tle, entries))
+              fprintf (f, " \\endl \n");
+            else
+              fprintf (f, "\n");
+          }
+          return fprintf (f, "\\end {cases}");
+        }
+        else
+          return print_expression(f, TREE_OPERAND (exp, 2));
+      }
+    case CASE_EXPR:
+      fprintf(f, "\t");
+      print_expression (f, TREE_OPERAND (exp, 0));
+      fprintf(f, " & ");
+      return print_expression (f, TREE_OPERAND (exp, 1));
+    case OTHERWISE_EXPR:
+      return fprintf(f, "\\otherwise");
     default:
       {
         const char *opcode;

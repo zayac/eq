@@ -199,10 +199,22 @@ struct tree_genar_node
   tree operands[2];
 };
 
+struct tree_with_loop_node
+{
+  struct tree_base base;
+  bool is_multirule;
+  tree operands[3];
+};
+
 struct tree_return_node
 {
   struct tree_base base;
   tree operands[1];
+};
+
+struct tree_otherwise_node
+{
+  struct tree_base base;
 };
 
 union tree_node
@@ -228,6 +240,8 @@ union tree_node
   struct tree_vector_node           vector_node;
   struct tree_genar_node            genar_node;
   struct tree_return_node           return_node;
+  struct tree_with_loop_node        with_loop_node;
+  struct tree_otherwise_node        otherwise_node;
   /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
 };
 
@@ -290,6 +304,8 @@ get_tree_operand (tree node, int idx)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         return node->unary_expr_node.operands[idx];
+      else if (code == WITH_LOOP_EXPR)
+        return node->with_loop_node.operands[idx];
       else if (code == RETURN_EXPR)
         return node->return_node.operands[idx];
       else if (code == MATRIX_EXPR)
@@ -336,8 +352,10 @@ set_tree_operand (tree node, int idx, tree value)
     case tcl_expression:
       if (code == UMINUS_EXPR || code == NOT_EXPR)
         node->unary_expr_node.operands[idx] = value;
+      else if (code == WITH_LOOP_EXPR)
+        node->with_loop_node.operands[idx] = value;
       else if (code == RETURN_EXPR)
-        node->unary_expr_node.operands[idx] = value;
+        node->return_node.operands[idx] = value;
       else if (code == MATRIX_EXPR)
         node->matrix_node.operands[idx] = value;
       else if (code == VECTOR_EXPR)
@@ -417,6 +435,7 @@ tree make_unary_op (enum tree_code, tree);
 tree make_matrix (tree, tree, struct location);
 tree make_vector (tree, struct location);
 tree make_genar (tree, tree, struct location);
+tree make_with_loop (tree, tree, tree, bool);
 tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
