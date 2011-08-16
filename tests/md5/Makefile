@@ -14,27 +14,28 @@
 
 all: makepdf
 
+MV := mv
 CPP := cpp
 CPPFLAGS := -P
 CPPINPUT := md5.tex
 CPPOUTPUT := md5.prep.tex
-PDFOUTPUT := $(CPPOUTPUT:.tex=.pdf)
+PDFOUTPUT := $(CPPINPUT:.tex=.pdf)
 TOPDF := pdflatex
+LATEXINC := TEXINPUTS=./../share:
+
 
 # Any PDF viewer
 VIEWER := evince
 
 clean:
-	rm $(CPPOUTPUT)
-	rm $(CPPOUTPUT:.tex=.aux)
-	rm $(CPPOUTPUT:.tex=.log)
-	rm $(PDFOUTPUT)
+	$(RM) *.aux *.log *.pdf $(CPPOUTPUT)
 
 preprocess:
 	$(CPP) $(CPPFLAGS) $(CPPINPUT) > $(CPPOUTPUT)
 
 makepdf: preprocess
-	 $(TOPDF) $(CPPOUTPUT)
+	 $(LATEXINC) $(TOPDF) $(CPPOUTPUT)
+	 $(MV) $(CPPOUTPUT:.tex=.pdf) $(PDFOUTPUT)
 
 view: makepdf
 	$(VIEWER) $(PDFOUTPUT)
