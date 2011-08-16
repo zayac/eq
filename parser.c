@@ -91,11 +91,13 @@ tree handle_vector (struct parser *);
 tree handle_genarray (struct parser *);
 tree handle_expr (struct parser *);
 tree handle_return (struct parser *);
-tree handle_assign (struct parser *);
-tree handle_declare (struct parser *);
+tree handle_assign (struct parser *, tree);
+tree handle_declare (struct parser *, tree);
 tree handle_instr (struct parser *);
-tree handle_with_loop (struct parser *);
+tree handle_with_loop (struct parser *, tree);
 tree handle_with_loop_cases (struct parser *);
+tree handle_numx (struct parser *);
+tree handle_idx_numx (struct parser *);
 
 int parse(struct parser *);
 
@@ -524,8 +526,7 @@ handle_id (struct parser * parser)
 
 /*
  * idx:
- * ( divide | <num> | <id> [ upper ] [ lower ] )
- * TODO: lower is not being parsed at the moment
+ * <id> [ upper ] [ lower ]
  */
 tree
 handle_idx (struct parser* parser)
@@ -537,17 +538,9 @@ handle_idx (struct parser* parser)
   
   if (is_id (tok, false)) 
     t = make_identifier_tok (tok);
-  else if (token_class(tok) == tok_number)
-    t = make_integer_tok (tok);
-  else if (   token_value(tok) == tv_frac 
-           || token_value(tok) == tv_dfrac)
-  {
-    parser_unget(parser);
-    t = handle_divide (parser);
-  }
   else 
     return error_mark_node;
-
+  
   tok = parser_get_token(parser);
 
   if (token_value(tok) == tv_circumflex)
@@ -567,6 +560,7 @@ handle_idx (struct parser* parser)
 
 
   tok = parser_get_token(parser); 
+  
   if (token_value(tok) == tv_lower_index)
   { 
     parser_unget(parser);
@@ -688,7 +682,6 @@ handle_lower (struct parser* parser)
     parser_unget(parser);
     goto error;
   }
-
   return lower;
 
 error_shift:
@@ -892,7 +885,7 @@ handle_function_call (struct parser* parser)
   if (is_id (tok, false) || token_class(tok) == tok_number)
   {
     parser_unget (parser);
-    args = handle_idx_or_idx_list (parser);
+    args = handle_list (parser, handle_idx_numx, tv_comma);
     if (args != NULL && args != error_mark_node)
       TREE_OPERAND_SET(t, 1, args);     
     else
@@ -1457,7 +1450,7 @@ out:
 
 /*
  * sexpr_op:
- * [ (\lnot | - ) ] ( <idx> | function_call )
+ * [ (\lnot | - ) ] ( idx_numx | function_call )
  */
 
 tree
@@ -1484,7 +1477,7 @@ handle_sexpr_op (struct parser * parser)
   if (token_class(tok) == tok_number || is_id (tok, false) || token_value(tok) == tv_frac || token_value(tok) == tv_dfrac)
   {
     parser_unget (parser);
-    t1 = handle_idx(parser);
+    t1 = handle_idx_numx(parser);
   }
   else if (token_value (tok) == tv_call)
   {
@@ -1931,21 +1924,17 @@ error:
 
 /*
   assign:
-  <id> \gets expr
+  idx \gets expr
 */
-tree handle_assign (struct parser * parser)
+tree 
+handle_assign (struct parser * parser, tree prefix_id)
 {
   tree id = NULL, expr = NULL;
-
-  if (!is_id ( parser_get_token (parser), true))
-  {
-    parser_unget (parser);
-    goto error;
-  }
-
-  parser_unget (parser);
-
-  id = make_identifier_tok (parser_get_token (parser));
+  
+  if (prefix_id == NULL)
+    id = handle_idx (parser);
+  else
+    id = prefix_id;
 
   if (!parser_forward_tval (parser, tv_gets))
     goto error;
@@ -1962,21 +1951,16 @@ error:
 
 /*
   declare:
-  <id> \in expr
+  idx \in expr
 */
-tree handle_declare (struct parser * parser)
+tree handle_declare (struct parser * parser, tree prefix_id)
 {
   tree id = NULL, type = NULL;
   
-  if (!is_id ( parser_get_token (parser), true))
-  {
-    parser_unget (parser);
-    goto error;
-  }
-  
-  parser_unget (parser);
-
-  id = make_identifier_tok (parser_get_token (parser));
+  if (prefix_id == NULL)
+    id = handle_idx (parser);
+  else
+    id = prefix_id;
 
   if (!parser_forward_tval (parser, tv_in))
     goto error;
@@ -1998,7 +1982,8 @@ tree
 handle_instr ( struct parser * parser)
 {
   struct token * tok;
-  
+  tree idx;
+
   if (token_value (tok = parser_get_token (parser)) == tv_return)
   {
     parser_unget (parser);
@@ -2006,23 +1991,24 @@ handle_instr ( struct parser * parser)
   }
   else if ( is_id (tok, false))
   {
+    parser_unget (parser);
+    idx = handle_idx (parser);
+    
+  
     if (token_value (tok = parser_get_token (parser)) == tv_gets)
     {
       parser_unget (parser);
-      parser_unget (parser);
-      return handle_assign (parser);
+      return handle_assign (parser, idx);
     }
     else if (token_value (tok) == tv_in)
     {
       parser_unget (parser);
-      parser_unget (parser);
-      return handle_declare (parser);
+      return handle_declare (parser, idx);
     }
     else if (token_value (tok) == tv_vertical)
     {
       parser_unget (parser);
-      parser_unget (parser);
-      return handle_with_loop (parser);
+      return handle_with_loop (parser, idx);
     }
     else 
       parser_unget (parser);
@@ -2037,13 +2023,18 @@ handle_instr ( struct parser * parser)
   idx | condition \gets ( expr | with_loop_cases )
 */
 tree 
-handle_with_loop (struct parser * parser)
+handle_with_loop (struct parser * parser, tree prefix_id)
 {
   tree t = NULL, idx = NULL, cond = NULL, expr = NULL;
   
-  idx = handle_idx (parser); 
-  if (idx == NULL || idx == error_mark_node)
-    goto error;
+  if (prefix_id == NULL)
+  {
+    idx = handle_idx (parser); 
+    if (idx == NULL || idx == error_mark_node)
+      goto error;
+  }
+  else
+    idx = prefix_id; 
 
   if (!parser_forward_tval (parser, tv_vertical))
     goto error;
@@ -2138,6 +2129,52 @@ error:
   free_tree (expr);
   return error_mark_node;
 }
+
+/*
+  numx:
+  num | divide
+*/
+tree handle_numx (struct parser * parser)
+{
+  struct token * tok;
+  tree t;
+
+  tok = parser_get_token (parser);
+  if (token_class(tok) == tok_number)
+  {
+    t = make_integer_tok (tok);
+  }else
+  {
+    parser_unget(parser);
+    t = handle_divide (parser);
+  }
+  
+  return t;
+}
+
+/*
+  idx_numx:
+  numx | idx
+*/
+tree handle_idx_numx (struct parser * parser)
+{
+  tree t;
+  struct token* tok;
+  tok = parser_get_token (parser);
+ 
+  if (is_id (tok, false)) 
+  {
+    parser_unget (parser);
+    t = handle_idx (parser);
+  }
+  else
+  {
+    parser_unget (parser);
+    t = handle_numx (parser);
+  }
+  return t;
+}
+
 
 /* Top level function to parse the file.  */
 int
