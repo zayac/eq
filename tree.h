@@ -26,11 +26,10 @@ enum tree_code_class
   tcl_misc,
   tcl_type,
   tcl_constant,
-  tcl_statement,
   tcl_expression
 };
 
-#define DEF_TREE_CODE(code, desc, class, operands) code,
+#define DEF_TREE_CODE(code, desc, class, operands, typed) code,
 enum tree_code 
 {
 #include "tree.def"
@@ -40,14 +39,16 @@ enum tree_code
 extern enum tree_code_class tree_code_type[];
 #define TREE_CODE_CLASS(code) tree_code_type[(int) (code)]
 
-extern enum tree_code_class tree_code_operand[];
+extern unsigned char tree_code_operand[];
 #define TREE_CODE_OPERANDS(code) tree_code_operand[(int) (code)]
 
+extern bool tree_code_typed[];
+#define TREE_CODE_TYPED(code) tree_code_typed[(int) (code)]
 extern const char * tree_code_name[];
 #define TREE_CODE_NAME(code) tree_code_name[(int) (code)]
 
-union tree_node;
-typedef union tree_node *tree;
+struct tree_node;
+typedef struct tree_node *tree;
 
 /* Basic information each node should have.  */
 struct tree_base
@@ -75,44 +76,19 @@ TAILQ_HEAD (tree_list, tree_list_element);
 
 struct tree_list_node
 {
-  //struct tree_base base;
   struct tree_type_base typed;
   struct tree_list list;
 };
 
-struct tree_function_type_node
-{
-  struct tree_base base;
-  tree name;
-  tree operands[2];
-};
-
-struct tree_function_node
-{
-  struct tree_base base;
-  tree name;
-  tree args;
-  tree args_types;
-  tree ret;
-  tree instr_list;
-};
 
 struct tree_circumflex_node
 {
   struct tree_base base;
-  tree operands[2];
   bool is_index;
-};
-
-struct tree_function_call_node
-{
-  struct tree_base base;
-  tree operands[2];
 };
 
 struct tree_string_cst_node
 {
-  //struct tree_base base;
   struct tree_type_base typed;
   int  length;
   char *  value;
@@ -120,129 +96,29 @@ struct tree_string_cst_node
 
 struct tree_int_cst_node
 {
-  //struct tree_base base;
   struct tree_type_base typed;
   int value;
 };
 
-struct tree_list_cst_node
-{
-  //struct tree_base base;
-  struct tree_type_base typed;
-  int size;
-  tree elements;
-};
-
 struct tree_identifier_node
 {
-  //struct tree_base base;
   struct tree_type_base typed;
   tree name;
 };
 
-struct tree_unary_expr_node
+struct tree_node
 {
-  //struct tree_base base;
-  struct tree_type_base typed;
-  tree operands[1];
-};
-
-struct tree_binary_expr_node
-{
-  //struct tree_base base;
-  struct tree_type_base typed;
-  tree operands[2];
-};
-
-struct tree_trinary_expr_node
-{
-  //struct tree_base base;
-  struct tree_type_base typed;
-  tree operands[3];
-};
-
-struct tree_three_op_stmt_node
-{
-  struct tree_base base;
-  tree operands[3];
-};
-
-struct tree_stmt_list_node
-{
-  struct tree_base base;
-  tree stmts;
-  tree vars;
-};
-
-struct tree_type_node
-{
-  struct tree_base base;
-  tree dim;
-  tree shape;
-};
-
-struct tree_matrix_node
-{
-  struct tree_base base;
-  tree operands[2];
-};
-
-struct tree_vector_node
-{
-  struct tree_base base;
-  tree operands[1];
-};
-
-struct tree_genar_node
-{
-  struct tree_base base;
-  tree operands[2];
-};
-
-struct tree_with_loop_node
-{
-  struct tree_base base;
-  bool is_multirule;
-  tree operands[3];
-};
-
-struct tree_return_node
-{
-  struct tree_base base;
-  tree operands[1];
-};
-
-struct tree_otherwise_node
-{
-  struct tree_base base;
-};
-
-union tree_node
-{
-  struct tree_base                  base;
-  struct tree_type_base             typed;
-  struct tree_list_node             list_node;
-  struct tree_type_node             type_node;
-  struct tree_function_type_node    function_type_node;
-  struct tree_function_node         function_node;
-  struct tree_string_cst_node       string_cst_node;
-  struct tree_int_cst_node          int_cst_node;
-  struct tree_list_cst_node         list_cst_node;
-  struct tree_identifier_node       identifier_node;
-  struct tree_unary_expr_node       unary_expr_node;
-  struct tree_binary_expr_node      binary_expr_node;
-  struct tree_trinary_expr_node     trinary_expr_node;
-  struct tree_three_op_stmt_node    three_op_stmt_node;
-  struct tree_stmt_list_node        stmt_list_node;
-  struct tree_circumflex_node       circumflex_node; 
-  struct tree_function_call_node    function_call_node;
-  struct tree_matrix_node           matrix_node;
-  struct tree_vector_node           vector_node;
-  struct tree_genar_node            genar_node;
-  struct tree_return_node           return_node;
-  struct tree_with_loop_node        with_loop_node;
-  struct tree_otherwise_node        otherwise_node;
-  /*struct tree_one_op_stmt_node      one_op_stmt_node;*/
+  union tree_types
+  {
+    struct tree_base                  base;
+    struct tree_type_base             typed;
+    struct tree_identifier_node       identifier_node;
+    struct tree_list_node             list_node;
+    struct tree_int_cst_node          int_cst_node;
+    struct tree_string_cst_node       string_cst_node;
+    struct tree_circumflex_node       circumflex_node; 
+  } node_id;
+  tree* operands; 
 };
 
 
@@ -264,12 +140,9 @@ enum tree_global_code
 #define z_type_node         global_tree[TG_Z_TYPE]
 #define r_type_node         global_tree[TG_R_TYPE]
 
-#define TREE_CODE(node) ((enum tree_code) (node)->base.code)
-#define TREE_LOCATION(node) ((node)->base.loc)
-#define TREE_CODE_SET(node, value) ((node)->base.code = (value))
-
-#define TREE_TYPE(node) ((node)->typed.type)
-#define TREE_CONSTANT(node) ((node)->typed.is_constant)
+#define TREE_CODE(node) ((enum tree_code) (node)->node_id.base.code)
+#define TREE_LOCATION(node) ((node)->node_id.base.loc)
+#define TREE_CODE_SET(node, value) ((node)->node_id.base.code = (value))
 
 /* Checks if it is possible to access the operand number IDX
    in the node with the code CODE.  */
@@ -288,45 +161,12 @@ get_tree_operand (tree node, int idx)
   
   assert (tree_operand_in_range (code, idx), 
           "operand index out of range or no operands in the node");
-  switch (TREE_CODE_CLASS (code))
-    {
-    case tcl_misc:
-      unreachable("node `%s` of tcl_misc doesn't have operands", TREE_CODE_NAME (code));
-      break;
-    case tcl_type:
-      unreachable ("node `%s' of tcl_type do not have operands", 
-                     TREE_CODE_NAME (code));
-      break;
 
-    case tcl_statement:
-      return node->three_op_stmt_node.operands[idx];
-
-    case tcl_expression:
-      if (code == UMINUS_EXPR || code == NOT_EXPR)
-        return node->unary_expr_node.operands[idx];
-      else if (code == WITH_LOOP_EXPR)
-        return node->with_loop_node.operands[idx];
-      else if (code == RETURN_EXPR)
-        return node->return_node.operands[idx];
-      else if (code == MATRIX_EXPR)
-        return node->matrix_node.operands[idx];
-      else if (code == VECTOR_EXPR)
-        return node->vector_node.operands[idx];
-      else if (code == GENAR_EXPR)
-        return node->genar_node.operands[idx];
-      else if (code == CIRCUMFLEX)
-        return node->circumflex_node.operands[idx];
-      else if (code == FUNCTION_CALL)
-        return node->function_call_node.operands[idx];
-      else
-        return node->binary_expr_node.operands[idx];
-
-    default:  
-      unreachable ("node %s does not have operands!",
-                   TREE_CODE_NAME (code));
-    }
+  if (TREE_CODE_OPERANDS (code) > 0)
+    return node->operands[idx];
+  else
+    unreachable("node `%s` doesn't have operands", TREE_CODE_NAME (code));
 }
-
 
 static inline void
 set_tree_operand (tree node, int idx, tree value)
@@ -334,90 +174,45 @@ set_tree_operand (tree node, int idx, tree value)
   enum tree_code code = TREE_CODE (node);
   assert (tree_operand_in_range (code, idx), 
           "operand index out of range or no operands in the node");
-  switch (TREE_CODE_CLASS (code))
-    {
-    case tcl_misc:
-      unreachable ("nod `%s` of tcl_misc does not have operands",
-                    TREE_CODE_NAME (code));
-      break;
-    case tcl_type:
-      unreachable ("node `%s' of tcl_type do not have operands", 
-                     TREE_CODE_NAME (code));
-      break;
-
-    case tcl_statement:
-      node->three_op_stmt_node.operands[idx] = value;
-      break;
-
-    case tcl_expression:
-      if (code == UMINUS_EXPR || code == NOT_EXPR)
-        node->unary_expr_node.operands[idx] = value;
-      else if (code == WITH_LOOP_EXPR)
-        node->with_loop_node.operands[idx] = value;
-      else if (code == RETURN_EXPR)
-        node->return_node.operands[idx] = value;
-      else if (code == MATRIX_EXPR)
-        node->matrix_node.operands[idx] = value;
-      else if (code == VECTOR_EXPR)
-        node->vector_node.operands[idx] = value;
-      else if (code == GENAR_EXPR)
-        node->genar_node.operands[idx] = value;
-      else if (code == CIRCUMFLEX)
-        node->circumflex_node.operands[idx] = value;
-      else if (code == FUNCTION_CALL)
-        node->function_call_node.operands[idx] = value;
-      else
-        node->binary_expr_node.operands[idx] = value;
-      break;
-
-    default:  
-      unreachable ("node %s does not have operands",
-                   TREE_CODE_NAME (code));
-    }
+  
+  if (TREE_CODE_OPERANDS (code) > 0)
+    node->operands[idx] = value;
+  else
+    unreachable ("nod `%s` does not have operands", TREE_CODE_NAME (code));
 }
-
 
 #define TREE_OPERAND(node, i) get_tree_operand ((node), (i))
 #define TREE_OPERAND_SET(node, i, value) set_tree_operand ((node), (i), (value))
 
-#define TREE_INTEGER_CST(node) ((node)->int_cst_node.value)
-#define TREE_STRING_CST(node) ((node)->string_cst_node.value)
-#define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
-#define TREE_LIST_CST(node) ((node)->list_cst_node.elements)
-#define TREE_LIST_CST_LENGTH(node) ((node)->list_cst_node.length)
+#define TREE_INTEGER_CST(node) ((node)->node_id.int_cst_node.value)
+#define TREE_STRING_CST(node) ((node)->node_id.string_cst_node.value)
+#define TREE_STRING_CST_LENGTH(node) ((node)->node_id.string_cst_node.length)
 
-#define TREE_LIST_QUEUE(node) ((node)->list_node.list)
+#define TREE_LIST_QUEUE(node) ((node)->node_id.list_node.list)
 
-#define TREE_ID_NAME(node) ((node)->identifier_node.name)
+#define TREE_ID_NAME(node) ((node)->node_id.identifier_node.name)
 
-#define TREE_STMT_LIST_STMTS(node) ((node)->stmt_list_node.stmts)
-#define TREE_STMT_LIST_VARS(node) ((node)->stmt_list_node.vars)
+#define TREE_TYPE_DIM(node) ((node)->operands[0])
+#define TREE_TYPE_SHAPE(node) ((node)->operands[1])
 
-#define TREE_FUNC_TYPE_NAME(node) ((node)->function_type_node.name)
+#define TREE_FUNC_NAME(node) ((node)->operands[0])
+#define TREE_FUNC_ARGS(node) ((node)->operands[1])
+#define TREE_FUNC_ARGS_TYPES(node) ((node)->operands[2])
+#define TREE_FUNC_RET_TYPE(node) ((node)->operands[3])
+#define TREE_FUNC_INSTRS(node) ((node)->operands[4])
 
-#define TREE_FUNC_NAME(node) ((node)->function_node.name)
-#define TREE_FUNC_ARGS(node) ((node)->function_node.args)
-#define TREE_FUNC_ARGS_TYPES(node) ((node)->function_node.args_types)
-#define TREE_FUNC_RET_TYPE(node) ((node)->function_node.ret)
-#define TREE_FUNC_INSTRS(node) ((node)->function_node.instr_list)
-
-
-#define TREE_TYPE_DIM(node) ((node)->type_node.dim)
-#define TREE_TYPE_SHAPE(node) ((node)->type_node.shape)
-
+#define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->node_id.circumflex_node.is_index)
 static inline bool
 is_assignment_operator (enum token_kind tk)
 {
   switch (tk)
     {
-    case tv_eq:
+    case tv_gets:
       return true;
     default:
       return false;
     }
 }
-
-
 
 tree make_tree (enum tree_code);
 void free_tree (tree);
@@ -428,10 +223,10 @@ tree make_identifier_tok (struct token *);
 tree make_integer_tok (struct token *);
 tree make_tree_list ();
 bool tree_list_append (tree, tree);
-tree make_function(tree, tree, tree, tree, tree);
+tree make_function(tree, tree, tree, tree, tree, struct location);
 tree make_type (enum tree_code);
 tree make_binary_op (enum tree_code, tree, tree);
-tree make_unary_op (enum tree_code, tree);
+tree make_unary_op (enum tree_code, tree, struct location);
 tree make_matrix (tree, tree, struct location);
 tree make_vector (tree, struct location);
 tree make_genar (tree, tree, struct location);

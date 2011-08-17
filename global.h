@@ -21,10 +21,8 @@
 
 /* Structure to store a list of user-defined types
    FIXME it should be a hash-table!  */
-extern tree type_list;
 extern tree constant_list;
 extern tree function_list;
-extern tree function_proto_list;
 
 extern int error_count;
 extern int warning_count;
@@ -33,16 +31,11 @@ void init_global ();
 void finalize_global ();
 void init_global_tree ();
 void finalize_global_tree ();
-void init_function_protos ();
-
 
 tree type_defined (const char *  name);
 tree add_user_type (tree type);
 tree function_exists (const char *);
-tree expand_exists (const char *);
 tree constant_exists (const char *);
 bool type_lists_eq (tree, tree);
-tree make_function_proto_args (int, va_list);
-
 
 #endif /* __GLOBAL_H__  */

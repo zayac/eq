@@ -13,11 +13,25 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
-/* This list should be sorted alphabetically to allow
-   bsearch work correctly. */
+/*
+   The description of token attributes:
+   
+   1. Token name 
+      In compiler a token will be represented as this name with "tv_" prefix.
+   
+   2. Token type
+      All types are interpreted differently. For instance, all whitespaces
+      are ignored by lexer.
 
-/* FIXME Write a description for the colums. What the hell is third column?  */
+   3. ID status
+      Indicates if a token can be used as an identifier.
 
+   4. Lexem
+      Lexical representation of a token.
+  
+   This list should be sorted alphabetically by lexems to allow
+   bsearch work correctly. 
+*/
 KEYWORD (boolean,   keyword,    false,		"B")
 KEYWORD (natural,   keyword,    false,		"N")
 KEYWORD (real,      keyword,    false,		"R")

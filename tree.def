@@ -14,158 +14,87 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 
-/* Tree nodes are defined in this file.  */
-
-DEF_TREE_CODE (FUNCTION, "function_node", tcl_misc, 0)
+/* Tree nodes are defined in this file.  
+   1. node identifier
+   2. string representation
+   3. node class
+   4. number of arguments
+   5. if has a type property
+*/
+DEF_TREE_CODE (FUNCTION, "function_node", tcl_misc, 5, false)
 
 /* Used when freeing atomic objects.  */
-DEF_TREE_CODE (EMPTY_MARK, "error_mark", tcl_misc, 0)
+DEF_TREE_CODE (EMPTY_MARK, "error_mark", tcl_misc, 0, false)
 
 /* Used to return an error.  */
-DEF_TREE_CODE (ERROR_MARK, "error_mark", tcl_misc, 0)
+DEF_TREE_CODE (ERROR_MARK, "error_mark", tcl_misc, 0, false)
 
 /* Represents any variable declared.  */
-DEF_TREE_CODE (IDENTIFIER, "identifier_node", tcl_misc, 0)
+DEF_TREE_CODE (IDENTIFIER, "identifier_node", tcl_misc, 0, true)
 
 /* List of trees, used to represent list of statements
    or list of arguments in the function call.  */
-DEF_TREE_CODE (LIST, "tree_list", tcl_expression, 0)
-
-/* List of statements. Also stores variables used inside
-   that list.  */
-DEF_TREE_CODE (STMT_LIST, "statement_list", tcl_misc, 0)
+DEF_TREE_CODE (LIST, "tree_list", tcl_expression, 0, false)
 
 /* Type nodes.  */
-
-DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 0)
-DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 0)
-DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 0)
-DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 0)
+DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 2, true)
+DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 2, true)
+DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 2, true)
+DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 2, true)
 
 /* Constant nodes.  */
 
 /* Integer constant.  */
-DEF_TREE_CODE (INTEGER_CST, "integer_cst", tcl_constant, 0)
+DEF_TREE_CODE (INTEGER_CST, "integer_cst", tcl_constant, 0, true)
 
 /* String constant.  */
-DEF_TREE_CODE (STRING_CST, "string_cst", tcl_constant, 0)
+DEF_TREE_CODE (STRING_CST, "string_cst", tcl_constant, 0, true)
 
-/* List constant.  */
-DEF_TREE_CODE (LIST_CST, "list_cst", tcl_constant, 0)
-
-
-
-/* Statements.  */
-
-/* Expand statemnt: expand fun=<string> args=[<list>] <stmts>  
-   Tree operands:
-        1 -- <string>
-        2 -- <list>
-        3 -- <stmts>  */
-DEF_TREE_CODE (EXPAND_STMT, "expand_stmt", tcl_statement, 3)
-
-/* Function statement: function <string> ( <list> ) <stmts>
-        1 -- <string>
-        2 -- <list>
-        3 -- <stmts>  */
-DEF_TREE_CODE (FUNCTION_STMT, "function_stmt", tcl_statement, 3)
-
-/* Function prototype: -- currently no syntactical support for user,
-   we use it for the typechecking.
-        1 -- <string> name
-        2 -- <ret type> type
-        3 -- <arg types> type, type, ...  */
-DEF_TREE_CODE (FUNCTION_PROTO, "function_proto", tcl_statement, 3)
-
-/* If statement: if <cond> <stmt1> (else stmt2)?
-   Tree operands: 
-        1 -- <cond>
-        2 -- <stmt1>
-        3 -- <stmt2>  */
-DEF_TREE_CODE (IF_STMT, "if_stmt", tcl_statement, 3)
-
-/* For statement: for <varlist> in <expr> <stmt>
-   Tree operands:
-        1 -- <varlist>
-        2 -- <expr>
-        3 -- <stmt>  */
-DEF_TREE_CODE (FOR_STMT, "for_stmt", tcl_statement, 3)
-
-DEF_TREE_CODE (GENERATOR, "generator_expr", tcl_expression, 2)
-
-
-/* Expressions.  */
-
-/* Function call expression: <function> (<list> */
-DEF_TREE_CODE (CALL_EXPR, "call_expr", tcl_expression, 2)
-
-/* C function call: ccall <string> (<list>)  */
-DEF_TREE_CODE (C_CALL_EXPR, "ccall_expr", tcl_expression, 2)
-
-/* Conditional expression <cond> ? <x> : <y>
-   NOTE this is an expression with 3 operators!  */
-DEF_TREE_CODE (COND_EXPR, "cond_expr", tcl_expression, 3)
-
-/* Filter */
-DEF_TREE_CODE (FILTER_EXPR, "filter_expr", tcl_expression, 2)
-
-/* Assignment.  */
-DEF_TREE_CODE (ASSIGN_EXPR, "assign_expr", tcl_expression, 2)
-
-/* Declaration */
-DEF_TREE_CODE (DECLARE_EXPR, "declare_expr", tcl_expression, 2)
+/* Expressions */
+DEF_TREE_CODE (GENERATOR, "generator_expr", tcl_expression, 2, false)
+DEF_TREE_CODE (FILTER_EXPR, "filter_expr", tcl_expression, 2, false)
+DEF_TREE_CODE (ASSIGN_EXPR, "assign_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (DECLARE_EXPR, "declare_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (GENAR_EXPR, "genar_expr", tcl_expression ,2, true)
+DEF_TREE_CODE (RETURN_EXPR, "return_expr", tcl_expression, 1, false)
+DEF_TREE_CODE (FUNCTION_CALL, "function_call_node", tcl_expression, 2, true)
 
 /* Arithmetic.  */
-DEF_TREE_CODE (PLUS_EXPR, "plus_expr", tcl_expression, 2)
-DEF_TREE_CODE (MINUS_EXPR, "minus_expr", tcl_expression, 2)
-DEF_TREE_CODE (DIV_EXPR, "div_expr", tcl_expression, 2)
-DEF_TREE_CODE (MULT_EXPR, "mult_expr", tcl_expression, 2)
-DEF_TREE_CODE (MOD_EXPR, "mod_exp", tcl_expression, 2)
+DEF_TREE_CODE (PLUS_EXPR, "plus_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (MINUS_EXPR, "minus_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (DIV_EXPR, "div_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (MULT_EXPR, "mult_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (MOD_EXPR, "mod_exp", tcl_expression, 2, true)
 
-DEF_TREE_CODE (UMINUS_EXPR, "uminus_exp", tcl_expression, 1)
-DEF_TREE_CODE (NOT_EXPR, "not_expr", tcl_expression, 1)
-DEF_TREE_CODE (FORALL, "forall_node", tcl_expression, 1)
+DEF_TREE_CODE (UMINUS_EXPR, "uminus_exp", tcl_expression, 1, true)
+DEF_TREE_CODE (NOT_EXPR, "not_expr", tcl_expression, 1, true)
+DEF_TREE_CODE (FORALL, "forall_node", tcl_expression, 1, true)
 
-DEF_TREE_CODE (LOWER, "lower_expr", tcl_expression, 2)
-DEF_TREE_CODE (CIRCUMFLEX, "circumflex_node", tcl_expression,  2)
-
-/* Function call */
-DEF_TREE_CODE (FUNCTION_CALL, "function_call_node", tcl_expression, 2)
+DEF_TREE_CODE (LOWER, "lower_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (CIRCUMFLEX, "circumflex_node", tcl_expression,  2, true)
 
 /* Comparison  */
-DEF_TREE_CODE (EQ_EXPR, "eq_expr", tcl_expression, 2)
-DEF_TREE_CODE (GT_EXPR, "gt_expr", tcl_expression, 2)
-DEF_TREE_CODE (LT_EXPR, "lt_expr", tcl_expression, 2)
-DEF_TREE_CODE (GE_EXPR, "ge_expr", tcl_expression, 2)
-DEF_TREE_CODE (LE_EXPR, "le_expr", tcl_expression, 2)
-DEF_TREE_CODE (NE_EXPR, "ne_expr", tcl_expression, 2)
+DEF_TREE_CODE (EQ_EXPR, "eq_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (GT_EXPR, "gt_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (LT_EXPR, "lt_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (GE_EXPR, "ge_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (LE_EXPR, "le_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (NE_EXPR, "ne_expr", tcl_expression, 2, true)
 
 /* Shifts */
-DEF_TREE_CODE (SLEFT_EXPR, "sleft_expr", tcl_expression, 2)
-DEF_TREE_CODE (SRIGHT_EXPR, "sright_expr", tcl_expression, 2)
+DEF_TREE_CODE (SLEFT_EXPR, "sleft_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (SRIGHT_EXPR, "sright_expr", tcl_expression, 2, true)
 
-/* Truth expressions || && !  */
-DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2)
-DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2)
-DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2)
+/* Boolean expressions  */
+DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2, true)
 
-/* Matrix */
-DEF_TREE_CODE (MATRIX_EXPR, "matrix_expr", tcl_expression, 2)
+/* Array expressions */
+DEF_TREE_CODE (MATRIX_EXPR, "matrix_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (VECTOR_EXPR, "vector_expr", tcl_expression, 1, true)
 
-/* Vector */
-DEF_TREE_CODE (VECTOR_EXPR, "vector_expr", tcl_expression, 1)
-
-/* Gen Array */
-DEF_TREE_CODE (GENAR_EXPR, "genar_expr", tcl_expression ,2)
-
-/* Return */
-DEF_TREE_CODE (RETURN_EXPR, "return_expr", tcl_expression, 1)
-
-/* With Loop */
-DEF_TREE_CODE (WITH_LOOP_EXPR, "with_loop_expr", tcl_expression, 3)
-
-/* With Loop case */
-DEF_TREE_CODE (CASE_EXPR, "case_expr", tcl_expression, 2)
-
-/* Otherwise */
-DEF_TREE_CODE (OTHERWISE_EXPR, "otherwise_expr", tcl_expression, 0)
+/* Related to With Loop */
+DEF_TREE_CODE (WITH_LOOP_EXPR, "with_loop_expr", tcl_expression, 3, false)
+DEF_TREE_CODE (CASE_EXPR, "case_expr", tcl_expression, 2, false)
+DEF_TREE_CODE (OTHERWISE_EXPR, "otherwise_expr", tcl_expression, 0, false)

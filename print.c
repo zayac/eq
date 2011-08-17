@@ -86,10 +86,10 @@ print_expression (FILE *f, tree exp)
         {
           print_expression(f, TREE_OPERAND(exp, 0));
           fprintf(f, "^{");
-          if(exp->circumflex_node.is_index)
+          if(TREE_CIRCUMFLEX_INDEX_STATUS (exp))
             fprintf(f, "[");
           print_expression(f, TREE_OPERAND(exp, 1));
-          if(exp->circumflex_node.is_index)
+          if(TREE_CIRCUMFLEX_INDEX_STATUS (exp))
             fprintf(f, "]");
           return fprintf(f, "}");
         }
@@ -110,13 +110,13 @@ print_expression (FILE *f, tree exp)
           fprintf(f, "}\n");
 
           level += 2;
-	  TAILQ_FOREACH (tle, &TREE_LIST_QUEUE(TREE_FUNC_INSTRS(exp)), entries)
+	        TAILQ_FOREACH (tle, &TREE_LIST_QUEUE(TREE_FUNC_INSTRS(exp)), entries)
           {
-	    indent (f, level);
+	          indent (f, level);
             print_expression(f, tle->element);
             fprintf(f," \\endl\n");
           }
-	  level -= 2;
+	        level -= 2;
           return fprintf(f, "\\end{eqcode}\n");
         }
     case B_TYPE:
@@ -157,18 +157,6 @@ print_expression (FILE *f, tree exp)
           print_expression (f, TREE_OPERAND(exp, 1));
           return fprintf(f, " } ");
         }
-    case COND_EXPR:
-      {
-        tree cond = TREE_OPERAND (exp, 0);
-        tree if_expr = TREE_OPERAND (exp, 1);
-        tree else_expr = TREE_OPERAND (exp, 2);
-
-        print_expression (f, cond);
-        fprintf (f, " ? ");
-        print_expression (f, if_expr);
-        fprintf (f, " : ");
-        return print_expression (f, else_expr);
-      }
     case UMINUS_EXPR:
       fprintf (f, " -");
       return print_expression (f, TREE_OPERAND (exp, 0));
@@ -189,26 +177,19 @@ print_expression (FILE *f, tree exp)
         fprintf(f, " | ");
         print_expression (f, TREE_OPERAND (exp, 1));
         fprintf(f, " = ");
-        if (exp->with_loop_node.is_multirule)
-        {
-          fprintf(f, "\\begin{cases}\n");
-	  level += 2;
-          TAILQ_FOREACH (tle, &TREE_LIST_QUEUE (TREE_OPERAND (exp, 2)), entries)
-          {
-            indent (f, level);
-	    print_expression (f, tle->element);
-            if (TAILQ_NEXT (tle, entries))
-              fprintf (f, " \\endl \n");
-            else
-              fprintf (f, "\n");
-          }
-	  level -= 2;
-          indent (f, level);
-	  fprintf (f, "\\end {cases}");
-	  return 0;
-        }
+        fprintf(f, "\\begin{cases}\n");
+	      level += 2;
+        TAILQ_FOREACH (tle, &TREE_LIST_QUEUE (TREE_OPERAND (exp, 2)), entries)
+        indent (f, level);
+	      print_expression (f, tle->element);
+        if (TAILQ_NEXT (tle, entries))
+          fprintf (f, " \\endl \n");
         else
-          return print_expression(f, TREE_OPERAND (exp, 2));
+          fprintf (f, "\n");
+        level -= 2;
+        indent (f, level);
+	      fprintf (f, "\\end {cases}");
+	      return 0;
       }
     case CASE_EXPR:
       print_expression (f, TREE_OPERAND (exp, 0));
@@ -253,236 +234,4 @@ print_expression (FILE *f, tree exp)
 	return ret;
       }
     }
-}
-
-int
-print_statement (FILE *f, tree stmt)
-{
-  assert (stmt != NULL
-          && (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_statement
-              || TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_expression
-              || TREE_CODE (stmt) == IDENTIFIER), 0);
-
-  if (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_expression
-      || TREE_CODE (stmt) == IDENTIFIER)
-    return print_expression (f, stmt);
-  else if (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_statement)
-    switch (TREE_CODE (stmt))
-      {
-      case FOR_STMT:
-        fprintf (f, "for ");
-        print_expression (f, TREE_OPERAND (stmt, 0));
-        fprintf (f, " in ");
-        print_expression (f, TREE_OPERAND (stmt, 1));
-        fprintf (f, "\n");
-        return print_stmt_list (f, TREE_OPERAND (stmt, 2));
-
-      case IF_STMT:
-        fprintf (f, "if ");
-        print_expression (f, TREE_OPERAND (stmt, 0));
-        fprintf (f, "\n");
-        print_stmt_list (f, TREE_OPERAND (stmt, 1));
-        if (TREE_OPERAND (stmt, 2) != NULL)
-          {
-            fprintf (f, " else \n");
-            print_stmt_list (f, TREE_OPERAND (stmt, 2));
-          }
-        return 0;
-      default:
-        unreachable (0);
-      }
-  else
-    unreachable (0);
-
-  return -1;
-}
-
-int
-print_stmt_list (FILE *f, tree stmt)
-{
-  struct tree_list_element *  tle;
-  tree lst;
-
-  assert (stmt != NULL
-          && TREE_CODE (stmt) == STMT_LIST, 0);
-
-  lst = TREE_STMT_LIST_STMTS (stmt);
-  assert (TREE_CODE (lst) == LIST, 0);
-  
-  indent (f, level);
-  fprintf (f, "{\n");
-  level++;
-  TAILQ_FOREACH (tle, &TREE_LIST_QUEUE (lst), entries)
-    {
-      indent (f, level);
-      print_statement (f, tle->element);
-      fprintf (f, ";\n");
-    }
-  level--;
-  indent (f, level);
-  fprintf (f, "}");
-
-  return 0;
-}
-/*
-int
-print_types (FILE *f)
-{
-  struct tree_list_element *  ptr;
-
-  if (type_list == NULL)
-    return 0;
-    
-  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (type_list), entries)
-    {
-      if (ptr->element == integer_type_node || ptr->element == string_type_node
-          || ptr->element == list_type_node || ptr->element == void_type_node)
-        continue;
-      fprintf (f, "type ");
-      print_expression (f, TREE_TYPE_NAME (ptr->element));
-      fprintf (f, ";\n");
-    }
-
-  return 0;
-}
-*/
-int
-print_constants (FILE *f)
-{
-  struct tree_list_element *  ptr;
-
-  if (constant_list == NULL)
-    return 0;
-    
-  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (constant_list), entries)
-    {
-      /* FIXME for the time being we have only strlist,
-         in case we would allow more constants we will
-         have to change the printing routine as well.  */
-      fprintf (f, "strlist ");
-      print_expression (f, ptr->element);
-      fprintf (f, ";\n");
-    }
-
-  return 0;
-}
-
-int
-print_functions (FILE *f)
-{
-  return print_functions_or_expands (f, t_function);
-}
-
-int
-print_expands (FILE *f)
-{
-  return print_functions_or_expands (f, t_expand);
-}
-
-int
-print_functions_or_expands (FILE *f, enum funexpand proctype)
-{
-  tree lst = function_list;
-  struct tree_list_element *  ptr;
-
-  if (lst == NULL)
-    return 0;
-
-  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (lst), entries)
-    {
-      if (proctype == t_function)
-        {
-          if (TREE_CODE (ptr->element) != FUNCTION_STMT)
-            continue;
-          print_function (f, ptr->element);
-        }
-      else if (proctype == t_expand)
-        {
-          if (TREE_CODE (ptr->element) != EXPAND_STMT)
-            continue;
-          print_expand (f, ptr->element);
-        }
-      else
-        unreachable (0);
-    }
- 
-  return 0;
-}
-
-int
-print_expand (FILE *f, tree node)
-{
-  assert (TREE_CODE (node) == EXPAND_STMT, 
-          "Cannot print node of type %s.", TREE_CODE_NAME (TREE_CODE (node)));
-
-  return print_function_or_expand (f, node, t_expand);
-}
-
-int
-print_function (FILE *f, tree node)
-{
-  assert (TREE_CODE (node) == FUNCTION_STMT, 
-          "Cannot print node of type %s.", TREE_CODE_NAME (TREE_CODE (node)));
-  return print_function_or_expand (f, node, t_function);
-}
-
-int
-print_function_or_expand (FILE *f, tree node,  enum funexpand proctype)
-{
-  if (proctype == t_expand)
-    {
-      assert (TREE_CODE (node) == EXPAND_STMT, "expand statement expected.");
-      fprintf (f, "expand ");
-    }
-  else if (proctype == t_function)
-    {
-      assert (TREE_CODE (node) == FUNCTION_STMT, "function statement expected");
-      fprintf (f, "function ");
-    }
-  else
-    unreachable (0);
-
-  fprintf (f, "name = ");
-  print_expression (f, TREE_OPERAND (node, 0));
-  fprintf (f, " args = ");
-  //print_arglist (f, TREE_OPERAND (node, 1));
-  fprintf (f, "\n");
-
-  print_stmt_list (f, TREE_OPERAND (node, 2));
-  fprintf (f, "\n");
-
-  return 0;
-}
-/*
-int
-print_arglist (FILE *f, tree node)
-{
-  struct tree_list_element *  ptr;
-  
-  assert (TREE_CODE (node) == LIST, "Not an argument list.");
-  fprintf (f, "[");
-  
-  TAILQ_FOREACH (ptr, &TREE_LIST_QUEUE (node), entries)
-    {
-      print_expression (f, TREE_TYPE_NAME (TREE_TYPE (ptr->element)));
-      fprintf (f, " ");
-      print_expression (f, ptr->element);
-      if (TAILQ_NEXT (ptr, entries))
-        fprintf (f, ", ");
-    }
- 
-  fprintf (f, "]");
-  return 0;
-}
-*/
-int
-print_all (FILE *f)
-{
-  //int type_ret = print_types (f);
-  int const_ret = print_constants (f);
-  int function_ret = print_functions (f);
-  int expand_ret = print_expands (f);
-  
-  return /*type_ret == 0 &&*/ const_ret == 0 
-         && function_ret == 0 && expand_ret == 0;
 }

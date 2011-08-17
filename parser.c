@@ -790,8 +790,11 @@ handle_function (struct parser * parser)
   tree name = NULL, args = NULL, arg_types = NULL, ret = NULL, instrs = NULL,
     t = NULL;
   struct token *tok;
-  if (token_value (parser_get_token (parser)) != tv_begin)
+  struct location loc;
+  if (token_value (tok = parser_get_token (parser)) != tv_begin)
     return NULL;
+
+  loc = token_location (tok);
   if (token_value (parser_get_token (parser)) != tv_lbrace)
     return NULL;
   if (token_value (parser_get_token (parser)) != tv_eqcode)
@@ -867,9 +870,9 @@ handle_function (struct parser * parser)
 
       /* end of file check */
       if (token_class (parser_get_token (parser)) == tok_eof)
-	break;
+	      break;
       else
-	parser_unget (parser);
+	      parser_unget (parser);
 
       /* \end{eqcode} check */
       if (is_end (parser, tv_eqcode))
@@ -877,29 +880,29 @@ handle_function (struct parser * parser)
 
       t = handle_instr (parser);
 
-      if (t == error_mark_node)
-	{
-	  parser_get_until_tval (parser, tv_lend);
-	  continue;
-	}
+      if (t == NULL || t == error_mark_node)
+	      {
+	        parser_get_until_tval (parser, tv_lend);
+	        continue;
+	      }
 
       tree_list_append (instrs, t);
 
       if (parser_expect_tval (parser, tv_lend))
-	parser_get_token (parser);
+				parser_get_token (parser);
     }
-  return make_function (name, args, arg_types, ret, instrs);
+  	return make_function (name, args, arg_types, ret, instrs, loc);
 
 error:
   while (true)
     {
       parser_get_until_tval (parser, tv_end);
       if (token_value (parser_get_token (parser)) != tv_lbrace)
-	continue;
+				continue;
       if (token_value (parser_get_token (parser)) != tv_eqcode)
-	continue;
+				continue;
       if (token_value (parser_get_token (parser)) != tv_rbrace)
-	continue;
+				continue;
       break;
     }
   free_tree (name);
@@ -1000,10 +1003,10 @@ handle_upper (struct parser * parser)
   if (!(token_value (tok = parser_get_token (parser)) == tv_lsquare))
     {
       parser_unget (parser);
-      circumflex->circumflex_node.is_index = false;
+      TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
     }
   else
-    circumflex->circumflex_node.is_index = true;
+    TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = true;
 
   t = handle_linear (parser);
   if (t == NULL || t == error_mark_node)
@@ -1011,7 +1014,7 @@ handle_upper (struct parser * parser)
   else
     TREE_OPERAND_SET (circumflex, 1, t);
 
-  if (circumflex->circumflex_node.is_index)
+  if (TREE_CIRCUMFLEX_INDEX_STATUS (circumflex))
     if (!(tok = parser_forward_tval (parser, tv_rsquare)))
       goto error_shift;
 
@@ -1526,12 +1529,12 @@ handle_sexpr_op (struct parser * parser)
 
   if (token_value (tok) == tv_minus)
     {
-      t = make_unary_op (UMINUS_EXPR, NULL);
+      t = make_unary_op (UMINUS_EXPR, NULL, token_location (tok));
       prefix = true;
     }
   else if (token_value (tok) == tv_lnot)
     {
-      t = make_unary_op (NOT_EXPR, NULL);
+      t = make_unary_op (NOT_EXPR, NULL, token_location (tok));
       prefix = true;
     }
 
@@ -1671,7 +1674,7 @@ handle_filter_op (struct parser * parser)
   ret = make_tree (CIRCUMFLEX);
   TREE_OPERAND_SET (ret, 0, id);
   TREE_OPERAND_SET (ret, 1, pow);
-  ret->circumflex_node.is_index = true;
+  TREE_CIRCUMFLEX_INDEX_STATUS (ret) = true; 
   return ret;
 
 error:
@@ -2117,11 +2120,16 @@ handle_with_loop (struct parser * parser, tree prefix_id)
 
   if (token_value (parser_get_token (parser)) != tv_begin)
     {
+      tree tlist;
       parser_unget (parser);
       expr = handle_expr (parser);
       if (cond == NULL || cond == error_mark_node)
-	goto error;
-      t = make_with_loop (idx, cond, expr, false);
+	      goto error;
+
+      tlist = make_tree_list();
+      tree_list_append (tlist, make_binary_op (CASE_EXPR, expr, make_tree
+      (OTHERWISE_EXPR)));
+      t = make_with_loop (idx, cond, tlist, false);
     }
   else
     {

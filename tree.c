@@ -19,21 +19,28 @@
 #include "tree.h"
 #include "global.h"
 
-#define DEF_TREE_CODE(code, desc, class, operands) class,
+#define DEF_TREE_CODE(code, desc, class, operands, typed) class,
 enum tree_code_class tree_code_type[] =
 {
 #include "tree.def"
 };
 #undef DEF_TREE_CODE
 
-#define DEF_TREE_CODE(code, desc, class, operands) operands,
-enum tree_code_class tree_code_operand[] =
+#define DEF_TREE_CODE(code, desc, class, operands, typed) operands,
+unsigned char tree_code_operand[] =
 {
 #include "tree.def"
 };
 #undef DEF_TREE_CODE
 
-#define DEF_TREE_CODE(code, desc, class, operands) desc,
+#define DEF_TREE_CODE(code, desc, class, operands, typed) typed,
+bool tree_code_typed[] = 
+{
+#include "tree.def"
+};
+#undef DEF_TREE_CODE
+
+#define DEF_TREE_CODE(code, desc, class, operands, typed) desc,
 const char *  tree_code_name[] =
 {
 #include "tree.def"
@@ -58,88 +65,75 @@ make_tree (enum tree_code code)
 {
   tree ret;
   size_t size;
-  //int i;
+ 
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
       if (code == IDENTIFIER)
-        ret = (tree) malloc (size = sizeof (struct tree_identifier_node));
-      else if (code == FUNCTION)
-        ret = (tree) malloc (size = sizeof (struct tree_function_node));
+        ret = (tree) malloc (size = sizeof (struct tree_identifier_node) +
+        TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       else if (code == LIST)
-        ret = (tree) malloc (size = sizeof (struct tree_list_node));
-      else if (code == STMT_LIST)
-        ret = (tree) malloc (size = sizeof (struct tree_stmt_list_node));
+        ret = (tree) malloc (size = sizeof (struct tree_list_node) + 
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       else if (code == ERROR_MARK)
         {
           warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
           return error_mark_node;
         }
-      else
-        unreachable (0);
+      else  
+        if (TREE_CODE_TYPED (code))
+          ret = (tree) malloc (size = sizeof (struct tree_type_base) + 
+            TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+        else
+          ret = (tree) malloc (size = sizeof (struct tree_base) + 
+            TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       break;
     
     case tcl_type:
-       if (code == B_TYPE || code == N_TYPE || code == Z_TYPE || code == R_TYPE)
-        ret = (tree) malloc (size = sizeof (struct tree_type_node));
+      if (TREE_CODE_TYPED (code))
+        ret = (tree) malloc (size = sizeof (struct tree_type_base) + 
+      
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       else
-        {
-          warning ("attempt to allocate standard type-node");
-          /* FIXME when type-nodes would be available, return it.  */
-          unreachable (0);
-        }
+        ret = (tree) malloc (size = sizeof (struct tree_base) + 
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       break;
 
     case tcl_constant:
       if (code == INTEGER_CST)
-        ret = (tree) malloc (size = sizeof (struct tree_int_cst_node));
+        ret = (tree) malloc (size = sizeof (struct tree_int_cst_node) + 
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       else if (code == STRING_CST)
-        ret = (tree) malloc (size = sizeof (struct tree_string_cst_node));
-      else if (code == LIST_CST)
-        ret = (tree) malloc (size = sizeof (struct tree_list_cst_node));
+        ret = (tree) malloc (size = sizeof (struct tree_string_cst_node) +
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       else
         unreachable (0);
       break;
-
-    case tcl_statement:
-      ret = (tree) malloc (size = sizeof (struct tree_three_op_stmt_node));
-      break;
-
     case tcl_expression:
-      if (code == UMINUS_EXPR || code == NOT_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_unary_expr_node));
-      else if (code == WITH_LOOP_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_with_loop_node));
-      else if (code == RETURN_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_return_node));
-      else if (code == MATRIX_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_matrix_node));
-      else if (code == VECTOR_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_vector_node));
-      else if (code == GENAR_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_genar_node));
-      else if (code == CIRCUMFLEX)
-        ret = (tree) malloc (size = sizeof (struct tree_circumflex_node));
-      else if (code == OTHERWISE_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_otherwise_node));
-      else if (code == FUNCTION_CALL)
-        ret = (tree) malloc (size = sizeof (struct tree_function_call_node));
-      else if (code == COND_EXPR)
-        ret = (tree) malloc (size = sizeof (struct tree_trinary_expr_node));
+      if (code == CIRCUMFLEX)
+        ret = (tree) malloc (size = sizeof (struct tree_circumflex_node) +
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+      else if (TREE_CODE_TYPED (code))
+        ret = (tree) malloc (size = sizeof (struct tree_type_base) + 
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       else
-        ret = (tree) malloc (size = sizeof (struct tree_binary_expr_node));
+        ret = (tree) malloc (size = sizeof (struct tree_base) + 
+          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
       break;
 
     default:
       unreachable (0);
       break;
-    }
+  }
   memset (ret, 0, size);
-  
+  if (TREE_CODE_OPERANDS (code) != 0)
+  {
+    ret->operands = (tree*) malloc (size = sizeof (tree) * TREE_CODE_OPERANDS (code));
+    printf ("-- %s %i size = %i (%i)\n", TREE_CODE_NAME(code), TREE_CODE_OPERANDS(code), size, sizeof
+    (void*));
+    memset (ret->operands, 0, size);
+  }
   TREE_CODE_SET (ret, code);
-
-  /*for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
-    TREE_OPERAND_SET (ret, i, (tree)NULL);*/
   return ret;
 }
 
@@ -242,11 +236,6 @@ free_tree (tree node)
                 }
             }
         }
-      else if (code == STMT_LIST)
-        {
-          free_tree (TREE_STMT_LIST_STMTS (node));
-          free_tree (TREE_STMT_LIST_VARS (node));
-        }
       else         
         unreachable (0);
       break;
@@ -270,13 +259,8 @@ free_tree (tree node)
             free (TREE_STRING_CST (node));
           TREE_CODE_SET (node, EMPTY_MARK);
         }
-      else if (code == LIST_CST)
-        free_tree (TREE_LIST_CST (node));
       else
         unreachable (0);
-      break;
-
-    case tcl_statement:
       break;
 
     case tcl_expression:
@@ -304,14 +288,16 @@ free_tree (tree node)
 }
 
 tree
-make_function (tree name, tree args, tree args_types, tree ret, tree instrs)
+make_function (tree name, tree args, tree args_types, tree ret, tree instrs,
+                struct location loc)
 {
   tree t = make_tree(FUNCTION);
-  TREE_FUNC_NAME(t) = name;
-  TREE_FUNC_ARGS(t) = args;
-  TREE_FUNC_ARGS_TYPES(t) = args_types;
-  TREE_FUNC_RET_TYPE(t) = ret;
-  TREE_FUNC_INSTRS(t) = instrs;
+  TREE_OPERAND_SET (t, 0, name);
+  TREE_OPERAND_SET (t, 1, args);
+  TREE_OPERAND_SET (t, 2, args_types);
+  TREE_OPERAND_SET (t, 3, ret);
+  TREE_OPERAND_SET (t, 4, instrs);
+  TREE_LOCATION (t) = loc;
   return t;
 }
 
@@ -351,15 +337,15 @@ make_string_cst_tok (struct token *tok)
 tree
 make_identifier_tok (struct token *tok)
 {
-   tree t;
-   assert (is_id (tok, false), 
+  tree t;
+  assert (is_id (tok, false), 
            "attempt to build identifier from %s", 
            token_class_as_string (token_class (tok)));
 
-   t = make_tree (IDENTIFIER);
-   TREE_ID_NAME (t) = make_string_cst_tok (tok);
-   TREE_LOCATION (t) = token_location (tok);
-   return t;
+  t = make_tree (IDENTIFIER);
+  TREE_ID_NAME (t) = make_string_cst_tok (tok);
+  TREE_LOCATION (t) = token_location (tok);
+  return t;
 }
 
 tree
@@ -370,7 +356,8 @@ make_tree_list ()
   return t;
 }
 
-tree make_integer_tok (struct token * tok)
+tree 
+make_integer_tok (struct token * tok)
   {
     tree t;
     assert (token_class (tok) == tok_number,
@@ -393,7 +380,6 @@ tree_list_append (tree list, tree elem)
   
   tel = (struct tree_list_element *) malloc (sizeof (struct tree_list_element));
   tel->element = elem;
-
   TAILQ_INSERT_TAIL (&TREE_LIST_QUEUE (list), tel, entries);
   return true;
 }
@@ -473,13 +459,12 @@ make_with_loop (tree idx, tree cond, tree expr, bool flag)
   TREE_OPERAND_SET (t, 0, idx);
   TREE_OPERAND_SET (t, 1, cond);
   TREE_OPERAND_SET (t, 2, expr);
-  t->with_loop_node.is_multirule = flag;
   TREE_LOCATION (t) = TREE_LOCATION (idx);
   return t;
 }
 
 tree
-make_unary_op (enum tree_code code, tree val)
+make_unary_op (enum tree_code code, tree val, struct location loc)
 {
   tree t;
   assert (TREE_CODE_CLASS(code) == tcl_expression
@@ -487,8 +472,7 @@ make_unary_op (enum tree_code code, tree val)
            "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, val);
-  if (val != NULL)
-    TREE_LOCATION (t) = TREE_LOCATION(val);
+  TREE_LOCATION (t) = loc;
   return t;
 
 }
@@ -503,7 +487,7 @@ make_assign (enum token_kind tk, tree lhs, tree rhs)
   //printf ("-- %s enter\n", __func__);
   switch (tk)
     {
-    case tv_eq:
+    case tv_gets:
       return make_binary_op (ASSIGN_EXPR, lhs, rhs);
     default:
       unreachable ("assignment creation failed");

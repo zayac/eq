@@ -140,11 +140,6 @@ type_lists_eq (tree tal, tree tar)
   return true;
 }
 
-void
-finalize_function_protos ()
-{
-}
-
 tree
 function_exists (const char * str)
 {
@@ -154,9 +149,6 @@ function_exists (const char * str)
 
   TAILQ_FOREACH (tl, &TREE_LIST_QUEUE (function_list), entries)
     {
-      if (TREE_CODE (tl->element) != FUNCTION_STMT)
-        continue;
-      
       if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->element, 0)), str) == 0)
         return tl->element;
     }
