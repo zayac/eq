@@ -51,6 +51,7 @@ parser_parens_zero (struct parser *parser)
     && parser->square_count == 0 && parser->brace_count == 0;
 }
 
+/* FIXME These functions should be static at some point.  */
 struct token *parser_get_token (struct parser *);
 void parser_unget (struct parser *);
 
@@ -99,6 +100,7 @@ tree handle_with_loop (struct parser *, tree);
 tree handle_with_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
+
 
 int parse (struct parser *);
 
@@ -246,7 +248,11 @@ parser_get_until_tclass (struct parser *parser, enum token_class tclass)
   return tok;
 }
 
-/* Get the next token and check if it's value  is what expected.
+/* FIXME This is a dangerous function!
+   You cannot check token_value, if you are not sure
+   taht token is not using buffer.
+   
+   Get the next token and check if it's value  is what expected.
    Function doesn't unget the token in case of the success.
    In case when unexpected value found -- print error message */
 /*struct token *
@@ -314,7 +320,11 @@ parser_token_alternative_tclass (struct parser *parser,
   return NULL;
 }
 
-/* Get the next token from two alternative valueoptions.
+/* FIXME This is a dangerous function!
+   You cannot check token_value, if you are not sure
+   taht token is not using buffer.
+   
+   Get the next token from two alternative valueoptions.
    If the token is different, return NULL
  */
 struct token *
@@ -1624,9 +1634,10 @@ error:
 }
 
 /*
- * filter_op:
- * <id> ^ { [ <id> ] }
- */
+   filter_op:
+   <id> ^ { [ <id> ] }
+
+*/
 tree
 handle_filter_op (struct parser * parser)
 {
@@ -1672,9 +1683,10 @@ error:
 }
 
 /*
- * filter:
- * \filter { <id> ^ { [ <id> ] } [ , <id> ^ { [ <id> ] } ]* | generator }
- */
+   filter:
+   \filter { <id> ^ { [ <id> ] } [ , <id> ^ { [ <id> ] } ]* | generator }
+
+*/
 tree
 handle_filter (struct parser * parser)
 {
