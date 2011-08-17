@@ -72,6 +72,7 @@ extern int warning_count;
 #define error_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "error:%d:%d: ", (int)loc.line, (int)loc.col); \
+    (void) fprintf (stderr, "[line=%i]  ", __LINE__); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++error_count; \
   } while (0)

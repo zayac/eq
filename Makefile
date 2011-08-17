@@ -1,5 +1,5 @@
 #  Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
-#											Pavel Zaichenkov <zaichenkov@gmail.com>
+#                     Pavel Zaichenkov <zaichenkov@gmail.com>
 #
 #  Permission to use, copy, modify, and distribute this software for any
 #  purpose with or without fee is hereby granted, provided that the above
@@ -15,19 +15,26 @@
 
 all: parser
 
-CFLAGS = -Wall -g -pedantic -std=c99
+CFLAGS = -Wall -g #-pedantic -std=c99
+OBJECTS = lex.o parser.o tree.o global.o print.o
+
 
 lexer: lex.c
 	$(CC) $(CFLAGS) -DLEXER_BINARY -o $@ $^
 
-parser: lex.o parser.o tree.o global.o print.o
-		$(CC) $(CFLAGS) -o $@ $^
+
+parser: $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^
+
 
 clean:
 	$(RM) *.o lexer parser
 
+
 lex.o: expand.h token_kind.def keywords.def token_class.def
-parser.o: expand.h keywords.def tree.def
-tree.o: expand.h tree.h tree.def
-global.o: global.h
+parser.o: expand.h tree.h global.h print.h
+tree.o: expand.h tree.h global.h tree.def
+global.o: expand.h tree.h global.h
 print.o: print.h expand.h tree.h
+
+expand.h: token_kind.def keywords.def token_class.def
