@@ -58,67 +58,66 @@ tree global_tree[TG_MAX];
 static tree *  atomic_trees = NULL;
 static size_t  atomic_trees_size = 0;
 static size_t  atomic_trees_idx = 0;
+UT_icd tree_icd;
 
+tree 
+tree_init (enum tree_code code, size_t * size)
+{
+	if (TREE_CODE_TYPED (code))
+	{
+		if (TREE_CODE_OPERANDS (code) > 0)
+    	return (tree) malloc (*size = sizeof (struct tree_type_base_op));
+		else
+			return(tree) malloc (*size = sizeof (struct tree_type_base));
+	}
+  else
+	{
+		if (TREE_CODE_OPERANDS (code) > 0)
+			return (tree) malloc (*size = sizeof (struct tree_base_op));
+		else
+			return (tree) malloc (*size = sizeof (struct tree_base));
+	}
+	return NULL;
+}
 
 tree
 make_tree (enum tree_code code)
 {
   tree ret;
   size_t size;
- 
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
       if (code == IDENTIFIER)
-        ret = (tree) malloc (size = sizeof (struct tree_identifier_node) +
-        TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+        ret = (tree) malloc (size = sizeof (struct tree_identifier_node));
       else if (code == LIST)
-        ret = (tree) malloc (size = sizeof (struct tree_list_node) + 
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+        ret = (tree) malloc (size = sizeof (struct tree_list_node));
       else if (code == ERROR_MARK)
         {
           warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
           return error_mark_node;
         }
       else  
-        if (TREE_CODE_TYPED (code))
-          ret = (tree) malloc (size = sizeof (struct tree_type_base) + 
-            TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
-        else
-          ret = (tree) malloc (size = sizeof (struct tree_base) + 
-            TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
-      break;
+				ret = tree_init (code, &size);
+			break;
     
     case tcl_type:
-      if (TREE_CODE_TYPED (code))
-        ret = (tree) malloc (size = sizeof (struct tree_type_base) + 
-      
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
-      else
-        ret = (tree) malloc (size = sizeof (struct tree_base) + 
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+      ret = tree_init (code, &size);
       break;
 
     case tcl_constant:
       if (code == INTEGER_CST)
-        ret = (tree) malloc (size = sizeof (struct tree_int_cst_node) + 
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
-      else if (code == STRING_CST)
-        ret = (tree) malloc (size = sizeof (struct tree_string_cst_node) +
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+        ret = (tree) malloc (size = sizeof (struct tree_int_cst_node));
+			else if (code == STRING_CST)
+        ret = (tree) malloc (size = sizeof (struct tree_string_cst_node));
       else
         unreachable (0);
       break;
     case tcl_expression:
       if (code == CIRCUMFLEX)
-        ret = (tree) malloc (size = sizeof (struct tree_circumflex_node) +
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
-      else if (TREE_CODE_TYPED (code))
-        ret = (tree) malloc (size = sizeof (struct tree_type_base) + 
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+        ret = (tree) malloc (size = sizeof (struct tree_circumflex_op_node));
       else
-        ret = (tree) malloc (size = sizeof (struct tree_base) + 
-          TREE_CODE_OPERANDS (code) != 0 ? sizeof (tree*) : 0);
+				ret = tree_init (code, &size);
       break;
 
     default:
@@ -128,10 +127,24 @@ make_tree (enum tree_code code)
   memset (ret, 0, size);
   if (TREE_CODE_OPERANDS (code) != 0)
   {
-    ret->operands = (tree*) malloc (size = sizeof (tree) * TREE_CODE_OPERANDS (code));
-    printf ("-- %s %i size = %i (%i)\n", TREE_CODE_NAME(code), TREE_CODE_OPERANDS(code), size, sizeof
-    (void*));
-    memset (ret->operands, 0, size);
+		if (code == CIRCUMFLEX)
+		{
+			ret->circumflex_op_node.operands = (tree*) malloc (size = sizeof (tree) *
+			TREE_CODE_OPERANDS (code));
+			memset (ret->circumflex_op_node.operands, 0, size);
+		}
+		else if (TREE_CODE_TYPED (code))
+		{
+			ret->typed_op.operands = (tree*) malloc (size = sizeof (tree) *
+			TREE_CODE_OPERANDS (code));
+			memset (ret->typed_op.operands, 0, size);
+		}
+		else
+		{
+			ret->base_op.operands = (tree*) malloc (size = sizeof (tree) *
+			TREE_CODE_OPERANDS (code));
+			memset (ret->base_op.operands, 0, size);
+		}
   }
   TREE_CODE_SET (ret, code);
   return ret;
@@ -218,23 +231,7 @@ free_tree (tree node)
         }
       else if (code == LIST) 
         {
-          struct tree_list_element *  ptr;
-          struct tree_list_element *  tmpptr;
-          
-          if (!TAILQ_EMPTY (&TREE_LIST_QUEUE (node)))
-            {
-              ptr = TAILQ_FIRST (&TREE_LIST_QUEUE (node));
-              while (ptr != NULL)
-                {
-                  tmpptr = TAILQ_NEXT (ptr, entries);
-                  if (ptr)
-                    {
-                      free_tree (ptr->element);
-                      free (ptr);
-                    }
-                  ptr = tmpptr;
-                }
-            }
+					utarray_free (TREE_LIST (node));
         }
       else         
         unreachable (0);
@@ -352,7 +349,7 @@ tree
 make_tree_list ()
 {
   tree t = make_tree (LIST);
-  TAILQ_INIT (&TREE_LIST_QUEUE (t));
+	utarray_new(TREE_LIST(t), &tree_icd);
   return t;
 }
 
@@ -373,14 +370,10 @@ make_integer_tok (struct token * tok)
 bool
 tree_list_append (tree list, tree elem)
 {
-  struct tree_list_element *tel;
-
   assert (TREE_CODE (list) == LIST, 
           "appending element of type `%s'", TREE_CODE_NAME (TREE_CODE (list)));
   
-  tel = (struct tree_list_element *) malloc (sizeof (struct tree_list_element));
-  tel->element = elem;
-  TAILQ_INSERT_TAIL (&TREE_LIST_QUEUE (list), tel, entries);
+  utarray_push_back (TREE_LIST (list), &elem);
   return true;
 }
 
@@ -500,7 +493,6 @@ tree
 tree_list_copy (tree lst)
 {
   tree cpy;
-  struct tree_list_element *  tel;
 
   if (lst == NULL)
     return NULL;
@@ -509,11 +501,7 @@ tree_list_copy (tree lst)
          "cannot copy list from %s", TREE_CODE_NAME (TREE_CODE (lst)));
   
   cpy = make_tree_list ();
-  TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (lst), entries)
-    {
-      tree_list_append (cpy, tel->element);
-    }
-
+	utarray_concat (TREE_LIST(cpy), TREE_LIST(lst));
   return cpy;
 }
 
@@ -524,22 +512,7 @@ tree_list_copy (tree lst)
 void
 free_list (tree lst)
 {
-  struct tree_list_element *  ptr;
-  struct tree_list_element *  tmpptr;
-  
-  if (lst == NULL)
-    return;
-
-  if (!TAILQ_EMPTY (&TREE_LIST_QUEUE (lst)))
-    {
-      ptr = TAILQ_FIRST (&TREE_LIST_QUEUE (lst));
-      while (ptr != NULL)
-        {
-          tmpptr = TAILQ_NEXT (ptr, entries);
-          if (ptr)
-            free (ptr);
-          ptr = tmpptr;
-        }
-    }
+/*
+  utarray_free (TREE_LIST (lst)); */
 }
 

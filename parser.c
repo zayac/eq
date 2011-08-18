@@ -101,7 +101,6 @@ tree handle_with_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
 
-
 int parse (struct parser *);
 
 static inline bool token_is_operator (struct token *, enum token_kind);
@@ -2256,7 +2255,7 @@ int
 parse (struct parser *parser)
 {
   struct token *tok;
-  struct tree_list_element *tle;
+  tree *tle;
 
   error_count = warning_count = 0;
   while (token_class (tok = parser_get_token (parser)) != tok_eof)
@@ -2276,16 +2275,18 @@ parse (struct parser *parser)
     }
 
   printf ("\n######### Output ########\n");
-  TAILQ_FOREACH (tle, &TREE_LIST_QUEUE (function_list), entries)
-  {
-    if (tle->element != error_mark_node)
-      {
-	print_expression (stdout, tle->element);
-	if (TAILQ_NEXT (tle, entries))
-	  printf ("\n");
-      }
-    else
-      printf ("Errors in function\n\n");
+  
+	tle = NULL;
+	while ( (tle = (tree*) utarray_next (TREE_LIST(function_list), tle))) 
+	{
+		if (*tle != error_mark_node)
+		{
+			print_expression (stdout, *tle);
+			if (utarray_next (TREE_LIST(function_list), tle) != NULL)
+				printf ("\n");
+		}
+		else
+			printf ("Errors in function\n\n");
   }
 
   return 0;

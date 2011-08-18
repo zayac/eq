@@ -26,6 +26,7 @@ extern tree function_list;
 
 extern int error_count;
 extern int warning_count;
+extern tree global_tree[];
 
 void init_global ();
 void finalize_global ();
