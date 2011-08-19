@@ -106,7 +106,7 @@ int parse (struct parser *);
 static inline bool token_is_operator (struct token *, enum token_kind);
 
 static inline bool
-token_is_operator (struct token * tok, enum token_kind tkind)
+token_is_operator (struct token *tok, enum token_kind tkind)
 {
   return token_class (tok) == tok_operator && token_value (tok) == tkind;
 }
@@ -127,7 +127,7 @@ parser_get_token (struct parser *parser)
       while (true)
 	{
 	  tok = lexer_get_token (parser->lex);
-	  if (token_class (tok) != tok_comments 
+	  if (token_class (tok) != tok_comments
 	      && token_class (tok) != tok_whitespace)
 	    break;
 	  else
@@ -496,7 +496,7 @@ handle_ext_type (struct parser * parser)
 
   tok = parser_get_token (parser);
 
-  
+
   if (token_value (tok) != tv_circumflex)
     {
       parser_unget (parser);
@@ -507,7 +507,7 @@ handle_ext_type (struct parser * parser)
      be eaten-up by the sexpr.
 
      if (!(tok = parser_forward_tval (parser, tv_lbrace)))
-      goto error_shift; */
+     goto error_shift; */
 
   dim = handle_sexpr (parser);
 
@@ -518,7 +518,7 @@ handle_ext_type (struct parser * parser)
 
   /* XXX See above comment.  
      if (!(tok = parser_forward_tval (parser, tv_rbrace)))
-       goto error_shift;  */
+     goto error_shift;  */
 
   tok = parser_get_token (parser);
 
@@ -529,7 +529,7 @@ handle_ext_type (struct parser * parser)
     }
 
   /*if (!(tok = parser_forward_tval (parser, tv_lbrace)))
-    goto error_shift;*/
+     goto error_shift; */
   tok = parser_get_token (parser);
   if (token_is_operator (tok, tv_lbrace))
     {
@@ -543,7 +543,7 @@ handle_ext_type (struct parser * parser)
   else
     {
       parser_unget (parser);
-      shape = handle_sexpr (parser); 
+      shape = handle_sexpr (parser);
     }
 
   if (shape == NULL || shape == error_mark_node)
@@ -714,12 +714,12 @@ handle_lower (struct parser * parser)
       return error_mark_node;
     }
 
-  
+
   /*if (!(tok = parser_forward_tval (parser, tv_lbrace)))
-    {
-      parser_get_until_tval (parser, tv_rbrace);
-      return error_mark_node;
-    }*/
+     {
+     parser_get_until_tval (parser, tv_rbrace);
+     return error_mark_node;
+     } */
 
   tok = parser_get_token (parser);
   if (token_is_operator (tok, tv_lbrace))
@@ -742,10 +742,10 @@ handle_lower (struct parser * parser)
     lower = make_binary_op (LOWER, NULL, t);
 
   /*if (!(tok = parser_forward_tval (parser, tv_rbrace)))
-    {
-      parser_unget (parser);
-      goto error;
-    }*/
+     {
+     parser_unget (parser);
+     goto error;
+     } */
   return lower;
 
 error_shift:
@@ -827,7 +827,6 @@ handle_function (struct parser * parser)
       parser_unget (parser);
       args = NULL;
     }
-
   if (!(tok = parser_forward_tval (parser, tv_rbrace)))
     goto error;
 
@@ -869,39 +868,40 @@ handle_function (struct parser * parser)
 
       /* end of file check */
       if (token_class (parser_get_token (parser)) == tok_eof)
-	      break;
+	break;
       else
-	      parser_unget (parser);
+	parser_unget (parser);
 
       /* \end{eqcode} check */
       if (is_end (parser, tv_eqcode))
 	break;
 
       t = handle_instr (parser);
+      print_expression (stdout, t);
 
       if (t == NULL || t == error_mark_node)
-	      {
-	        parser_get_until_tval (parser, tv_lend);
-	        continue;
-	      }
+	{
+	  parser_get_until_tval (parser, tv_lend);
+	  continue;
+	}
 
       tree_list_append (instrs, t);
 
       if (parser_expect_tval (parser, tv_lend))
-				parser_get_token (parser);
+	parser_get_token (parser);
     }
-  	return make_function (name, args, arg_types, ret, instrs, loc);
+  return make_function (name, args, arg_types, ret, instrs, loc);
 
 error:
   while (true)
     {
       parser_get_until_tval (parser, tv_end);
       if (token_value (parser_get_token (parser)) != tv_lbrace)
-				continue;
+	continue;
       if (token_value (parser_get_token (parser)) != tv_eqcode)
-				continue;
+	continue;
       if (token_value (parser_get_token (parser)) != tv_rbrace)
-				continue;
+	continue;
       break;
     }
   free_tree (name);
@@ -1540,8 +1540,8 @@ handle_sexpr_op (struct parser * parser)
   if (prefix)
     tok = parser_get_token (parser);
 
-  if (token_class (tok) == tok_number  || is_id (tok, false) 
-      || token_value (tok) == tv_frac  || token_value (tok) == tv_dfrac)
+  if (token_class (tok) == tok_number || is_id (tok, false)
+      || token_value (tok) == tv_frac || token_value (tok) == tv_dfrac)
     {
       parser_unget (parser);
       t1 = handle_idx_numx (parser);
@@ -1673,7 +1673,7 @@ handle_filter_op (struct parser * parser)
   ret = make_tree (CIRCUMFLEX);
   TREE_OPERAND_SET (ret, 0, id);
   TREE_OPERAND_SET (ret, 1, pow);
-  TREE_CIRCUMFLEX_INDEX_STATUS (ret) = true; 
+  TREE_CIRCUMFLEX_INDEX_STATUS (ret) = true;
   return ret;
 
 error:
@@ -2123,11 +2123,11 @@ handle_with_loop (struct parser * parser, tree prefix_id)
       parser_unget (parser);
       expr = handle_expr (parser);
       if (cond == NULL || cond == error_mark_node)
-	      goto error;
+	goto error;
 
-      tlist = make_tree_list();
+      tlist = make_tree_list ();
       tree_list_append (tlist, make_binary_op (CASE_EXPR, expr, make_tree
-      (OTHERWISE_EXPR)));
+					       (OTHERWISE_EXPR)));
       t = make_with_loop (idx, cond, tlist, false);
     }
   else
@@ -2263,8 +2263,17 @@ parse (struct parser *parser)
       parser_unget (parser);
       tree t = handle_function (parser);
 
-      if (t != NULL)
-	tree_list_append (function_list, t);
+      if (t != NULL && t != error_mark_node)
+	{
+	  print_expression (stdout, t);
+	  tree_list_append (function_list, t);
+	}
+      else
+	{
+	  tok = parser_get_token (parser);
+	  parser_unget (parser);
+	  error_loc (token_location (tok), "handle_function failed");
+	}
     }
 
   printf ("note: finished parsing.\n");
@@ -2275,19 +2284,19 @@ parse (struct parser *parser)
     }
 
   printf ("\n######### Output ########\n");
-  
-	tle = NULL;
-	while ( (tle = (tree*) utarray_next (TREE_LIST(function_list), tle))) 
+
+  tle = NULL;
+  while ((tle = (tree *) utarray_next (TREE_LIST (function_list), tle)))
+    {
+      if (*tle != error_mark_node)
 	{
-		if (*tle != error_mark_node)
-		{
-			print_expression (stdout, *tle);
-			if (utarray_next (TREE_LIST(function_list), tle) != NULL)
-				printf ("\n");
-		}
-		else
-			printf ("Errors in function\n\n");
-  }
+	  print_expression (stdout, *tle);
+	  if (utarray_next (TREE_LIST (function_list), tle) != NULL)
+	    printf ("\n");
+	}
+      else
+	printf ("Errors in function\n\n");
+    }
 
   return 0;
 }
