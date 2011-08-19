@@ -35,6 +35,7 @@ print_expression (FILE *f, tree exp)
             TREE_CODE_NAME (TREE_CODE (exp)));*/
   assert (exp != NULL 
           && (   TREE_CODE(exp) == FUNCTION
+							|| TREE_CODE(exp) == LIST
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_type
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_expression
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_constant

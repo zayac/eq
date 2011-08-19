@@ -58,7 +58,6 @@ tree global_tree[TG_MAX];
 static tree *  atomic_trees = NULL;
 static size_t  atomic_trees_size = 0;
 static size_t  atomic_trees_idx = 0;
-UT_icd tree_icd;
 
 tree 
 tree_init (enum tree_code code, size_t * size)
@@ -349,7 +348,7 @@ tree
 make_tree_list ()
 {
   tree t = make_tree (LIST);
-	utarray_new(TREE_LIST(t), &tree_icd);
+	TREE_LIST(t) = NULL;
   return t;
 }
 
@@ -373,8 +372,8 @@ tree_list_append (tree list, tree elem)
   assert (TREE_CODE (list) == LIST, 
           "appending element of type `%s'", TREE_CODE_NAME (TREE_CODE (list)));
   
-  utarray_push_back (TREE_LIST (list), &elem);
-  return true;
+  DL_APPEND (TREE_LIST(list), elem);
+	return true;
 }
 
 tree
@@ -501,7 +500,7 @@ tree_list_copy (tree lst)
          "cannot copy list from %s", TREE_CODE_NAME (TREE_CODE (lst)));
   
   cpy = make_tree_list ();
-	utarray_concat (TREE_LIST(cpy), TREE_LIST(lst));
+	DL_CONCAT (TREE_LIST(cpy), TREE_LIST(lst));
   return cpy;
 }
 
@@ -512,7 +511,6 @@ tree_list_copy (tree lst)
 void
 free_list (tree lst)
 {
-/*
-  utarray_free (TREE_LIST (lst)); */
+	
 }
 

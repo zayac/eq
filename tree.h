@@ -78,10 +78,15 @@ struct tree_type_base_op
 	tree* operands;
 };
 
+typedef struct element {
+	tree entry;
+	struct element *next, *prev;
+} element;
+
 struct tree_list_node
 {
   struct tree_type_base typed;
-	UT_array *list;
+	element *list;
 };
 
 struct tree_circumflex_op_node

@@ -2292,6 +2292,11 @@ parse (struct parser *parser)
   return 0;
 }
 
+void print_code(tree e)
+{
+	printf("%s\n", TREE_CODE_NAME(TREE_CODE(TREE_FUNC_INSTRS(e))));
+}
+
 int
 main (int argc, char *argv[])
 {
