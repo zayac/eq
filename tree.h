@@ -17,7 +17,7 @@
 #define __TREE_H__
 
 #include <stdlib.h>
-#include "utarray.h"
+#include "utlist.h"
 
 #include "expand.h"
 
@@ -157,6 +157,9 @@ enum tree_global_code
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
+#define TREE_TYPE_NAME(node) ((node)->type_node.name)
+#define TREE_TYPE_SIZE(node) ((node)->type_node.size)
+
 /* Checks if it is possible to access the operand number IDX
    in the node with the code CODE.  */
 static inline bool
@@ -171,7 +174,7 @@ static inline tree
 get_tree_operand (tree node, int idx)
 {
   enum tree_code code = TREE_CODE (node);
-
+  
   assert (tree_operand_in_range (code, idx),
 	  "operand index out of range or no operands in the node");
 
@@ -220,11 +223,11 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_TYPE_DIM(node) ((node)->typed_op.operands[0])
 #define TREE_TYPE_SHAPE(node) ((node)->typed_op.operands[1])
 
-#define TREE_FUNC_NAME(node) ((node)->typed_op.operands[0])
-#define TREE_FUNC_ARGS(node) ((node)->typed_op.operands[1])
-#define TREE_FUNC_ARGS_TYPES(node) ((node)->typed_op.operands[2])
-#define TREE_FUNC_RET_TYPE(node) ((node)->typed_op.operands[3])
-#define TREE_FUNC_INSTRS(node) ((node)->typed_op.operands[4])
+#define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
+#define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
+#define TREE_FUNC_ARGS_TYPES(node) ((node)->base_op.operands[2])
+#define TREE_FUNC_RET_TYPE(node) ((node)->base_op.operands[3])
+#define TREE_FUNC_INSTRS(node) ((node)->base_op.operands[4])
 
 #define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
 static inline bool

@@ -33,7 +33,8 @@ print_expression (FILE * f, tree exp)
   /*if (exp != NULL)
     printf ("-- enter function %s with exp %s\n", __func__, 
             TREE_CODE_NAME (TREE_CODE (exp)));*/
-  assert (exp != NULL 
+  //printf("%s\n", TREE_CODE_NAME(TREE_CODE(exp)));
+	assert (exp != NULL 
           && (   TREE_CODE(exp) == FUNCTION
 							|| TREE_CODE(exp) == LIST
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_type
@@ -54,16 +55,16 @@ print_expression (FILE * f, tree exp)
       return fprintf (f, "%i", TREE_INTEGER_CST (exp));
     case LIST:
       {
-	tree *tle = NULL;
-	fprintf (f, "(");
+				element * tle = NULL;
+				fprintf (f, "(");
 
-	while ((tle = (tree *) utarray_next (TREE_LIST (exp), tle)))
-	  {
-	    print_expression (f, *tle);
-	    if (utarray_next (TREE_LIST (exp), tle) != NULL)
-	      fprintf (f, ", ");
-	  }
-	return fprintf (f, ")");
+				DL_FOREACH (TREE_LIST (exp), tle)
+	  		{
+	    		print_expression (f, tle->entry);
+	      	if (tle->next != NULL)
+						fprintf (f, ", ");
+	  		}
+				return fprintf (f, ")");
       }
     case IDENTIFIER:
       return print_expression (f, TREE_ID_NAME (exp));
@@ -97,7 +98,7 @@ print_expression (FILE * f, tree exp)
       }
     case FUNCTION:
       {
-	tree *tle = NULL;
+	element *tle = NULL;
 	assert (TREE_CODE (TREE_FUNC_INSTRS (exp)) == LIST, 0);
 	fprintf (f, "\\begin{ eqcode }{");
 	print_expression (f, TREE_FUNC_NAME (exp));
@@ -111,10 +112,10 @@ print_expression (FILE * f, tree exp)
 	print_expression (f, TREE_FUNC_RET_TYPE (exp));
 	fprintf (f, "}\n");
 	level += 2;
-	while ((tle = (tree *) utarray_next (TREE_LIST (exp), tle)))
+	DL_FOREACH (TREE_LIST (TREE_FUNC_INSTRS(exp)), tle)
 	  {
 	    indent (f, level);
-	    print_expression (f, *tle);
+	    print_expression (f, tle->entry);
 	    fprintf (f, " \\endl\n");
 	  }
 	level -= 2;
@@ -173,20 +174,18 @@ print_expression (FILE * f, tree exp)
       return print_expression (f, TREE_OPERAND (exp, 0));
     case WITH_LOOP_EXPR:
       {
-	tree *tle = NULL;
+	element *tle = NULL;
 	print_expression (f, TREE_OPERAND (exp, 0));
 	fprintf (f, " | ");
 	print_expression (f, TREE_OPERAND (exp, 1));
 	fprintf (f, " = ");
 	fprintf (f, "\\begin{cases}\n");
 	level += 2;
-	while ((tle =
-		(tree *) utarray_next (TREE_LIST (TREE_OPERAND (exp, 2)),
-				       tle)))
+	DL_FOREACH(TREE_LIST(TREE_OPERAND(exp, 2)), tle)
 	  {
 	    indent (f, level);
-	    print_expression (f, *tle);
-	    if (utarray_next (TREE_LIST (TREE_OPERAND (exp, 2)), tle) != NULL)
+	    print_expression (f, tle->entry);
+			if (tle->next != NULL)
 	      fprintf (f, " \\endl \n");
 	    else
 	      fprintf (f, "\n");

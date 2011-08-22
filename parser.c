@@ -406,20 +406,22 @@ bool
 parser_finalize (struct parser * parser)
 {
   assert (parser, "attempt to free empty parser");
-
-  while (parser->buf_start % parser->buf_size
-	 != parser->buf_end % parser->buf_size)
-
+  
+  if (parser->buf_size != 0)
     {
-      token_free (parser->token_buffer[parser->buf_start]);
-      parser->buf_start = (parser->buf_start + 1) % parser->buf_size;
+      while ( parser->buf_start % parser->buf_size
+		!= parser->buf_end % parser->buf_size)
+	{
+	  token_free (parser->token_buffer[parser->buf_start]);
+	  parser->buf_start = (parser->buf_start + 1) % parser->buf_size;
+	}
+
+      if (parser->token_buffer)
+	free (parser->token_buffer);
+  
+      lexer_finalize (parser->lex);
     }
-
-  if (parser->token_buffer)
-    free (parser->token_buffer);
-
-  lexer_finalize (parser->lex);
-  return true;
+    return true;
 }
 
 /* Check either token is a valid id */
@@ -877,7 +879,6 @@ handle_function (struct parser * parser)
 	break;
 
       t = handle_instr (parser);
-      print_expression (stdout, t);
 
       if (t == NULL || t == error_mark_node)
 	{
@@ -2255,17 +2256,15 @@ int
 parse (struct parser *parser)
 {
   struct token *tok;
-  tree *tle;
+  element *tle;
 
   error_count = warning_count = 0;
   while (token_class (tok = parser_get_token (parser)) != tok_eof)
     {
       parser_unget (parser);
       tree t = handle_function (parser);
-
       if (t != NULL && t != error_mark_node)
 	{
-	  print_expression (stdout, t);
 	  tree_list_append (function_list, t);
 	}
       else
@@ -2285,13 +2284,12 @@ parse (struct parser *parser)
 
   printf ("\n######### Output ########\n");
 
-  tle = NULL;
-  while ((tle = (tree *) utarray_next (TREE_LIST (function_list), tle)))
+	DL_FOREACH(TREE_LIST(function_list), tle)
     {
-      if (*tle != error_mark_node)
+      if (tle->entry != error_mark_node)
 	{
-	  print_expression (stdout, *tle);
-	  if (utarray_next (TREE_LIST (function_list), tle) != NULL)
+	  print_expression (stdout, tle->entry);
+		if (tle->next != NULL)
 	    printf ("\n");
 	}
       else
@@ -2315,7 +2313,7 @@ main (int argc, char *argv[])
 
   init_global ();
   init_global_tree ();
-  /* init_function_protos (); */
+  
   if (argc <= 1)
     {
       fprintf (stderr, "filename argument required\n");

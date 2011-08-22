@@ -37,10 +37,10 @@ DEF_TREE_CODE (IDENTIFIER, "identifier_node", tcl_misc, 0, true)
 DEF_TREE_CODE (LIST, "tree_list", tcl_misc, 0, false)
 
 /* Type nodes.  */
-DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 2, true)
-DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 2, true)
-DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 2, true)
-DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 2, true)
+DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 2, false)
+DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 2, false)
+DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 2, false)
+DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 2, false)
 
 /* Constant nodes.  */
 

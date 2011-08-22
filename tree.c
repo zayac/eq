@@ -18,6 +18,7 @@
 #include "expand.h"
 #include "tree.h"
 #include "global.h"
+#include "print.h"
 
 #define DEF_TREE_CODE(code, desc, class, operands, typed) class,
 enum tree_code_class tree_code_type[] =
@@ -61,26 +62,6 @@ static size_t  atomic_trees_size = 0;
 static size_t  atomic_trees_idx = 0;
 
 tree
-tree_init (enum tree_code code, size_t * size)
-{
-  if (TREE_CODE_TYPED (code))
-    {
-      if (TREE_CODE_OPERANDS (code) > 0)
-	return (tree) malloc (*size = sizeof (struct tree_type_base_op));
-      else
-	return (tree) malloc (*size = sizeof (struct tree_type_base));
-    }
-  else
-    {
-      if (TREE_CODE_OPERANDS (code) > 0)
-	return (tree) malloc (*size = sizeof (struct tree_base_op));
-      else
-	return (tree) malloc (*size = sizeof (struct tree_base));
-    }
-  return NULL;
-}
-
-tree
 make_tree (enum tree_code code)
 {
   tree ret;
@@ -88,11 +69,10 @@ make_tree (enum tree_code code)
   
   ops = TREE_CODE_OPERANDS (code) * sizeof (tree);
   size = TREE_CODE_TYPED (code) 
-	 && (ops ? sizeof (struct tree_base_op)
-		 : sizeof (struct tree_base))
-	 || (ops ? sizeof (struct tree_type_base_op)
-		 : sizeof (struct tree_type_base));
-  
+	 ? (ops ? sizeof (struct tree_type_base_op)
+		 : sizeof (struct tree_type_base))
+	 : (ops ? sizeof (struct tree_base_op)
+		 : sizeof (struct tree_base));
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
@@ -142,7 +122,7 @@ make_tree (enum tree_code code)
 static inline void
 atomic_trees_add (tree t)
 {
-  assert (TREE_CODE (t) == EMPTY_MARK,
+	assert (TREE_CODE (t) == EMPTY_MARK,
 	  "only EMPTY_MARK nodes can be added to atomic_tres");
 
   if (atomic_trees_size == 0)
@@ -183,7 +163,7 @@ free_atomic_trees ()
   for (i = 0; i < atomic_trees_idx; i++)
     {
       assert (TREE_CODE (atomic_trees[i]) == EMPTY_MARK, 0);
-      free (atomic_trees[i]);
+      free(atomic_trees[i]); 
     }
 
   if (atomic_trees)
@@ -204,71 +184,63 @@ free_tree (tree node)
   if (node == NULL
       || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK)
     return;
-
+  
   code = TREE_CODE (node);
-  /*switch (TREE_CODE_CLASS (TREE_CODE (node)))
+  switch (TREE_CODE_CLASS (code))
     {
 
     case tcl_misc:
       if (code == IDENTIFIER)
 	{
 	  free_tree (TREE_ID_NAME (node));
-	  TREE_ID_NAME (node) = NULL;
-	  TREE_CODE_SET (node, EMPTY_MARK);
 	}
       else if (code == LIST)
 	{
-	  utarray_free (TREE_LIST (node));
+	  struct element * el, *tmp;
+	  DL_FOREACH_SAFE(TREE_LIST(node), el, tmp) 
+	    {
+	      free_tree (el->entry);
+	      free (el);
+	    }
 	}
-      else
-	unreachable (0);
       break;
 
     case tcl_type:
-      free_tree (TREE_TYPE_DIM (node));
-      TREE_TYPE_DIM (node) = NULL;
-      free_tree (TREE_TYPE_SHAPE (node));
-      TREE_TYPE_SHAPE (node) = NULL;
-      TREE_CODE_SET (node, EMPTY_MARK);
+      free_tree (TREE_TYPE_NAME (node));
+      free_tree (TREE_TYPE_SIZE (node));
       break;
 
     case tcl_constant:
-      if (code == INTEGER_CST)
-	{
-	  TREE_CODE_SET (node, EMPTY_MARK);
-	}
-      else if (code == STRING_CST)
+      if (code == STRING_CST)
 	{
 	  if (TREE_STRING_CST (node))
 	    free (TREE_STRING_CST (node));
-	  TREE_CODE_SET (node, EMPTY_MARK);
+	}
+      else
+      if (code == INTEGER_CST)
+	{
+	
 	}
       else
 	unreachable (0);
       break;
 
     case tcl_expression:
-      if (code == UMINUS_EXPR || code == NOT_EXPR)
-	break;
-      else
-	break;
       break;
 
     default:
       unreachable (0);
       break;
     }
-
+  
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {
       free_tree (TREE_OPERAND (node, i));
       TREE_OPERAND_SET (node, i, NULL);
     }
 
-  if (TREE_CODE (node) == EMPTY_MARK)
-    atomic_trees_add (node);
-  else
-    free (node);*/
+  TREE_CODE_SET (node, EMPTY_MARK);
+  atomic_trees_add (node);
 }
 
 tree
@@ -359,9 +331,14 @@ tree_list_append (tree list, tree elem)
 {
   assert (TREE_CODE (list) == LIST, 
           "appending element of type `%s'", TREE_CODE_NAME (TREE_CODE (list)));
-  
-  DL_APPEND (TREE_LIST(list), elem);
-	return true;
+ 
+  element * el = (element * ) malloc (sizeof(element));
+  assert (el != NULL, "Can't allocate enough memory for new element `%s`",
+  TREE_CODE_NAME(TREE_CODE(list)));
+  el->entry = elem;
+
+  DL_APPEND (TREE_LIST(list), el);
+  return true;
 }
 
 tree
@@ -498,5 +475,19 @@ tree_list_copy (tree lst)
 void
 free_list (tree lst)
 {
-	
+  struct element * ptr;
+  struct element * tmpptr;
+      
+  if (lst == NULL)
+    return;
+
+  ptr = TREE_LIST (lst);
+  while (ptr != NULL)
+    {
+      tmpptr = ptr->next;
+      if (ptr)
+	free (ptr);
+      ptr = tmpptr;
+    }
+  free (lst);
 }

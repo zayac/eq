@@ -37,8 +37,6 @@ tree constant_list = NULL ;
 /* A global list to store functions and expands.  */
 tree function_list = NULL;
 
-UT_icd tree_icd = {sizeof(tree), NULL, NULL, NULL };
-
 /* Allocat all the global structures that are going to be used
    during the compilation.  */
 void 
@@ -47,13 +45,8 @@ init_global ()
   assert (constant_list == NULL, "constant list is already allocated");
   assert (function_list == NULL, "function list is already allocated");
 
-
-	constant_list = make_tree (LIST);
- 	utarray_new(TREE_LIST(constant_list), &tree_icd); 
-  
-	function_list = make_tree (LIST);
- 	utarray_new(TREE_LIST(function_list), &tree_icd); 
-
+  constant_list = make_tree_list();
+  function_list = make_tree_list();
   error_count = 0;
   warning_count = 0;
 }
@@ -148,14 +141,14 @@ type_lists_eq (tree tal, tree tar)
 tree
 function_exists (const char * str)
 {
-  tree *  tl;
+  element *  tl;
   
   assert (function_list != NULL, "function-list is not initialized");
 
-	while ( (tl = (tree*) utarray_next (TREE_LIST (function_list), tl)))
+	DL_FOREACH (TREE_LIST(function_list), tl)
 	{
-		if (strcmp (TREE_STRING_CST (TREE_OPERAND (*tl, 0)), str) == 0)
-			return *tl;
+		if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->entry, 0)), str) == 0)
+			return tl->entry;
 	}
 
   return NULL;
@@ -166,22 +159,22 @@ function_exists (const char * str)
 tree
 constant_exists (const char * str)
 {
-  tree *  tl;
+  element *  tl;
   
   assert (constant_list != NULL, "function-list is not initialized");
 
-	while ( (tl = (tree*) utarray_next (TREE_LIST (function_list), tl)))
+	DL_FOREACH (TREE_LIST(function_list), tl)
 	{
 		tree t; 
 		
-	  assert (TREE_CODE (*tl) == ASSIGN_EXPR, 
+	  assert (TREE_CODE (tl->entry) == ASSIGN_EXPR, 
               "Constant should be defined using assign_expr");
       
-    t = TREE_OPERAND (*tl, 0);
+    t = TREE_OPERAND (tl->entry, 0);
     assert (TREE_CODE (t) == IDENTIFIER, 0);
 
     if (strcmp (TREE_STRING_CST (TREE_ID_NAME (t)), str) == 0)
-      return *tl;
+      return tl->entry;
  	
 	}
 
