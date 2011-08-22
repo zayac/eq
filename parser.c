@@ -247,11 +247,7 @@ parser_get_until_tclass (struct parser *parser, enum token_class tclass)
   return tok;
 }
 
-/* FIXME This is a dangerous function!
-   You cannot check token_value, if you are not sure
-   taht token is not using buffer.
-   
-   Get the next token and check if it's value  is what expected.
+/* Get the next token and check if it's value  is what expected.
    Function doesn't unget the token in case of the success.
    In case when unexpected value found -- print error message */
 /*struct token *
@@ -259,7 +255,7 @@ parser_forward_tval (struct parser *parser, enum token_kind tkind)
 {
   struct token *tok = parser_get_token (parser);
 
-  if (token_value (tok) != tkind)
+  if (token_uses_buf ( token_class (tok)) || token_value (tok) != tkind)
     {
       error_loc (token_location (tok), "unexpected token `%s` ",
 		 token_as_string (tok));
@@ -273,7 +269,7 @@ parser_forward_tval (struct parser *parser, enum token_kind tkind)
 #define parser_forward_tval(parser, tkind) \
 ({ \
   struct token * tok = parser_get_token (parser); \
-  if (token_value (tok) != tkind) \
+  if (token_uses_buf ( token_class (tok) ) || token_value (tok) != tkind) \
     { \
       error_loc (token_location (tok), "unexpected token `%s` ", \
 		 token_as_string (tok)); \
@@ -319,11 +315,7 @@ parser_token_alternative_tclass (struct parser *parser,
   return NULL;
 }
 
-/* FIXME This is a dangerous function!
-   You cannot check token_value, if you are not sure
-   taht token is not using buffer.
-   
-   Get the next token from two alternative valueoptions.
+/* Get the next token from two alternative valueoptions.
    If the token is different, return NULL
  */
 struct token *
@@ -332,7 +324,8 @@ parser_token_alternative_tval (struct parser *parser, enum token_kind first,
 {
   struct token *tok = parser_get_token (parser);
 
-  if ((token_value (tok) == first) || (token_value (tok) == second))
+  if (!token_uses_buf (token_class (tok)) && ((token_value (tok) == first) ||
+  (token_value (tok) == second)))
     return tok;
 
   parser_unget (parser);
