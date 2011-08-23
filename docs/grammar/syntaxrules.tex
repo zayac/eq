@@ -35,6 +35,8 @@
 \newcommand{\BnfUpper}{
 \bHead{upper}
   \bSymb{\^} \bSymb{\{} \bAlt{\bSymb{[} linear \bSymb{]}}{linear} \bSymb{\}}
+  \bOr
+  \bSymb{\^} \bAlt {\bToken{id} } {\bToken{num}}
 \bEnd
 }
 
@@ -47,7 +49,8 @@
 
 \newcommand{\BnfLower}{
 \bHead{lower}
-  \bSymb{\_} \bSymb{\{} sexpr \bStar{\bSymb{,} sexpr} \bSymb{\}}
+  \bSymb{\_} \bSymb{\{} sexpr \bStar{\bSymb{,} sexpr} \bSymb{\}} \bOr
+  \bSymb{\_} \bAlt {\bToken{id} } {\bToken{num}}
 \bEnd
 }
 
@@ -131,7 +134,8 @@
 \bHead{sexpr}
   \bAlt{\bToken{\bs lnot}}{\bSymb{-}} sexpr\_op
   \bStar{\bAlt{binop}{boolop} sexpr\_op } \bOr
-  \bSymb{(} sexpr \bSymb{)}
+  \bSymb{(} sexpr \bSymb{)} \bOr
+  \bSymb{\{} sexpr \bSymb{\}}
 \bEnd
 }
 
