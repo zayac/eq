@@ -59,9 +59,9 @@ struct token *parser_get_until_tval (struct parser *, enum token_kind);
 struct token *parser_get_until_tclass (struct parser *, enum token_class);
 struct token *parser_forward_tval (struct parser *, enum token_kind);
 struct token *parser_forward_tclass (struct parser *, enum token_class);
-struct token *parser_toke_alternative_tval (struct parser *, enum token_kind,
+struct token *parser_token_alternative_tval (struct parser *, enum token_kind,
 					    enum token_kind);
-struct token *parser_toke_alternative_tclass (struct parser *,
+struct token *parser_token_alternative_tclass (struct parser *,
 					      enum token_class,
 					      enum token_class);
 bool parser_expect_tval (struct parser *, enum token_kind);
@@ -1347,7 +1347,8 @@ out:
 }
 
 /* sexpr:
-     ( sexpr ) 
+       { sexpr }
+     | ( sexpr ) 
      |
      sexpr_op [ ( \land | \lor | \oplus | + | - 
 		| \cdot | divide | \ll | \gg 
@@ -1389,6 +1390,12 @@ handle_sexpr (struct parser * parser)
     {
       t = handle_sexpr (parser);
       parser_expect_tval (parser, tv_rbrace);
+      parser_get_token (parser);
+    }
+  else if (token_value (tok) == tv_lparen)
+    {
+      t = handle_sexpr (parser);
+      parser_expect_tval (parser, tv_rparen);
       parser_get_token (parser);
     }
   else
@@ -1468,6 +1475,12 @@ handle_sexpr (struct parser * parser)
 	    {
 	      t = handle_sexpr (parser);
 	      parser_expect_tval (parser, tv_rparen);
+	      parser_get_token (parser);
+	    }
+	  else if (token_value (tok) == tv_lbrace)
+	    {
+	      t = handle_sexpr (parser);
+	      parser_expect_tval (parser, tv_rbrace);
 	      parser_get_token (parser);
 	    }
 	  else
