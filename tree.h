@@ -220,8 +220,8 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
 
-#define TREE_TYPE_DIM(node) ((node)->typed_op.operands[0])
-#define TREE_TYPE_SHAPE(node) ((node)->typed_op.operands[1])
+#define TREE_TYPE_DIM(node) ((node)->base_op.operands[0])
+#define TREE_TYPE_SHAPE(node) ((node)->base_op.operands[1])
 
 #define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])

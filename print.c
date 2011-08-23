@@ -268,11 +268,11 @@ print_expression (FILE * f, tree exp)
 	    unreachable (0);
 	  }
 	/* for the time being in parens.  */
-	//fprintf (f, "(");
+	fprintf (f, "(");
 	ret += print_expression (f, TREE_OPERAND (exp, 0));
 	fprintf (f, " %s ", opcode);
 	ret += print_expression (f, TREE_OPERAND (exp, 1));
-	//return fprintf (f, ")");
+	return fprintf (f, ")");
 	return ret;
       }
     }

@@ -192,11 +192,15 @@ lexer_read_comments (struct lexer *lex, char **buf, size_t *size)
     {
       char c = lexer_getch (lex);
       
+      if (c == EOF)
+        break;
+	
       buffer_add_char (buf, &index, size, c);
-      if ((c == '\n') || c == EOF)
+      if (c == '\n')
         break;
     }
 
+   buffer_add_char (buf, &index, size, '\0');
    return tok_comments;
 }
 
@@ -568,6 +572,7 @@ token_free (struct token *tok)
   if (token_uses_buf (token_class (tok)) && tok->value.cval)
     free (tok->value.cval);
   free (tok);
+  tok = NULL;
 }
 
 
@@ -580,7 +585,7 @@ int
 main (int argc, char *argv[])
 {
   struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
-  struct token *tok;
+  struct token *tok = NULL;
   
   if (argc <= 1)
     {

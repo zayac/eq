@@ -90,7 +90,7 @@ make_tree (enum tree_code code)
       break;
 
     case tcl_type:
-      ret = (tree) malloc (size = ops + sizeof (struct tree_type_node));
+      ret = (tree) malloc (size = size + ops);
       break;
 
     case tcl_constant:
