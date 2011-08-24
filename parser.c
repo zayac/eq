@@ -77,6 +77,7 @@ tree handle_list (struct parser *, tree (*)(struct parser *),
 tree handle_ext_type_or_ext_type_list (struct parser *);
 tree handle_sexpr_or_sexpr_list (struct parser *);
 tree handle_id (struct parser *);
+tree handle_indexes (struct parser *, tree);
 tree handle_idx (struct parser *);
 tree handle_idx_or_idx_list (struct parser *);
 tree handle_lower (struct parser *);
@@ -525,8 +526,6 @@ upper_type_wrapper (struct parser * parser)
 
   }
 
-
-
 /*
    ext_type:
       type [ ^ { sexpr } [ _ { sexpr [ , sexpr ]* } ] ]
@@ -658,23 +657,20 @@ upper_wrapper (struct parser * parser, tree t)
 }
 
 /*
- * idx:
- * <id> ( [ upper ] [ lower ] | [ lower ] [ upper ] )
- */
+   indexes:
+    ( [ upper ] [ lower ] | [ lower ] [ upper ] )
+*/
 tree
-handle_idx (struct parser * parser)
+handle_indexes (struct parser * parser, tree prefix)
 {
   tree idx = NULL;
   tree t = NULL;
-  tree id = NULL;
   bool circumflex_first = true;
 
-  id = handle_id (parser);
-  
   if (token_is_operator (parser_get_token (parser), tv_circumflex))
     {
       parser_unget (parser);
-      idx = upper_wrapper (parser, id);
+      idx = upper_wrapper (parser, prefix);
     }
   else
   {
@@ -692,7 +688,7 @@ handle_idx (struct parser * parser)
 	  if (idx != NULL)
 	    TREE_OPERAND_SET (t, 0, idx);
 	  else
-	    TREE_OPERAND_SET (t, 0, id);
+	    TREE_OPERAND_SET (t, 0, prefix);
 	  idx = t;
 	}
       else
@@ -702,7 +698,7 @@ handle_idx (struct parser * parser)
     parser_unget (parser);
   
   if (idx == NULL)
-    idx = id;
+    idx = prefix;
 
   /* In case we not encountered 'upper' production before the 'lower',
      we have to check now - may be 'upper' is after the 'lower' one */
@@ -712,6 +708,18 @@ handle_idx (struct parser * parser)
     }
 
   return idx;
+}
+
+/*
+ * idx:
+ * <id> indexes
+ */
+tree
+handle_idx (struct parser * parser)
+{
+  tree id = NULL;
+  id = handle_id (parser);
+  return handle_indexes (parser, id);
 }
 
 tree
@@ -1003,7 +1011,7 @@ error:
 
 /*
  * function_call:
- * \call { <id> } { [ idx [, idx ]* ] }
+ * \call { <id> } { [ idx [, idx ]* ] } indexes
  */
 tree
 handle_function_call (struct parser * parser)
@@ -1046,7 +1054,7 @@ handle_function_call (struct parser * parser)
       return error_mark_node;
     }
   else
-    return t;
+    return handle_indexes (parser, t);
 
   if (!parser_forward_tval (parser, tv_rbrace))
     {
@@ -1054,7 +1062,7 @@ handle_function_call (struct parser * parser)
       return error_mark_node;
     }
 
-  return t;
+  return handle_indexes (parser, t);
 
 error:
   parser_get_until_tval (parser, tv_rbrace);

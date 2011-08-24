@@ -2,9 +2,9 @@
 Here is a TODO list of the things that must be done very soon.
 
 *  Parser have problems with complex expressions like:
-      f(x)[0]	    -- no rule to parse that.
-      a * {b + c}   -- the same stuff.
-      and so on.
+      [DONE]  f(x)[0]	    -- no rule to parse that.
+      [DONE]  a * {b + c}   -- the same stuff.
+	      and so on.
 
 *  Lexer need some major improvement:
       - Numbers must be handled properly, including \hex {12fcc}

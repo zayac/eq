@@ -15,10 +15,15 @@
 
 \newcommand{\BnfIdx}{
 \bHead{idx}
-  \bSpecial{id} \bAlt { \bOpt{upper} \bOpt{lower} } { lower upper }
+  \bSpecial{id} indexes
 \bEnd
 }
 
+\newcommand{\BnfIndexes}{
+\bHead{indexes}
+  \bAlt { \bOpt{upper} \bOpt{lower} } { lower upper }
+\bEnd
+}
 \newcommand{\BnfNumx}{
 \bHead{numx}
   \bSpecial{num} \bOr
