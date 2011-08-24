@@ -181,7 +181,7 @@ get_tree_operand (tree node, int idx)
   if (TREE_CODE_OPERANDS (code) > 0)
     {
       if (code == CIRCUMFLEX)
-	return node->circumflex_op_node.operands[idx];
+      	return node->circumflex_op_node.operands[idx];
       if (TREE_CODE_TYPED (code))
 	return node->typed_op.operands[idx];
       else
@@ -201,8 +201,8 @@ set_tree_operand (tree node, int idx, tree value)
   if (TREE_CODE_OPERANDS (code) > 0)
     {
       if (code == CIRCUMFLEX)
-	node->circumflex_op_node.operands[idx] = value;
-      if (TREE_CODE_TYPED (code))
+      	node->circumflex_op_node.operands[idx] = value;
+      else if (TREE_CODE_TYPED (code))
 	node->typed_op.operands[idx] = value;
       else
 	node->base_op.operands[idx] = value;

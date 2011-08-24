@@ -103,7 +103,7 @@ make_tree (enum tree_code code)
       break;
     case tcl_expression:
       if (code == CIRCUMFLEX)
-	ret = (tree) malloc (size = sizeof (struct tree_circumflex_op_node));
+	ret = (tree) malloc (size = ops + sizeof (struct tree_circumflex_op_node));
       else
 	ret = (tree) malloc (size = size + ops);
       break;
@@ -112,7 +112,7 @@ make_tree (enum tree_code code)
       unreachable (0);
       break;
     }
-  
+  //printf("%s %d\n", TREE_CODE_NAME(code), size); 
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
   return ret;
@@ -184,8 +184,10 @@ free_tree (tree node)
   if (node == NULL
       || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK)
     return;
-  
+ 
   code = TREE_CODE (node);
+  
+  //printf("free %s\n", TREE_CODE_NAME(code));
   switch (TREE_CODE_CLASS (code))
     {
 
@@ -235,6 +237,10 @@ free_tree (tree node)
   
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {
+      if (code == CIRCUMFLEX)
+	{
+	  //printf("AAA\n");
+	}
       free_tree (TREE_OPERAND (node, i));
       TREE_OPERAND_SET (node, i, NULL);
     }

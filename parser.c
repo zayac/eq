@@ -435,7 +435,7 @@ is_id (struct token * tok, bool error)
   if (token_class (tok) == tok_id)
     return true;
   if (token_class (tok) == tok_keyword)
-    ret = is_token_id[(int) (tok->value.tval - tv_boolean)];
+    ret = is_token_id[(int) (token_value (tok) - tv_boolean)];
   if (error && !ret)
     error_loc (token_location (tok), "token `%s` cannot start an id",
 	       token_as_string (tok));
@@ -2352,7 +2352,7 @@ main (int argc, char *argv[])
 
   init_global ();
   init_global_tree ();
-  
+
   if (argc <= 1)
     {
       fprintf (stderr, "filename argument required\n");
