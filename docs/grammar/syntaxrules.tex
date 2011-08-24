@@ -5,8 +5,8 @@
 \newcommand{\BnfFunction}{
 \bHead{function}
   \bToken{\bs begin} \bSymb{\{} \bToken{eqcode} \bSymb{\}} \bSymb{\{}
-  \bSpecial{id} \bSymb{\}} \bSkip \bSymb{\{} \bOpt{idx \bStar{\bSymb{,}
-  idx}} \bSymb{\}} \bSkip \bSymb{\{} \bOpt{ext\_type \bStar{\bSymb{,}
+  \bSpecial{id} \bSymb{\}} \bSkip \bSymb{\{} \bOpt{id \bStar{\bSymb{,}
+  id}} \bSymb{\}} \bSkip \bSymb{\{} \bOpt{ext\_type \bStar{\bSymb{,}
   ext\_type}} \bSymb{\}} \bSymb{\{} ext\_type \bSymb{\}} \bSkip
   instr\_list \bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{eqcode} \bSymb{\}}
@@ -15,7 +15,7 @@
 
 \newcommand{\BnfIdx}{
 \bHead{idx}
-  \bSpecial{id} \bOpt{upper} \bOpt{lower}
+  \bSpecial{id} \bAlt { \bOpt{upper} \bOpt{lower} } { lower upper }
 \bEnd
 }
 
@@ -63,9 +63,10 @@
 
 \newcommand{\BnfExtType}{
 \bHead{ext\_type}
-  type \bOpt{\bSymb{\^} \bSymb{\{} sexpr \bSymb{\}} \bSkip \bOpt{\bSymb{\_}
-  \bSymb{\{} sexpr \bStar{\bSymb{,}
-  sexpr} \bSymb{\}}}}
+  type \bOpt{\bSymb{\^} \bAltBegin \bSymb{\{} sexpr \bSymb{\}} \bDAlt
+  \bSpecial{num} \bDAlt \bSpecial{id} \bAltEnd \bSkip \bOpt{\bSymb{\_}
+  \bAltBegin \bSymb{\{} sexpr \bStar{\bSymb{,}
+  sexpr} \bSymb{\}}}} \bDAlt \bSpecial{id} \bDAlt \bSpecial{num} \bAltEnd
 \bEnd
 }
 
