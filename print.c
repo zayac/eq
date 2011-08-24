@@ -85,6 +85,14 @@ print_expression (FILE * f, tree exp)
 	print_expression (f, TREE_OPERAND (exp, 1));
 	return fprintf (f, "}");
       }
+    case GENAR_EXPR:
+      {
+	fprintf(f, "\\genar \\limits ^ { ");
+	print_expression (f, TREE_OPERAND (exp, 0));
+	fprintf(f, " } ( ");
+	print_expression (f, TREE_OPERAND (exp, 1));
+	return fprintf(f, " ) ");
+      }
     case CIRCUMFLEX:
       {
 	print_expression (f, TREE_OPERAND (exp, 0));

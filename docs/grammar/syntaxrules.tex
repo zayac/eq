@@ -186,11 +186,8 @@
 
 \newcommand{\BnfExpr}{
 \bHead{expr}
-  sexpr \bOr
-  filter \bOr
-  genarray \bOr
-  vector \bOr
-  matrix
+  \bAltBegin sexpr \bDAlt filter \bDAlt genarray \bDAlt vector \bDAlt matrix
+  \bAltEnd indexes
 \bEnd
 }
 

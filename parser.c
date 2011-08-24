@@ -669,6 +669,7 @@ handle_indexes (struct parser * parser, tree prefix)
 
   if (token_is_operator (parser_get_token (parser), tv_circumflex))
     {
+
       parser_unget (parser);
       idx = upper_wrapper (parser, prefix);
     }
@@ -1011,7 +1012,7 @@ error:
 
 /*
  * function_call:
- * \call { <id> } { [ idx [, idx ]* ] } indexes
+ * \call { <id> } { [ idx [, idx ]* ] }
  */
 tree
 handle_function_call (struct parser * parser)
@@ -1054,7 +1055,7 @@ handle_function_call (struct parser * parser)
       return error_mark_node;
     }
   else
-    return handle_indexes (parser, t);
+    return t;
 
   if (!parser_forward_tval (parser, tv_rbrace))
     {
@@ -1062,7 +1063,7 @@ handle_function_call (struct parser * parser)
       return error_mark_node;
     }
 
-  return handle_indexes (parser, t);
+  return t;
 
 error:
   parser_get_until_tval (parser, tv_rbrace);
@@ -2022,7 +2023,7 @@ handle_genarray (struct parser * parser)
     goto shift;
 
   exp = handle_sexpr (parser);
-
+  
   if (!parser_forward_tval (parser, tv_rparen))
     goto error;
 
@@ -2038,22 +2039,23 @@ error:
 
 /*
    expr:
-   sexpr | filter | genarray | vector | matrix
+   ( sexpr | filter | genarray | vector | matrix ) indexes
  */
 tree
 handle_expr (struct parser * parser)
 {
   struct token *tok;
+  tree t = error_mark_node;
 
   if (token_is_keyword (tok = parser_get_token (parser), tv_filter))
     {
       parser_unget (parser);
-      return handle_filter (parser);
+      t = handle_filter (parser);
     }
   else if (token_is_keyword (tok, tv_genar))
     {
       parser_unget (parser);
-      return handle_genarray (parser);
+      t = handle_genarray (parser);
     }
   else if (token_is_keyword (tok, tv_begin))
     {
@@ -2064,14 +2066,14 @@ handle_expr (struct parser * parser)
 	      parser_unget (parser);
 	      parser_unget (parser);
 	      parser_unget (parser);
-	      return handle_matrix (parser);
+	      t = handle_matrix (parser);
 	    }
 	  else if (token_is_keyword (tok, tv_tvector))
 	    {
 	      parser_unget (parser);
 	      parser_unget (parser);
 	      parser_unget (parser);
-	      return handle_vector (parser);
+	      t = handle_vector (parser);
 	    }
 	  else
 	    parser_unget (parser);
@@ -2079,9 +2081,13 @@ handle_expr (struct parser * parser)
       else
 	parser_unget (parser);
     }
+  else
+  {
+    parser_unget (parser);
+    t =  handle_sexpr (parser);
+  }
 
-  parser_unget (parser);
-  return handle_sexpr (parser);
+  return handle_indexes (parser, t);
 }
 
 /*
