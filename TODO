@@ -25,9 +25,9 @@ Here is a TODO list of the things that must be done very soon.
 *  Printing routines must be decoupled in severla functions which 
    would allow easier modifications.
 
-*  Freeng stuff works very poorly, function free_tree must be adjusted.
+*  [DONE] Freeng stuff works very poorly, function free_tree must be adjusted.
 
-*  In the code base we have a lot of dead code. This must be eliminated
+*  [PARTLY DONE] In the code base we have a lot of dead code. This must be eliminated
    as soon as possible.
 
 *  Unknown tokens are just ignored now. This is wrong! Unknwon token

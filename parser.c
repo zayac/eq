@@ -487,52 +487,73 @@ error:
 }
 
 /*
-   ext_type:
-   type [ ^ { sexpr } [ _ { sexpr [ , sexpr ]* } ] ]
+   We use this function to avoid code repetition in handle_ext_type while
+   parsing circumflex (^) part of expression
+*/
+static inline tree
+upper_type_wrapper (struct parser * parser)
+  {
+    struct token * tok = NULL;
+    tree dim = error_mark_node;
 
-   ??? Why only in such an order? LaTeX could handle perfectly
-   well expression like \type{Z}_1^8.  */
+    tok = parser_get_token (parser);
+    if (token_class (tok) == tok_number)
+      {
+        dim = make_integer_tok (tok);
+      }
+    else if (token_class (tok) == tok_id)
+      {
+        dim = make_identifier_tok (tok);
+      }
+    else if (token_is_operator (tok, tv_lbrace))
+      {
+	dim = handle_sexpr (parser);
+	if (!parser_forward_tval (parser, tv_rbrace))
+	  return error_mark_node;
+      }
+    else
+      {
+	error_loc (token_location (tok), "unexpected token `%s` ",
+	token_as_string (tok));
+	return error_mark_node;
+      }
+
+    if (dim == NULL || dim == error_mark_node)
+      return error_mark_node;
+    else
+      return dim;
+
+  }
+
+
+
+/*
+   ext_type:
+      type [ ^ { sexpr } [ _ { sexpr [ , sexpr ]* } ] ]
+   |  type  _ { sexpr [ , sexpr ]* }  ^ { sexpr } 
+*/
 tree
 handle_ext_type (struct parser * parser)
 {
   struct token *tok;
+  bool circumflex_first = true; 
 
   tree t = handle_type (parser);
-  tree dim = error_mark_node;
+  tree dim = NULL;
   tree shape = error_mark_node;
 
   if (!token_is_operator (parser_get_token (parser), tv_circumflex))
     {
+      circumflex_first = false;
       parser_unget (parser);
-      return t;
     }
-
-  tok = parser_get_token (parser);
-  if (token_class (tok) == tok_number)
+  else
     {
-      dim = make_integer_tok (tok);
-    }
-  else if (token_class (tok) == tok_id)
-    {
-      dim = make_identifier_tok (tok);
-    }
-  else if (token_is_operator (tok, tv_lbrace))
-    {
-      dim = handle_sexpr (parser);
-      if (!parser_forward_tval (parser, tv_rbrace))
+      dim = upper_type_wrapper (parser);
+      if (dim == error_mark_node)
 	goto error_shift;
+      TREE_TYPE_DIM (t) = dim;
     }
-  else
-  {
-    error_loc (token_location (tok), "unexpected token `%s` ", token_as_string
-    (tok));
-    goto error_shift;
-  }
-
-  if (dim == NULL || dim == error_mark_node)
-    goto error_shift;
-  else
-    TREE_TYPE_DIM (t) = dim;
 
   tok = parser_get_token (parser);
 
@@ -567,6 +588,26 @@ handle_ext_type (struct parser * parser)
     goto error;
   else
     TREE_TYPE_SHAPE (t) = shape;
+  
+  
+  if (!circumflex_first)
+    {
+      if (token_is_operator (tok = parser_get_token (parser), tv_circumflex))
+	{
+	  dim = upper_type_wrapper (parser);
+	  if (dim == error_mark_node )
+	    goto error_shift;
+	  TREE_TYPE_DIM (t) = dim;
+	}
+      else
+      {
+	error_loc (token_location (tok), 
+	  "upper index must be also part of type if lower index is included",
+	  token_as_string (tok));
+	parser_unget (parser);
+      }
+    }
+   
   return t;
 error_shift:
   parser_get_until_tval (parser, tv_rbrace);
@@ -591,16 +632,13 @@ handle_id (struct parser * parser)
 }
 
 /*
- * idx:
- * <id> [ upper ] [ lower ]
- */
-tree
-handle_idx (struct parser * parser)
+   We use this function to avoid code repetition in handle_idx while parsing
+   'upper' production
+*/
+static inline tree
+upper_wrapper (struct parser * parser, tree t)
 {
   tree idx = error_mark_node;
-  tree t = error_mark_node;
-
-  t = handle_id (parser);
 
   if (token_is_operator (parser_get_token (parser), tv_circumflex))
     {
@@ -616,6 +654,33 @@ handle_idx (struct parser * parser)
       parser_unget (parser);
       idx = t;
     }
+  return idx;
+}
+
+/*
+ * idx:
+ * <id> ( [ upper ] [ lower ] | [ lower ] [ upper ] )
+ */
+tree
+handle_idx (struct parser * parser)
+{
+  tree idx = NULL;
+  tree t = NULL;
+  tree id = NULL;
+  bool circumflex_first = true;
+
+  id = handle_id (parser);
+  
+  if (token_is_operator (parser_get_token (parser), tv_circumflex))
+    {
+      parser_unget (parser);
+      idx = upper_wrapper (parser, id);
+    }
+  else
+  {
+    circumflex_first = false;
+    parser_unget (parser);
+  }
 
   if (token_is_operator (parser_get_token (parser), tv_lower_index))
     {
@@ -624,15 +689,27 @@ handle_idx (struct parser * parser)
 
       if (t != NULL && t != error_mark_node)
 	{
-	  TREE_OPERAND_SET (t, 0, idx);
-
-	  return t;
+	  if (idx != NULL)
+	    TREE_OPERAND_SET (t, 0, idx);
+	  else
+	    TREE_OPERAND_SET (t, 0, id);
+	  idx = t;
 	}
       else
 	return error_mark_node;
     }
   else
     parser_unget (parser);
+  
+  if (idx == NULL)
+    idx = id;
+
+  /* In case we not encountered 'upper' production before the 'lower',
+     we have to check now - may be 'upper' is after the 'lower' one */
+  if (!circumflex_first)
+    {
+      idx = upper_wrapper (parser, idx);
+    }
 
   return idx;
 }
@@ -829,7 +906,7 @@ handle_function (struct parser * parser)
   if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     {
       parser_unget (parser);
-      args = handle_idx_or_idx_list (parser);
+      args = handle_list (parser, handle_id, tv_comma);
       if (args == error_mark_node)
 	goto error;
     }
@@ -2306,12 +2383,14 @@ parse (struct parser *parser)
 	{
 	  tree_list_append (function_list, t);
 	}
+      /*
       else
 	{
 	  tok = parser_get_token (parser);
 	  parser_unget (parser);
 	  error_loc (token_location (tok), "handle_function failed");
 	}
+      */
     }
 
   printf ("note: finished parsing.\n");
