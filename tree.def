@@ -54,6 +54,8 @@ DEF_TREE_CODE (STRING_CST, "string_cst", tcl_constant, 0, true)
 DEF_TREE_CODE (GENERATOR, "generator_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (FILTER_EXPR, "filter_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (ASSIGN_EXPR, "assign_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (VERTICAL_EXPR, "vertical_expr", tcl_expression, 2, true)
+
 DEF_TREE_CODE (DECLARE_EXPR, "declare_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (GENAR_EXPR, "genar_expr", tcl_expression ,2, true)
 DEF_TREE_CODE (RETURN_EXPR, "return_expr", tcl_expression, 1, false)

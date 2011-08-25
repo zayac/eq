@@ -39,7 +39,7 @@
 
 \newcommand{\BnfUpper}{
 \bHead{upper}
-  \bSymb{\^} \bSymb{\{} \bAlt{\bSymb{[} linear \bSymb{]}}{linear} \bSymb{\}}
+  \bSymb{\^} \bSymb{\{} \bAlt{\bSymb{[} expr \bSymb{]}}{expr} \bSymb{\}}
   \bOr
   \bSymb{\^} \bAlt {\bToken{id} } {\bToken{num}}
 \bEnd
@@ -54,7 +54,7 @@
 
 \newcommand{\BnfLower}{
 \bHead{lower}
-  \bSymb{\_} \bSymb{\{} sexpr \bStar{\bSymb{,} sexpr} \bSymb{\}} \bOr
+  \bSymb{\_} \bSymb{\{} expr \bStar{\bSymb{,} expr} \bSymb{\}} \bOr
   \bSymb{\_} \bAlt {\bToken{id} } {\bToken{num}}
 \bEnd
 }
@@ -92,7 +92,7 @@
 
 \newcommand{\BnfAssign}{
 \bHead{assign}
-  idx \bToken{\bs gets} expr
+  idx \bOpt { generator } \bToken{\bs gets} expr
 \bEnd
 }
 
@@ -131,8 +131,8 @@
 \newcommand{\BnfFunctionCall}{
 \bHead{function\_call}
   \bToken{\bs call} \bSymb{\{} \bSpecial{id} \bSymb{\}} \bSymb{\{}
-  \bOpt{idx\_numx
-  \bStar{\bSymb{,} idx\_numx }} \bSymb{\}}
+  \bOpt{expr
+  \bStar{\bSymb{,} expr }} \bSymb{\}}
 \bEnd
 }
 
@@ -140,8 +140,8 @@
 \bHead{sexpr}
   \bAlt{\bToken{\bs lnot}}{\bSymb{-}} sexpr\_op
   \bStar{\bAlt{binop}{boolop} sexpr\_op } \bOr
-  \bSymb{(} sexpr \bSymb{)} \bOr
-  \bSymb{\{} sexpr \bSymb{\}}
+  \bSymb{(} expr \bSymb{)} \bOr
+  \bSymb{\{} expr \bSymb{\}}
 \bEnd
 }
 
@@ -162,15 +162,15 @@
 
 \newcommand{\BnfGenArray}{
 \bHead{genarray}
- \bToken{\bs genar} \bToken{\bs limits} \bSymb{\^} \bSymb{\{} sexpr \bSymb{\}}
- \bSymb{(} sexpr \bSymb{)}
+ \bToken{\bs genar} \bToken{\bs limits} \bSymb{\^} \bSymb{\{} expr \bSymb{\}}
+ \bSymb{(} expr \bSymb{)}
 \bEnd
 }
 
 \newcommand{\BnfVector}{
 \bHead{vector}
   \bToken{\bs begin} \bSymb{\{} \bToken{tvector} \bSymb{\}} \bSkip
-  \bPlus{sexpr\bToken{\bs lend}} \bSkip
+  \bPlus{expr\bToken{\bs lend}} \bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{tvector} \bSymb{\}}
 \bEnd
 }
@@ -179,7 +179,7 @@
 \bHead{matrix}
   \bToken{\bs begin} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}\bSymb{\{}
   \bSpecial{id} \bSymb{\}} \bSkip
-  \bPlus{sexpr \bStar{ \bSymb{\&} sexpr } \bToken{\bs lend}} \bSkip
+  \bPlus{expr \bStar{ \bSymb{\&} expr } \bToken{\bs lend}} \bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}
 \bEnd
 }
@@ -216,8 +216,8 @@
 \newcommand{\BnfGenerator}{
 \bHead{generator}
   \bToken{\bs forall} \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id} } \bOr
-  \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id}} \bSymb{:} sexpr \bPlus{comp
-  sexpr} \bSkip \bStar{set\_op sexpr \bPlus{comp sexpr}}
+  \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id}} \bSymb{:} expr \bPlus{comp
+  expr} \bSkip \bStar{set\_op expr \bPlus{comp expr}}
 \bEnd
 }
 

@@ -212,12 +212,24 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
 {
   char *index = *buf;
   size_t search;
+  bool first = true;
+
   do
     {
+      if (c == '\\' && !first)
+	{
+	  c = lexer_getch (lex);
+	  if (c != '_')
+	    {
+	      lexer_ungetch (lex, c);
+	      break;
+	    }
+	}
       buffer_add_char (buf, &index, size, c);
       c = lexer_getch (lex);
+      first = false;
     }
-  while (isalnum (c));
+  while (isalnum (c) || (c == '\\'));
   lexer_ungetch (lex, c);
   buffer_add_char(buf, &index, size, 0);
 
@@ -249,10 +261,19 @@ lexer_read_id (struct lexer *lex, struct token *tok,
 
   do 
     {
+      if (c == '\\')
+	{
+	  c = lexer_getch (lex);
+	  if (c != '_')
+	    {
+	      lexer_ungetch (lex, c);
+	      break;
+	    }
+	}
       buffer_add_char (buf, &index, size, c);
       c = lexer_getch (lex);
     }
-  while (isalnum (c));
+  while (isalnum (c) || (c == '\\'));
   lexer_ungetch (lex, c);
   buffer_add_char (buf, &index, size, 0);
   tok->tok_class = tok_id;

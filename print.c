@@ -55,16 +55,15 @@ print_expression (FILE * f, tree exp)
       return fprintf (f, "%i", TREE_INTEGER_CST (exp));
     case LIST:
       {
-				element * tle = NULL;
-				fprintf (f, "(");
-
-				DL_FOREACH (TREE_LIST (exp), tle)
-	  		{
-	    		print_expression (f, tle->entry);
-	      	if (tle->next != NULL)
-						fprintf (f, ", ");
-	  		}
-				return fprintf (f, ")");
+	element * tle = NULL;
+	fprintf (f, "(");
+	DL_FOREACH (TREE_LIST (exp), tle)
+	  {
+	    print_expression (f, tle->entry);
+	    if (tle->next != NULL)
+	      fprintf (f, ", ");
+	  }
+	  return fprintf (f, ")");
       }
     case IDENTIFIER:
       return print_expression (f, TREE_ID_NAME (exp));
@@ -92,6 +91,20 @@ print_expression (FILE * f, tree exp)
 	fprintf(f, " } ( ");
 	print_expression (f, TREE_OPERAND (exp, 1));
 	return fprintf(f, " ) ");
+      }
+    case VECTOR_EXPR:
+      {
+	element * tle = NULL;
+	fprintf(f, "\\begin { tvector }\n");
+	level += 2;
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 0)), tle) 
+	  {
+	    indent (f, level);
+	    print_expression (f, tle->entry);
+	    fprintf(f, " \\endl\n");
+	  }
+	level -=2;
+	return fprintf(f, "\\end{tvector}");
       }
     case CIRCUMFLEX:
       {
