@@ -93,7 +93,18 @@ token_is_keyword (struct token *tok, enum token_kind tkind)
 {
   return token_class (tok) == tok_keyword && token_value (tok) == tkind;
 }
-
+/*
+char* transform_hex_to_dec (char * hex)
+  {
+    char* ret;
+    size_t size = 1;
+    long int tmp = 10;
+    long int num = strtol(hex, NULL, 16);
+    while (tmp
+    ret = malloc (
+    return NULL;
+  }
+*/
 /* Get one token from the lexer or from the token buffer.
    Token is taken from the buffer if parser_unget was
    called earlier. */
@@ -110,6 +121,30 @@ parser_get_token (struct parser *parser)
       while (true)
 	{
 	  tok = lexer_get_token (parser->lex);
+	  if (token_is_keyword (tok, tv_hex))
+	    {
+	      struct token* ret;
+	      parser->lex->hex_number = true;
+	      tok = lexer_get_token (parser->lex);
+	      if (!token_is_operator (tok, tv_lbrace))
+		{
+		  error_loc (token_location (tok), "\\hex must be followed by '{', not '%s'", token_as_string (tok));
+		  break;
+		}
+	      ret = lexer_get_token (parser->lex);
+	      if (token_class (ret) != tok_number)
+		{
+		  error_loc (token_location (ret), "hex number has to be on this place, not '%s'", token_as_string (ret));
+		  break;
+		}
+	      tok = lexer_get_token (parser->lex);
+	      if (!token_is_operator (tok, tv_rbrace))
+		{
+		  error_loc (token_location (tok), "'%s' must be followed by '}', not '%s'", token_as_string (ret), token_as_string (tok));
+		  break;
+		}
+	      tok = ret;
+	    }
 	  if (token_class (tok) != tok_comments
 	      && token_class (tok) != tok_whitespace)
 	    break;

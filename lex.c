@@ -85,6 +85,7 @@ lexer_init (struct lexer *lex, const char *fname)
   assert (fname != NULL, "lexer initialized with empty filename");
   assert (lex != NULL, "lexer memory is not allocated");
   
+  lex->hex_number = false;
   lex->is_eof = false;
   lex->loc = (struct location) {1, 0};
   lex->fname = fname;
@@ -204,6 +205,25 @@ lexer_read_comments (struct lexer *lex, char **buf, size_t *size)
    return tok_comments;
 }
 
+/* Function to read a hex number */
+static inline void
+lexer_read_hex_number (struct lexer *lex, struct token* tok,
+			  char **buf, size_t *size, char c)
+{
+  char *index = *buf;
+  do
+    {
+      buffer_add_char (buf, &index, size, c);
+      c = lexer_getch (lex);
+    }
+  while (isxdigit (c));
+
+  lexer_ungetch (lex, c);
+  buffer_add_char(buf, &index, size, 0);
+  tok->tok_class = tok_number;
+  lex->hex_number = false;
+}
+
 /* Internal function to read a string,
    checking if it is a keyword, an operator or id */
 static inline void
@@ -249,36 +269,6 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
     tok->tok_class = tok_id;
   else
     tok->tok_class = tok_unknown;
-}
-
-/* Internal function to read until the end of identifier, checking
-   if it is a keyword.  */
-static inline void
-lexer_read_id (struct lexer *lex, struct token *tok,
-               char **buf, size_t *size, char c)
-{
-  char *index = *buf;
-
-  do 
-    {
-      if (c == '\\')
-	{
-	  c = lexer_getch (lex);
-	  if (c != '_')
-	    {
-	      lexer_ungetch (lex, c);
-	      break;
-	    }
-	}
-      buffer_add_char (buf, &index, size, c);
-      c = lexer_getch (lex);
-    }
-  while (isalnum (c) || (c == '\\'));
-  lexer_ungetch (lex, c);
-  buffer_add_char (buf, &index, size, 0);
-  tok->tok_class = tok_id;
-
-  return;
 }
 
 /* Internal function to read until the end of number.  */
@@ -432,13 +422,19 @@ lexer_get_token (struct lexer *lex)
 
   if (isalpha (c))
     {
-      lexer_read_keyword(lex, tok, &buf, &buf_size, c);
+      if (isxdigit(c) && lex->hex_number)
+	lexer_read_hex_number (lex, tok, &buf, &buf_size, c);
+      else
+	lexer_read_keyword(lex, tok, &buf, &buf_size, c);
       goto return_token;
     }
 
   if (isdigit (c))
     {
-      tok->tok_class = lexer_read_number (lex, &buf, &buf_size, c);
+      if (lex->hex_number)
+	lexer_read_hex_number (lex, tok, &buf, &buf_size, c);
+      else
+	tok->tok_class = lexer_read_number (lex, &buf, &buf_size, c);
       goto return_token;
     }
 

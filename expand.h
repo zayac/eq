@@ -141,6 +141,8 @@ struct lexer
     struct location loc;
     struct token curtoken;
     bool is_eof;
+    bool hex_number; /* if set true, a token consisting of digits and a-f
+			letters will be considering as number  */
 };
 
 #define tval_tok_init(_tok, _cls, _val)             \

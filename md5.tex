@@ -73,13 +73,13 @@
     \return{r} \lend
 \end{eqcode}
 %
-%\begin{eqcode}{process}{A}{\type{Z}^1_{64}}{\type{Z}^1_{16}}
-%    W \gets \begin{tvector}
-%        \hex{01234567} \lend
-%        \hex{89ABCDEF} \lend
-%        \hex{FEDCBA98} \lend
-%        \hex{76543210} \lend
-%    \end{tvector} \lend
+\begin{eqcode}{process}{A}{\type{Z}^1_{64}}{\type{Z}^1_{16}}
+    W \gets \begin{tvector}
+        \hex{01234567} \lend
+        \hex{89ABCDEF} \lend
+        \hex{FEDCBA98} \lend
+        \hex{76543210} \lend
+    \end{tvector} \lend
     Q \gets \call{transform}{A} \lend
     W \gets \call{P}{0,1,2,3, 0, 7, 0,W,Q} \lend \quad W \gets \call{P}{3,0,1,2, 1,12, 1,W,Q} \lend
 
