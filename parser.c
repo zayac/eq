@@ -93,23 +93,29 @@ token_is_keyword (struct token *tok, enum token_kind tkind)
 {
   return token_class (tok) == tok_keyword && token_value (tok) == tkind;
 }
-/*
+
 char* transform_hex_to_dec (char * hex)
   {
     char* ret;
     size_t size = 1;
     long int tmp = 10;
     long int num = strtol(hex, NULL, 16);
-    while (tmp
-    ret = malloc (
-    return NULL;
+    while (tmp > num)
+      {
+	tmp *= 10;
+	size++;
+      }
+    ret = (char*) malloc (sizeof (char) * (size + 1));
+    sprintf(ret, "%li", num);
+    free (hex);
+    return ret;
   }
-*/
+
 /* Get one token from the lexer or from the token buffer.
    Token is taken from the buffer if parser_unget was
    called earlier. */
 struct token *
-parser_get_token (struct parser *parser)
+parser_get_lexer_token (struct parser *parser)
 {
   struct token *tok;
 
@@ -121,30 +127,6 @@ parser_get_token (struct parser *parser)
       while (true)
 	{
 	  tok = lexer_get_token (parser->lex);
-	  if (token_is_keyword (tok, tv_hex))
-	    {
-	      struct token* ret;
-	      parser->lex->hex_number = true;
-	      tok = lexer_get_token (parser->lex);
-	      if (!token_is_operator (tok, tv_lbrace))
-		{
-		  error_loc (token_location (tok), "\\hex must be followed by '{', not '%s'", token_as_string (tok));
-		  break;
-		}
-	      ret = lexer_get_token (parser->lex);
-	      if (token_class (ret) != tok_number)
-		{
-		  error_loc (token_location (ret), "hex number has to be on this place, not '%s'", token_as_string (ret));
-		  break;
-		}
-	      tok = lexer_get_token (parser->lex);
-	      if (!token_is_operator (tok, tv_rbrace))
-		{
-		  error_loc (token_location (tok), "'%s' must be followed by '}', not '%s'", token_as_string (ret), token_as_string (tok));
-		  break;
-		}
-	      tok = ret;
-	    }
 	  if (token_class (tok) != tok_comments
 	      && token_class (tok) != tok_whitespace)
 	    break;
@@ -297,6 +279,45 @@ parser_forward_tval (struct parser *parser, enum token_kind tkind)
 })
 
 
+/* Get token from lexer. In addition to this,
+   it does some hex number processing
+ */
+struct token *
+parser_get_token (struct parser * parser)
+  {
+    struct token * tok = parser_get_lexer_token (parser);
+    if (token_is_keyword (tok, tv_hex))
+      {
+	size_t s;
+        struct token* ret;
+        parser->lex->hex_number = true;
+	if(!(tok = parser_forward_tval (parser, tv_lbrace)))
+	  return tok;
+	if(!(ret = parser_forward_tclass (parser, tok_number)))
+	  return ret;
+	if(!(tok = parser_forward_tval (parser, tv_rbrace)))
+	  return tok;
+	//ret->value.cval = transform_hex_to_dec (ret->value.cval); 
+	tok = ret;
+
+	/* Substitute 4 tokens which were read with just one in the token
+	   buffer  */
+	token_free (parser->token_buffer[parser->buf_end - 4]);
+	token_free (parser->token_buffer[parser->buf_end - 3]);
+	token_free (parser->token_buffer[parser->buf_end - 1]);
+	parser->token_buffer[parser->buf_end - 4] =
+	  parser->token_buffer[parser->buf_end - 2];
+	
+	parser->token_buffer[parser->buf_end - 3] = NULL;
+	parser->token_buffer[parser->buf_end - 2] = NULL;
+	parser->token_buffer[parser->buf_end - 1] = NULL;
+	
+	s = parser->buf_end - 3;
+	parser->buf_end = s < 0 ? parser->buf_size + s : s;
+	
+      }
+    return tok;
+  }
 
 
 /* Get the next token and check if it's class is what expected.
@@ -975,7 +996,7 @@ handle_function (struct parser * parser)
 
   while (true)
     {
-      struct element * el;
+      struct element * el, * tmp;
 
       t = error_mark_node;
 
@@ -992,18 +1013,22 @@ handle_function (struct parser * parser)
       t = handle_list (parser, handle_instr, tv_comma);
       if (TREE_CODE (t) == LIST)
 	{
-	  DL_FOREACH (TREE_LIST(t), el)
+	  DL_FOREACH_SAFE (TREE_LIST(t), el, tmp)
 	    {
 	      tree_list_append(instrs, el->entry);
+	      free (el);
+	      DL_DELETE (TREE_LIST (t), el);
 	    }
+	    free_tree (t);
 	}
       else
-	tree_list_append(instrs, t);
-
-      if (t == NULL || t == error_mark_node)
-	{ 
-	  parser_get_until_tval (parser, tv_lend);
-	  break;
+	{
+	  tree_list_append(instrs, t);
+	  if (t == NULL || t == error_mark_node)
+	    { 
+	      parser_get_until_tval (parser, tv_lend);
+	      break;
+	    }
 	}
 
 
@@ -1676,6 +1701,7 @@ handle_sexpr_op (struct parser * parser)
   tree t1 = error_mark_node;
 
   struct token *tok = parser_get_token (parser);
+  
   bool prefix = false;
 
   if (token_is_operator (tok, tv_minus))
@@ -2083,7 +2109,7 @@ handle_expr (struct parser * parser)
 {
   struct token *tok;
   tree t = error_mark_node;
-
+  
   if (token_is_keyword (tok = parser_get_token (parser), tv_filter))
     {
       parser_unget (parser);
