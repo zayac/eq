@@ -35,16 +35,7 @@ find_program(git_exec
   DOC "git installation path"
 )
 
-find_program(wc_exec
-  NAMES
-    wc
-  HINTS
-    ENV PATH
-  DOC "unix word-count utility"
-)
-
-if (GIT_EXEC)
-  if (WC_EXEC)
+if (git_exec)
     execute_process (
       COMMAND "${git_exec}" log --pretty=format:'%ci' -n1
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -52,7 +43,6 @@ if (GIT_EXEC)
       OUTPUT_STRIP_TRAILING_WHITESPACE
       ERROR_QUIET
     )
-  endif ()
 endif ()
 
 set (COMMIT_DATE "${commit_date}")
