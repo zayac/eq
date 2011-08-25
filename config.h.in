@@ -1,0 +1,10 @@
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#define VERSION_MAJOR   @VERSION_MAJOR@
+#define VERSION_MINOR   @VERSION_MINOR@
+#define VERSION_PATCH   @VERSION_MINOR@
+#define VERSION		"@VERSION@"
+#define COMMIT_DATE	"@COMMIT_DATE@"
+
+#endif /* __CONFIG_H__  */
