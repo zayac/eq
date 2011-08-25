@@ -20,29 +20,8 @@
 #include "tree.h"
 #include "global.h"
 #include "print.h"
+#include "parser.h"
 
-
-struct parser
-{
-  struct lexer *lex;
-
-  /* Buffer and lengths associated with buffer.
-     Buffer holds up-to BUF_SIZE tokens, which means
-     that it is possible to look BUF_SIZE tokens
-     forward.  */
-  struct token **token_buffer;
-  size_t buf_size;
-  size_t buf_start, buf_end, unget_idx;
-  bool buf_empty;
-
-  /* Count of opened parens, square brackets and
-     figure brackets. Used when we skip the tokens
-     skip is finished when all the three counters
-     are zeroes.  */
-  int paren_count;
-  int square_count;
-  int brace_count;
-};
 
 /* Check if parser is not in any parenthesis/bracket expression.  */
 static inline bool
@@ -67,9 +46,6 @@ struct token *parser_token_alternative_tclass (struct parser *,
 					      enum token_class);
 bool parser_expect_tval (struct parser *, enum token_kind);
 bool parser_expect_tclass (struct parser *, enum token_class);
-bool parser_init (struct parser *, struct lexer *);
-bool parser_finalize (struct parser *);
-bool is_id (struct token *, bool);
 tree handle_type (struct parser *);
 tree handle_ext_type (struct parser *);
 tree handle_list (struct parser *, tree (*)(struct parser *),
@@ -102,8 +78,6 @@ tree handle_with_loop (struct parser *, tree);
 tree handle_with_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
-
-int parse (struct parser *);
 
 static inline bool token_is_operator (struct token *, enum token_kind);
 static inline bool token_is_keyword  (struct token *, enum token_kind);
@@ -2466,45 +2440,3 @@ void print_code(tree e)
   printf("%s\n", TREE_CODE_NAME(TREE_CODE(TREE_FUNC_INSTRS(e))));
 }
 
-int
-main (int argc, char *argv[])
-{
-  int ret = 0;
-  struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
-  struct parser *parser = (struct parser *) malloc (sizeof (struct parser));
-
-  init_global ();
-  init_global_tree ();
-
-  if (argc <= 1)
-    {
-      fprintf (stderr, "filename argument required\n");
-      ret = -1;
-      goto cleanup;
-    }
-
-  if (!lexer_init (lex, argv[1]))
-    {
-      fprintf (stderr, "cannot create a lexer for file %s\n", argv[1]);
-      ret = -2;
-      goto cleanup;
-    }
-
-  parser_init (parser, lex);
-  parse (parser);
-
-cleanup:
-  parser_finalize (parser);
-  finalize_global_tree ();
-  finalize_global ();
-
-  /* That should be called at the very end.  */
-  free_atomic_trees ();
-
-  if (parser)
-    free (parser);
-  if (lex)
-    free (lex);
-
-  return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-}

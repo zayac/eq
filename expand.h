@@ -16,7 +16,7 @@
 #ifndef __EXPAND_H__
 #define __EXPAND_H__
 
-//#define __USE_BSD
+#define __USE_BSD
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

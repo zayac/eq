@@ -15,8 +15,8 @@
 
 all: parser
 
-CFLAGS = -Wall -g #-pedantic -std=c99
-OBJECTS = lex.o parser.o tree.o global.o print.o
+CFLAGS = -Wall -g -std=c99 # -pedantic
+OBJECTS = lex.o parser.o tree.o global.o print.o main.o
 
 
 lexer: lex.c
@@ -32,9 +32,10 @@ clean:
 
 
 lex.o: expand.h token_kind.def keywords.def token_class.def
-parser.o: expand.h tree.h global.h print.h
+parser.o: expand.h tree.h global.h print.h parser.h
 tree.o: expand.h tree.h global.h tree.def
 global.o: expand.h tree.h global.h
 print.o: print.h expand.h tree.h
+main.o: expand.h parser.h global.h
 
 expand.h: token_kind.def keywords.def token_class.def
