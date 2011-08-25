@@ -1,7 +1,17 @@
 #include "expand.h"
 #include "global.h"
 #include "parser.h"
+#include "config.h"
 
+void usage (const char *);
+
+void
+usage (const char *  prog)
+{
+  fprintf (stderr, "%s:%s (revision: %s) <input-file>\n",
+	   prog, VERSION, COMMIT_DATE);
+  return;
+}
 
 int
 main (int argc, char *argv[])
@@ -15,14 +25,16 @@ main (int argc, char *argv[])
   
   if (argc <= 1)
     {
-      fprintf (stderr, "filename argument required\n");
+      fprintf (stderr, "%s:%s filename argument required\n", argv[0], VERSION);
+      usage (argv[0]);
       ret = -1;
       goto cleanup;
     }
 
   if (!lexer_init (lex, argv[1]))
     {
-      fprintf (stderr, "cannot create a lexer for file %s\n", argv[1]);
+      fprintf (stderr, "%s:%s cannot create a lexer for file %s\n", 
+	       argv[1], argv[0], VERSION);
       ret = -2;
       goto cleanup;
     }
