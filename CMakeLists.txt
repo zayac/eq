@@ -18,53 +18,25 @@ cmake_minimum_required (VERSION 2.6)
 # Name of the project
 project (eq C)
 
-# Version numbers
-set (VERSION_MAJOR 0)
-set (VERSION_MINOR 1)
-set (VERSION_PATCH 1)
-set (VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
-set (COMMIT_DATE "???")
+# Uncomment this if you want to have a verbose
+# makefile. It is useful for debugging. 
+# set (CMAKE_VERBOSE_MAKEFILE ON)
 
-# This is a unix hack to get a revision number from git
-# would not work anywhere where wc is not present.
-find_program(git_exec
-  NAMES
-    git git.cmd
-  HINTS
-    ENV PATH
-  DOC "git installation path"
-)
+set (CFLAGS "-g -Wall -std=c99")
 
-if (git_exec)
-    execute_process (
-      COMMAND "${git_exec}" log --pretty=format:'%ci' -n1
-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-      OUTPUT_VARIABLE commit_date
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-      ERROR_QUIET
-    )
-endif ()
-
-set (COMMIT_DATE "${commit_date}")
-
+include (cmake/version.cmake)
 
 configure_file (
-  "${PROJECT_SOURCE_DIR}/config.h.in"
+  "${PROJECT_SOURCE_DIR}/src/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
 
 include_directories ("${PROJECT_BINARY_DIR}")
 
-add_definitions(-g -Wall -std=c99)
+add_subdirectory (src)
 
-# EQ library files
-set (eqlib_src
-global.c  lex.c  
-parser.c  print.c  
-tree.c)
-add_library (eqlib ${eqlib_src})
-
-add_executable (eq main.c)
+add_definitions (${CFLAGS})
+add_executable (eq src/main.c)
 target_link_libraries (eq eqlib)
 
 
@@ -79,7 +51,7 @@ macro (xtest arg)
     FAIL_REGULAR_EXPRESSION "^error:")
 endmacro (xtest)
 
-file (GLOB_RECURSE testfiles "${PROJECT_SOURCE_DIR}/tests/parser_tests/*.tex")
+file (GLOB_RECURSE testfiles "tests/parser_tests/*.tex")
 foreach (test ${testfiles})
   xtest (${test})
 endforeach ()
