@@ -7,9 +7,9 @@ Here is a TODO list of the things that must be done very soon.
 	      and so on.
 
 *  Lexer need some major improvement:
-      - Numbers must be handled properly, including \hex {12fcc}
+      - [DONE] Numbers must be handled properly, including \hex {12fcc}
       - Strings are not considered at all.
-      - LaTeX specific stuff like escaped underscore.
+      - [DONE] LaTeX specific stuff like escaped underscore.
 
 *  In LaTeX it is possible to write an operation in the form:
       \left< a + b \right>

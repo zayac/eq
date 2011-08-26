@@ -79,7 +79,6 @@ tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
 
 
-/* XXX Is it still used by anyone?  */
 char * 
 transform_hex_to_dec (char * hex)
 {
@@ -298,7 +297,7 @@ parser_get_token (struct parser * parser)
 	return ret;
       if(!(tok = parser_forward_tval (parser, tv_rbrace)))
 	return tok;
-      //ret->value.cval = transform_hex_to_dec (ret->value.cval); 
+      ret->value.cval = transform_hex_to_dec (ret->value.cval); 
       tok = ret;
 
       /* Substitute 4 tokens which were read 
