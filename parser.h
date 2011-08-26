@@ -25,7 +25,17 @@ struct parser
   int brace_count;
 };
 
+
 __BEGIN_DECLS
+
+#define TOKEN_CLASS(a, b) \
+static inline bool \
+token_is_ ## a (struct token *  tok, enum token_kind tkind) \
+{ \
+  return token_class (tok) == tok_ ## a && token_value (tok) == tkind; \
+}
+#include "token_class.def"
+#undef TOKEN_CLASS
 
 int parse (struct parser *);
 bool parser_init (struct parser *, struct lexer *);

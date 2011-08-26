@@ -110,7 +110,7 @@ tok_kind_length
 #undef TOKEN_KIND
 #undef KEYWORD
 
-#define TOKEN_CLASS(a, b) a,
+#define TOKEN_CLASS(a, b) tok_ ## a,
 enum token_class
 {
 #include "token_class.def"

@@ -22,7 +22,6 @@
 #include "print.h"
 #include "parser.h"
 
-
 /* Check if parser is not in any parenthesis/bracket expression.  */
 static inline bool
 parser_parens_zero (struct parser *parser)
@@ -79,37 +78,35 @@ tree handle_with_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
 
-static inline bool token_is_operator (struct token *, enum token_kind);
-static inline bool token_is_keyword  (struct token *, enum token_kind);
 
-static inline bool
-token_is_operator (struct token *tok, enum token_kind tkind)
+/* XXX Is it still used by anyone?  */
+char * 
+transform_hex_to_dec (char * hex)
 {
-  return token_class (tok) == tok_operator && token_value (tok) == tkind;
+  char* ret;
+  size_t size = 1;
+  long int tmp = 10;
+  long int num = strtol(hex, NULL, 16);
+
+  while (tmp > num)
+    {
+      tmp *= 10;
+      size++;
+    }
+  ret = (char*) malloc (sizeof (char) * (size + 1));
+  sprintf(ret, "%li", num);
+  free (hex);
+  return ret;
 }
 
-static inline bool
-token_is_keyword (struct token *tok, enum token_kind tkind)
+/* Safely increment or decrement index of token buffer. Make
+   sure that negative index equals to size - idx.  */
+static inline size_t
+buf_idx_inc (const size_t idx, const ssize_t inc, const size_t size)
 {
-  return token_class (tok) == tok_keyword && token_value (tok) == tkind;
+  ssize_t diff = ((ssize_t)idx + inc) % size;
+  return diff < 0 ? size - diff : diff; 
 }
-
-char* transform_hex_to_dec (char * hex)
-  {
-    char* ret;
-    size_t size = 1;
-    long int tmp = 10;
-    long int num = strtol(hex, NULL, 16);
-    while (tmp > num)
-      {
-	tmp *= 10;
-	size++;
-      }
-    ret = (char*) malloc (sizeof (char) * (size + 1));
-    sprintf(ret, "%li", num);
-    free (hex);
-    return ret;
-  }
 
 /* Get one token from the lexer or from the token buffer.
    Token is taken from the buffer if parser_unget was
@@ -279,45 +276,48 @@ parser_forward_tval (struct parser *parser, enum token_kind tkind)
 })
 
 
+
 /* Get token from lexer. In addition to this,
    it does some hex number processing
  */
 struct token *
 parser_get_token (struct parser * parser)
-  {
-    struct token * tok = parser_get_lexer_token (parser);
-    if (token_is_keyword (tok, tv_hex))
-      {
-	size_t s;
-        struct token* ret;
-        parser->lex->hex_number = true;
-	if(!(tok = parser_forward_tval (parser, tv_lbrace)))
-	  return tok;
-	if(!(ret = parser_forward_tclass (parser, tok_number)))
-	  return ret;
-	if(!(tok = parser_forward_tval (parser, tv_rbrace)))
-	  return tok;
-	//ret->value.cval = transform_hex_to_dec (ret->value.cval); 
-	tok = ret;
+{
+  struct token * tok = parser_get_lexer_token (parser);
 
-	/* Substitute 4 tokens which were read with just one in the token
-	   buffer  */
-	token_free (parser->token_buffer[parser->buf_end - 4]);
-	token_free (parser->token_buffer[parser->buf_end - 3]);
-	token_free (parser->token_buffer[parser->buf_end - 1]);
-	parser->token_buffer[parser->buf_end - 4] =
-	  parser->token_buffer[parser->buf_end - 2];
-	
-	parser->token_buffer[parser->buf_end - 3] = NULL;
-	parser->token_buffer[parser->buf_end - 2] = NULL;
-	parser->token_buffer[parser->buf_end - 1] = NULL;
-	
-	s = parser->buf_end - 3;
-	parser->buf_end = s < 0 ? parser->buf_size + s : s;
-	
-      }
-    return tok;
-  }
+  if (token_is_keyword (tok, tv_hex))
+    {
+      size_t s = parser->buf_size, e;
+      struct token* ret;
+
+      
+      parser->lex->hex_number = true;
+      if(!(tok = parser_forward_tval (parser, tv_lbrace)))
+	return tok;
+      if(!(ret = parser_forward_tclass (parser, tok_number)))
+	return ret;
+      if(!(tok = parser_forward_tval (parser, tv_rbrace)))
+	return tok;
+      //ret->value.cval = transform_hex_to_dec (ret->value.cval); 
+      tok = ret;
+
+      /* Substitute 4 tokens which were read 
+	 with just one in the token buffer  */
+      e = parser->buf_end;
+      token_free (parser->token_buffer[buf_idx_inc (e, -4, s)]);
+      token_free (parser->token_buffer[buf_idx_inc (e, -3, s)]);
+      token_free (parser->token_buffer[buf_idx_inc (e, -1, s)]);
+      parser->token_buffer[buf_idx_inc (e, -4, s)] =
+	parser->token_buffer[buf_idx_inc (e, -2, s)];
+      
+      parser->token_buffer[buf_idx_inc (e, -3, s)] = NULL;
+      parser->token_buffer[buf_idx_inc (e, -2, s)] = NULL;
+      parser->token_buffer[buf_idx_inc (e, -1, s)] = NULL;
+      
+      parser->buf_end = buf_idx_inc (e, -3, s);
+    }
+  return tok;
+}
 
 
 /* Get the next token and check if it's class is what expected.
@@ -422,7 +422,7 @@ bool
 parser_init (struct parser * parser, struct lexer * lex)
 {
   parser->lex = lex;
-  parser->buf_size = 256;
+  parser->buf_size = 16;
   parser->buf_start = 0;
   parser->buf_end = 0;
   parser->buf_empty = true;
@@ -523,38 +523,33 @@ error:
 */
 static inline tree
 upper_type_wrapper (struct parser * parser)
-  {
-    struct token * tok = NULL;
-    tree dim = error_mark_node;
+{
+  struct token * tok = NULL;
+  tree dim = error_mark_node;
 
-    tok = parser_get_token (parser);
-    if (token_class (tok) == tok_number)
-      {
-        dim = make_integer_tok (tok);
-      }
-    else if (token_class (tok) == tok_id)
-      {
-        dim = make_identifier_tok (tok);
-      }
-    else if (token_is_operator (tok, tv_lbrace))
-      {
-	dim = handle_sexpr (parser);
-	if (!parser_forward_tval (parser, tv_rbrace))
-	  return error_mark_node;
-      }
-    else
-      {
-	error_loc (token_location (tok), "unexpected token `%s` ",
-	token_as_string (tok));
+  tok = parser_get_token (parser);
+  if (token_class (tok) == tok_number)
+    dim = make_integer_tok (tok);
+  else if (token_class (tok) == tok_id)
+    dim = make_identifier_tok (tok);
+  else if (token_is_operator (tok, tv_lbrace))
+    {
+      dim = handle_sexpr (parser);
+      if (!parser_forward_tval (parser, tv_rbrace))
 	return error_mark_node;
-      }
-
-    if (dim == NULL || dim == error_mark_node)
+    }
+  else
+    {
+      error_loc (token_location (tok), "unexpected token `%s` ",
+      token_as_string (tok));
       return error_mark_node;
-    else
-      return dim;
+    }
 
-  }
+  if (dim == NULL || dim == error_mark_node)
+    return error_mark_node;
+  else
+    return dim;
+}
 
 /*
    ext_type:
@@ -581,6 +576,7 @@ handle_ext_type (struct parser * parser)
       dim = upper_type_wrapper (parser);
       if (dim == error_mark_node)
 	goto error_shift;
+      
       TREE_TYPE_DIM (t) = dim;
     }
 
@@ -603,13 +599,9 @@ handle_ext_type (struct parser * parser)
 	  goto error;
     }
   else if (token_class (tok) == tok_number)
-    {
-      shape = make_integer_tok (tok);
-    }
+    shape = make_integer_tok (tok);
   else if (token_class (tok) == tok_id)
-    {
-      shape = make_identifier_tok (tok);
-    }
+    shape = make_identifier_tok (tok);
   else
     goto error_shift;
 
@@ -704,10 +696,10 @@ handle_indexes (struct parser * parser, tree prefix)
       idx = upper_wrapper (parser, prefix);
     }
   else
-  {
-    circumflex_first = false;
-    parser_unget (parser);
-  }
+    {
+      circumflex_first = false;
+      parser_unget (parser);
+    }
 
   if (token_is_operator (parser_get_token (parser), tv_lower_index))
     {
@@ -885,9 +877,9 @@ error:
 bool
 is_end (struct parser * parser, enum token_kind tok)
 {
-  if (token_is_keyword ( parser_get_token (parser), tv_end))
+  if (token_is_keyword (parser_get_token (parser), tv_end))
     {
-      if (token_is_operator ( parser_get_token (parser), tv_lbrace))
+      if (token_is_operator (parser_get_token (parser), tv_lbrace))
 	{
 	  if (!token_uses_buf (tok) && token_value (parser_get_token (parser)) == tok)
 	    {
