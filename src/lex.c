@@ -579,6 +579,25 @@ token_print (struct token *tok)
   fflush (stdout);
 }
 
+/* Copy token. Also copies string if necessary.
+   Memory allocation is done too.
+ */
+struct token* token_copy (struct token *tok)
+{
+  struct token * ret;
+  if (tok == NULL)
+    return NULL;
+
+  ret = (struct token *) malloc (sizeof (struct token));
+  ret->loc = tok->loc;
+  ret->tok_class = tok->tok_class;
+  ret->uses_buf = tok->uses_buf;
+  if (token_uses_buf (token_class (tok)))
+    ret->value.cval = strdup (tok->value.cval);
+  else
+    ret->value.tval = tok->value.tval;
+  return ret;
+}
 
 /* Deallocates the memory that token occupies.  */
 void

@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/tema/src/EqCode
+CMAKE_SOURCE_DIR = /home/zayac/code/EqCode
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/tema/src/EqCode
+CMAKE_BINARY_DIR = /home/zayac/code/EqCode
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -79,14 +79,14 @@ test/fast: test
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/tema/src/EqCode && $(CMAKE_COMMAND) -E cmake_progress_start /home/tema/src/EqCode/CMakeFiles /home/tema/src/EqCode/src/CMakeFiles/progress.marks
-	cd /home/tema/src/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/tema/src/EqCode/CMakeFiles 0
+	cd /home/zayac/code/EqCode && $(CMAKE_COMMAND) -E cmake_progress_start /home/zayac/code/EqCode/CMakeFiles /home/zayac/code/EqCode/src/CMakeFiles/progress.marks
+	cd /home/zayac/code/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/zayac/code/EqCode/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/tema/src/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/clean
+	cd /home/zayac/code/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/clean
 .PHONY : clean
 
 # The main clean target
@@ -95,22 +95,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/tema/src/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
+	cd /home/zayac/code/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/tema/src/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
+	cd /home/zayac/code/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/tema/src/EqCode && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/zayac/code/EqCode && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/CMakeFiles/eqlib.dir/rule:
-	cd /home/tema/src/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/CMakeFiles/eqlib.dir/rule
+	cd /home/zayac/code/EqCode && $(MAKE) -f CMakeFiles/Makefile2 src/CMakeFiles/eqlib.dir/rule
 .PHONY : src/CMakeFiles/eqlib.dir/rule
 
 # Convenience name for target.
@@ -119,7 +119,7 @@ eqlib: src/CMakeFiles/eqlib.dir/rule
 
 # fast build rule for target.
 eqlib/fast:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/build
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/build
 .PHONY : eqlib/fast
 
 global.o: global.c.o
@@ -127,7 +127,7 @@ global.o: global.c.o
 
 # target to build an object file
 global.c.o:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/global.c.o
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/global.c.o
 .PHONY : global.c.o
 
 global.i: global.c.i
@@ -135,7 +135,7 @@ global.i: global.c.i
 
 # target to preprocess a source file
 global.c.i:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/global.c.i
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/global.c.i
 .PHONY : global.c.i
 
 global.s: global.c.s
@@ -143,7 +143,7 @@ global.s: global.c.s
 
 # target to generate assembly for a file
 global.c.s:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/global.c.s
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/global.c.s
 .PHONY : global.c.s
 
 lex.o: lex.c.o
@@ -151,7 +151,7 @@ lex.o: lex.c.o
 
 # target to build an object file
 lex.c.o:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/lex.c.o
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/lex.c.o
 .PHONY : lex.c.o
 
 lex.i: lex.c.i
@@ -159,7 +159,7 @@ lex.i: lex.c.i
 
 # target to preprocess a source file
 lex.c.i:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/lex.c.i
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/lex.c.i
 .PHONY : lex.c.i
 
 lex.s: lex.c.s
@@ -167,7 +167,7 @@ lex.s: lex.c.s
 
 # target to generate assembly for a file
 lex.c.s:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/lex.c.s
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/lex.c.s
 .PHONY : lex.c.s
 
 parser.o: parser.c.o
@@ -175,7 +175,7 @@ parser.o: parser.c.o
 
 # target to build an object file
 parser.c.o:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/parser.c.o
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/parser.c.o
 .PHONY : parser.c.o
 
 parser.i: parser.c.i
@@ -183,7 +183,7 @@ parser.i: parser.c.i
 
 # target to preprocess a source file
 parser.c.i:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/parser.c.i
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/parser.c.i
 .PHONY : parser.c.i
 
 parser.s: parser.c.s
@@ -191,7 +191,7 @@ parser.s: parser.c.s
 
 # target to generate assembly for a file
 parser.c.s:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/parser.c.s
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/parser.c.s
 .PHONY : parser.c.s
 
 print.o: print.c.o
@@ -199,7 +199,7 @@ print.o: print.c.o
 
 # target to build an object file
 print.c.o:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/print.c.o
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/print.c.o
 .PHONY : print.c.o
 
 print.i: print.c.i
@@ -207,7 +207,7 @@ print.i: print.c.i
 
 # target to preprocess a source file
 print.c.i:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/print.c.i
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/print.c.i
 .PHONY : print.c.i
 
 print.s: print.c.s
@@ -215,7 +215,7 @@ print.s: print.c.s
 
 # target to generate assembly for a file
 print.c.s:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/print.c.s
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/print.c.s
 .PHONY : print.c.s
 
 tree.o: tree.c.o
@@ -223,7 +223,7 @@ tree.o: tree.c.o
 
 # target to build an object file
 tree.c.o:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/tree.c.o
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/tree.c.o
 .PHONY : tree.c.o
 
 tree.i: tree.c.i
@@ -231,7 +231,7 @@ tree.i: tree.c.i
 
 # target to preprocess a source file
 tree.c.i:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/tree.c.i
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/tree.c.i
 .PHONY : tree.c.i
 
 tree.s: tree.c.s
@@ -239,7 +239,7 @@ tree.s: tree.c.s
 
 # target to generate assembly for a file
 tree.c.s:
-	cd /home/tema/src/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/tree.c.s
+	cd /home/zayac/code/EqCode && $(MAKE) -f src/CMakeFiles/eqlib.dir/build.make src/CMakeFiles/eqlib.dir/tree.c.s
 .PHONY : tree.c.s
 
 # Help Target
@@ -278,6 +278,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/tema/src/EqCode && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/zayac/code/EqCode && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

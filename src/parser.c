@@ -21,6 +21,7 @@
 #include "global.h"
 #include "print.h"
 #include "parser.h"
+#include "matcher.c"
 
 /* Check if parser is not in any parenthesis/bracket expression.  */
 static inline bool
@@ -77,7 +78,7 @@ tree handle_with_loop (struct parser *, tree);
 tree handle_with_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
-
+bool handle_match (struct parser *);
 
 char * 
 transform_hex_to_dec (char * hex)
@@ -428,6 +429,7 @@ parser_init (struct parser * parser, struct lexer * lex)
   parser->token_buffer
     = (struct token * *) malloc (parser->buf_size * sizeof (struct token *));
   parser->unget_idx = 0;
+  matcher_finalize ();
   return true;
 }
 
@@ -438,6 +440,7 @@ parser_finalize (struct parser * parser)
 {
   assert (parser, "attempt to free empty parser");
   
+  matcher_finalize ();
   if (parser->buf_size != 0)
     {
       while ( parser->buf_start % parser->buf_size
@@ -471,6 +474,95 @@ is_id (struct token * tok, bool error)
 	       token_as_string (tok));
   return ret;
 }
+
+/*
+   This function handles \defx expressions, however in this case we don't need
+   to build a tree
+   Returns false in case an error, otherwise -- true.
+ */
+bool
+handle_match (struct parser * parser)
+{
+  struct token * tok = NULL;
+  struct token key;
+  struct token_list_el * match_head = NULL;
+  struct token_list_el * replace_head = NULL;
+  unsigned braces = 0;
+  if (!parser_forward_tval (parser, tv_match))
+    return false;
+  if (!parser_forward_tval (parser, tv_lbrace))
+    return false;
+  
+
+  key = *parser_get_token (parser);
+  parser_unget (parser);
+  while (true)
+    {
+      
+      struct token_list_el *el = NULL;
+      tok = token_copy (parser_get_token (parser));
+
+      /* We need to end up when there is a right brace encountered,
+	 and all inclusive braces are closed  */
+      if (token_is_operator(tok, tv_rbrace) && !braces)
+	{
+	  token_free (tok);
+	  break;
+	}
+      if (token_value (tok) == tv_eof)
+	{
+	  token_free (tok);
+	  return false;
+	}
+      else if (token_value (tok) == tv_lbrace)
+	braces++;
+      else if (token_value (tok) == tv_rbrace)
+	braces--;
+      
+      el =  (struct token_list_el *) 
+		    malloc (sizeof (struct token_list_el));
+      el->value = tok;
+      el->next = NULL;
+      LL_APPEND (match_head, el);
+    }
+
+  if (!parser_forward_tval (parser, tv_lbrace))
+    return false;
+
+  braces = 0;
+  while (true)
+    {
+      struct token_list_el * el = NULL;
+      tok = token_copy (parser_get_token (parser));
+
+      /* We need to end up when there is a right brace encountered,
+	 and all inclusive braces are closed  */
+      if (token_is_operator(tok, tv_rbrace) && !braces)
+	{
+	  token_free (tok);
+	  break;
+	}
+      if (token_value (tok) == tv_eof)
+	{
+	  token_free (tok);
+	  return false;
+	}
+      else if (token_value (tok) == tv_lbrace)
+	braces++;
+      else if (token_value (tok) == tv_rbrace)
+	braces--;
+
+      el = (struct token_list_el *) 
+		    malloc (sizeof (struct token_list_el));
+      el->value = tok;
+      el->next = NULL;
+      LL_APPEND (replace_head, el);
+    }
+  add_match (key, match_head, replace_head);
+
+  return true;
+}
+
 
 /*
    type:
@@ -1002,7 +1094,7 @@ handle_function (struct parser * parser)
 	break;
 
       t = handle_list (parser, handle_instr, tv_comma);
-      if (TREE_CODE (t) == LIST)
+      if ( t != NULL && TREE_CODE (t) == LIST)
 	{
 	  DL_FOREACH_SAFE (TREE_LIST(t), el, tmp)
 	    {
@@ -1014,17 +1106,29 @@ handle_function (struct parser * parser)
 	}
       else
 	{
-	  tree_list_append(instrs, t);
-	  if (t == NULL || t == error_mark_node)
+	  if (t != NULL)
+	    tree_list_append(instrs, t);
+	  if (t == error_mark_node)
 	    { 
 	      parser_get_until_tval (parser, tv_lend);
 	      break;
 	    }
 	}
 
-
-      if (parser_expect_tval (parser, tv_lend))
-	parser_get_token (parser);
+      /* If last instruction was \match, we can avoid \lend in the end  */
+      if (t == NULL)
+	{
+	  if (!token_is_keyword (parser_get_token (parser), tv_lend))
+	    {
+	      parser_unget (parser);
+	      continue;
+	    }
+	}
+      else
+	{
+          if (parser_expect_tval (parser, tv_lend))
+	    parser_get_token (parser);
+	}
     }
   
   return make_function (name, args, arg_types, ret, instrs, loc);
@@ -2255,6 +2359,14 @@ handle_instr (struct parser * parser)
       parser_unget (parser);
       return handle_return (parser);
     }
+  else if (token_is_keyword (tok, tv_match))
+    {
+      parser_unget (parser);
+      if (!handle_match (parser))
+	return error_mark_node;
+      else
+	return NULL;
+    }
   else if (is_id (tok, false))
     {
       parser_unget (parser);
@@ -2286,7 +2398,7 @@ handle_instr (struct parser * parser)
 
 /*
    with_loop:
-   idx | condition \gets ( expr | with_loop_cases )
+   idx | condition \gets ( expr | with_loop_cases )/
  */
 tree
 handle_with_loop (struct parser * parser, tree prefix_id)
@@ -2484,6 +2596,8 @@ parse (struct parser *parser)
 	printf ("Errors in function\n\n");
     }
 
+  printf ("\n####### Transforms ########\n");
+  print_matches ();
   return 0;
 }
 
