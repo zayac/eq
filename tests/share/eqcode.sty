@@ -35,6 +35,7 @@
 \RequirePackage{amsfonts}
 \RequirePackage{ifthen}
 %
+
 \newcommand{\pcode@AF}[1]{\mbox{\textsc{#1}}} % Algorithm font
 \newcommand{\pcode@tab}[1]{\hspace*{2ex}}
 \newcolumntype{A}{>{$}l<{$}} 
@@ -64,6 +65,10 @@
 \newcommand{\filter}[1]{\textbf{filter}(#1)}
 \newcommand{\hex}[1]{$0x#1$}
 \newcommand{\type}[1]{\mathbb{#1}}
+%\newcommand{\pair}[3]{\#1 #2 #3}
+%\newcommand{\defpair}[5]{\def \pair{\#1}{\#2}{\#3}{AAA}}
+\newcommand{\match}[2]{}
+\newcommand{\expr}[1]{}
 \newenvironment{tvector}{\left(\begin{array}{c}}{\end{array}\right)}
 \newenvironment{tmatrix}{\left(\begin{array}}{\end{array}\right)}
 \DeclareMathOperator{\genar}{\mathfrak{G}}
