@@ -2398,7 +2398,7 @@ handle_instr (struct parser * parser)
 
 /*
    with_loop:
-   idx | condition \gets ( expr | with_loop_cases )/
+   idx | condition \gets ( expr | with_loop_cases )
  */
 tree
 handle_with_loop (struct parser * parser, tree prefix_id)
