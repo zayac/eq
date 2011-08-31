@@ -1,1 +1,9 @@
 It's a simple LaTeX to SaC compiler
+
+In order to build the compiler do the following:
+  $cd build/
+  $cmake ..
+  $make
+
+In case you want to test the binary run:
+  $make test
