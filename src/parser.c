@@ -21,7 +21,7 @@
 #include "global.h"
 #include "print.h"
 #include "parser.h"
-#include "matcher.c"
+#include "matcher.h"
 
 /* Check if parser is not in any parenthesis/bracket expression.  */
 static inline bool
@@ -30,55 +30,6 @@ parser_parens_zero (struct parser *parser)
   return parser->paren_count == 0
     && parser->square_count == 0 && parser->brace_count == 0;
 }
-
-/* FIXME These functions should be static at some point.  */
-struct token *parser_get_token (struct parser *);
-void parser_unget (struct parser *);
-
-struct token *parser_get_until_tval (struct parser *, enum token_kind);
-struct token *parser_get_until_tclass (struct parser *, enum token_class);
-struct token *parser_forward_tval (struct parser *, enum token_kind);
-struct token *parser_forward_tclass (struct parser *, enum token_class);
-struct token *parser_token_alternative_tval (struct parser *, enum token_kind,
-					    enum token_kind);
-struct token *parser_token_alternative_tclass (struct parser *,
-					      enum token_class,
-					      enum token_class);
-bool parser_expect_tval (struct parser *, enum token_kind);
-bool parser_expect_tclass (struct parser *, enum token_class);
-tree handle_type (struct parser *);
-tree handle_ext_type (struct parser *);
-tree handle_list (struct parser *, tree (*)(struct parser *),
-		  enum token_kind);
-tree handle_ext_type_or_ext_type_list (struct parser *);
-tree handle_sexpr_or_sexpr_list (struct parser *);
-tree handle_id (struct parser *);
-tree handle_indexes (struct parser *, tree);
-tree handle_idx (struct parser *);
-tree handle_idx_or_idx_list (struct parser *);
-tree handle_lower (struct parser *);
-tree handle_upper (struct parser *);
-tree handle_function (struct parser *);
-tree handle_function_call (struct parser *);
-tree handle_linear (struct parser *);
-tree handle_divide (struct parser *);
-tree handle_sexpr (struct parser *);
-tree handle_sexpr_op (struct parser *);
-tree handle_condition (struct parser *);
-tree handle_filter (struct parser *);
-tree handle_matrix (struct parser *);
-tree handle_vector (struct parser *);
-tree handle_genarray (struct parser *);
-tree handle_expr (struct parser *);
-tree handle_return (struct parser *);
-tree handle_assign (struct parser *, tree);
-tree handle_declare (struct parser *, tree);
-tree handle_instr (struct parser *);
-tree handle_with_loop (struct parser *, tree);
-tree handle_with_loop_cases (struct parser *);
-tree handle_numx (struct parser *);
-tree handle_idx_numx (struct parser *);
-bool handle_match (struct parser *);
 
 char * 
 transform_hex_to_dec (char * hex)
@@ -486,8 +437,9 @@ handle_match (struct parser * parser)
   struct token * tok = NULL;
   struct token key;
   struct token_list_el * match_head = NULL;
-  struct token_list_el * replace_head = NULL;
   unsigned braces = 0;
+  tree replace = NULL;
+
   if (!parser_forward_tval (parser, tv_match))
     return false;
   if (!parser_forward_tval (parser, tv_lbrace))
@@ -495,7 +447,10 @@ handle_match (struct parser * parser)
   
 
   key = *parser_get_token (parser);
+  key.loc.line = 0;
+  key.loc.col = 0;
   parser_unget (parser);
+
   while (true)
     {
       
@@ -521,6 +476,8 @@ handle_match (struct parser * parser)
       
       el =  (struct token_list_el *) 
 		    malloc (sizeof (struct token_list_el));
+      tok->loc.col = 0;
+      tok->loc.line = 0;
       el->value = tok;
       el->next = NULL;
       LL_APPEND (match_head, el);
@@ -529,36 +486,20 @@ handle_match (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     return false;
 
-  braces = 0;
-  while (true)
+  if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     {
-      struct token_list_el * el = NULL;
-      tok = token_copy (parser_get_token (parser));
-
-      /* We need to end up when there is a right brace encountered,
-	 and all inclusive braces are closed  */
-      if (token_is_operator(tok, tv_rbrace) && !braces)
+      parser_unget (parser);
+      replace = handle_expr (parser);
+      if (!parser_forward_tval (parser, tv_rbrace))
 	{
-	  token_free (tok);
-	  break;
-	}
-      if (token_value (tok) == tv_eof)
-	{
-	  token_free (tok);
+	  add_match (key, match_head, replace);
 	  return false;
 	}
-      else if (token_value (tok) == tv_lbrace)
-	braces++;
-      else if (token_value (tok) == tv_rbrace)
-	braces--;
-
-      el = (struct token_list_el *) 
-		    malloc (sizeof (struct token_list_el));
-      el->value = tok;
-      el->next = NULL;
-      LL_APPEND (replace_head, el);
     }
-  add_match (key, match_head, replace_head);
+  else
+    parser_unget (parser);
+  
+  add_match (key, match_head, replace);
 
   return true;
 }
@@ -1611,9 +1552,43 @@ out:
   return stack[0].expr;
 }
 
+/* expr_match:
+   \expr { <num> }
+ */
+tree
+handle_expr_match (struct parser *parser)
+{
+  tree t = error_mark_node;
+  struct token * tok = NULL;
+
+  if (!parser_forward_tval (parser, tv_expr))
+    return error_mark_node;
+
+  if (!parser_forward_tval (parser, tv_lbrace))
+    return error_mark_node;
+
+  if (!(tok = parser_forward_tclass (parser, tok_number)))
+    {
+      token_free (tok);
+      return error_mark_node;
+    }
+
+  if (!parser_forward_tval (parser, tv_rbrace))
+    {
+      token_free (tok);
+      return error_mark_node;
+    }
+
+  t = make_tree (EXPR_MATCH);
+  TREE_ARGSET(t) = true;
+  TREE_ARG(t) = make_integer_tok (tok)->int_cst_node.value;
+  return t;
+}
+
 /* sexpr:
        { expr }
      | ( expr ) 
+     | expr_match
      |
      sexpr_op [ ( \land | \lor | \oplus | + | - 
 		| \cdot | divide | \ll | \gg 
@@ -1662,6 +1637,11 @@ handle_sexpr (struct parser * parser)
       t = handle_expr (parser);
       parser_expect_tval (parser, tv_rparen);
       parser_get_token (parser);
+    }
+  else if (token_is_keyword (tok, tv_expr))
+    {
+      parser_unget (parser);
+      return handle_expr_match (parser); 
     }
   else
     {
@@ -2205,6 +2185,11 @@ handle_expr (struct parser * parser)
   struct token *tok;
   tree t = error_mark_node;
   
+  /* Try to perform transformations which are recorded in matcher table  */
+  t = perform_transform (parser);
+  if ((t = perform_transform (parser)) != NULL)
+    return t;
+
   if (token_is_keyword (tok = parser_get_token (parser), tv_filter))
     {
       parser_unget (parser);

@@ -222,6 +222,8 @@ print_expression (FILE * f, tree exp)
       return print_expression (f, TREE_OPERAND (exp, 1));
     case OTHERWISE_EXPR:
       return fprintf (f, "\\otherwise");
+    case EXPR_MATCH:
+      return fprintf(f, "\\expr { %d }", TREE_ARG (exp));
     default:
       {
 	const char *opcode;

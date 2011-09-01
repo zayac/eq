@@ -314,7 +314,7 @@ tree
 make_tree_list ()
 {
   tree t = make_tree (LIST);
-	TREE_LIST(t) = NULL;
+  TREE_LIST(t) = NULL;
   return t;
 }
 
@@ -470,10 +470,36 @@ tree_list_copy (tree lst)
 	  "cannot copy list from %s", TREE_CODE_NAME (TREE_CODE (lst)));
 
   cpy = make_tree_list ();
-	DL_CONCAT (TREE_LIST(cpy), TREE_LIST(lst));
+  DL_CONCAT (TREE_LIST(cpy), TREE_LIST(lst));
   return cpy;
 }
 
+tree
+tree_copy (tree t)
+{
+  tree tmp = make_tree (TREE_CODE(t));
+  int i = 0;
+  memcpy (tmp, t, sizeof (t));
+  switch (TREE_CODE(t))
+    {
+      case (LIST):
+	tmp = tree_list_copy (t);
+	break;
+      case (STRING_CST):
+	tmp->string_cst_node.value = strdup (t->string_cst_node.value);
+	break;
+      case (IDENTIFIER):
+	tmp->identifier_node.name = tree_copy (t->identifier_node.name);
+	break;
+      default:
+	break;
+    }
+
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE(t)); i++)
+      TREE_OPERAND_SET(tmp, i, tree_copy (TREE_OPERAND(t, i)));
+
+  return tmp;
+}
 
 /* This function frees the list structure without touching
    any tree pointers that list stores. It is useful to destroy

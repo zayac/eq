@@ -100,3 +100,6 @@ DEF_TREE_CODE (VECTOR_EXPR, "vector_expr", tcl_expression, 1, true)
 DEF_TREE_CODE (WITH_LOOP_EXPR, "with_loop_expr", tcl_expression, 3, false)
 DEF_TREE_CODE (CASE_EXPR, "case_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (OTHERWISE_EXPR, "otherwise_expr", tcl_expression, 0, false)
+
+/* A special case used for marking \expr constructions in \match */
+DEF_TREE_CODE (EXPR_MATCH, "expr_match", tcl_expression, 0, true)

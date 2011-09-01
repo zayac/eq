@@ -175,6 +175,7 @@ bool lexer_finalize (struct lexer *);
 bool is_id (struct token *, bool);
 struct token *  lexer_get_token (struct lexer *);
 struct token * token_copy (struct token *);
+bool token_compare (struct token *, struct token *);
 void token_free (struct token *);
 void token_print (struct token *);
 const char *  token_as_string (struct token *);

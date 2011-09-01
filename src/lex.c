@@ -268,7 +268,10 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
   if (**buf != '\\')
     tok->tok_class = tok_id;
   else
-    tok->tok_class = tok_unknown;
+    {
+      tok->uses_buf = true;
+      tok->tok_class = tok_unknown;
+    }
 }
 
 /* Internal function to read until the end of number.  */
@@ -582,7 +585,8 @@ token_print (struct token *tok)
 /* Copy token. Also copies string if necessary.
    Memory allocation is done too.
  */
-struct token* token_copy (struct token *tok)
+struct token* 
+token_copy (struct token *tok)
 {
   struct token * ret;
   if (tok == NULL)
@@ -598,6 +602,32 @@ struct token* token_copy (struct token *tok)
     ret->value.tval = tok->value.tval;
   return ret;
 }
+
+/* Compare two tokens 
+   It doesn't take into consideration token locations
+ */
+bool
+token_compare (struct token * first, struct token * second)
+{
+  if (first == second)
+    return true;
+  if (first->tok_class != second->tok_class)
+    return false;
+  if (first->uses_buf != second->uses_buf)
+    return false;
+  if(first->uses_buf)
+    {
+      if (strcmp (first->value.cval, second->value.cval))
+	return false;
+    }
+  else
+    {
+      if (first->value.tval != second->value.tval)
+	return false;
+    }
+  return true;
+}
+
 
 /* Deallocates the memory that token occupies.  */
 void

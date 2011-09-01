@@ -70,6 +70,9 @@ struct tree_type_base
   struct tree_base base;
   tree type;
   unsigned int is_constant:1;
+  /* These options are needed when \match parsing  */
+  bool argset;
+  unsigned arg;
 };
 
 struct tree_type_node
@@ -159,6 +162,9 @@ enum tree_global_code
 
 #define TREE_TYPE_NAME(node) ((node)->type_node.name)
 #define TREE_TYPE_SIZE(node) ((node)->type_node.size)
+
+#define TREE_ARGSET(node) ((node)->typed.argset)
+#define TREE_ARG(node) ((node)->typed.arg)
 
 /* Checks if it is possible to access the operand number IDX
    in the node with the code CODE.  */
@@ -262,6 +268,7 @@ tree make_with_loop (tree, tree, tree, bool);
 tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
+tree tree_copy (tree);
 void free_list (tree);
 
 #endif /* __TREE_H__  */

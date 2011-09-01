@@ -40,6 +40,55 @@ token_is_ ## a (struct token *  tok, enum token_kind tkind) \
 int parse (struct parser *);
 bool parser_init (struct parser *, struct lexer *);
 bool parser_finalize (struct parser *);
+/* FIXME These functions should be static at some point.  */
+struct token *parser_get_token (struct parser *);
+void parser_unget (struct parser *);
+
+struct token *parser_get_until_tval (struct parser *, enum token_kind);
+struct token *parser_get_until_tclass (struct parser *, enum token_class);
+struct token *parser_forward_tval (struct parser *, enum token_kind);
+struct token *parser_forward_tclass (struct parser *, enum token_class);
+struct token *parser_token_alternative_tval (struct parser *, enum token_kind,
+					    enum token_kind);
+struct token *parser_token_alternative_tclass (struct parser *,
+					      enum token_class,
+					      enum token_class);
+bool parser_expect_tval (struct parser *, enum token_kind);
+bool parser_expect_tclass (struct parser *, enum token_class);
+tree handle_type (struct parser *);
+tree handle_ext_type (struct parser *);
+tree handle_list (struct parser *, tree (*)(struct parser *),
+		  enum token_kind);
+tree handle_ext_type_or_ext_type_list (struct parser *);
+tree handle_sexpr_or_sexpr_list (struct parser *);
+tree handle_id (struct parser *);
+tree handle_indexes (struct parser *, tree);
+tree handle_idx (struct parser *);
+tree handle_idx_or_idx_list (struct parser *);
+tree handle_lower (struct parser *);
+tree handle_upper (struct parser *);
+tree handle_function (struct parser *);
+tree handle_function_call (struct parser *);
+tree handle_linear (struct parser *);
+tree handle_divide (struct parser *);
+tree handle_sexpr (struct parser *);
+tree handle_sexpr_op (struct parser *);
+tree handle_condition (struct parser *);
+tree handle_filter (struct parser *);
+tree handle_matrix (struct parser *);
+tree handle_vector (struct parser *);
+tree handle_genarray (struct parser *);
+tree handle_expr (struct parser *);
+tree handle_return (struct parser *);
+tree handle_assign (struct parser *, tree);
+tree handle_declare (struct parser *, tree);
+tree handle_instr (struct parser *);
+tree handle_with_loop (struct parser *, tree);
+tree handle_with_loop_cases (struct parser *);
+tree handle_numx (struct parser *);
+tree handle_idx_numx (struct parser *);
+bool handle_match (struct parser *);
+
 
 __END_DECLS
 

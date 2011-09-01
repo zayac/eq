@@ -3,6 +3,6 @@ add_definitions (${CFLAGS})
 set (eqlib_src
 global.c  lex.c  
 parser.c  print.c  
-tree.c)
+tree.c matcher.c)
 add_library (eqlib ${eqlib_src})
 
