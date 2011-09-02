@@ -71,8 +71,8 @@ struct tree_type_base
   tree type;
   unsigned int is_constant:1;
   /* These options are needed when \match parsing  */
-  bool argset;
-  unsigned arg;
+  bool argset:1;
+  unsigned arg:6;
 };
 
 struct tree_type_node
@@ -248,6 +248,7 @@ is_assignment_operator (enum token_kind tk)
     }
 }
 
+size_t get_tree_size (enum tree_code);
 tree make_tree (enum tree_code);
 void free_tree (tree);
 void free_atomic_trees ();

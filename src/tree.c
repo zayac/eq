@@ -61,58 +61,64 @@ static tree *  atomic_trees = NULL;
 static size_t  atomic_trees_size = 0;
 static size_t  atomic_trees_idx = 0;
 
-tree
-make_tree (enum tree_code code)
+size_t 
+get_tree_size (enum tree_code code)
 {
-  tree ret;
   size_t size, ops;
-  
   ops = TREE_CODE_OPERANDS (code) * sizeof (tree);
   size = TREE_CODE_TYPED (code) 
 	 ? (ops ? sizeof (struct tree_type_base_op)
 		 : sizeof (struct tree_type_base))
 	 : (ops ? sizeof (struct tree_base_op)
 		 : sizeof (struct tree_base));
+
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
       if (code == IDENTIFIER)
-	ret = (tree) malloc (size = ops + sizeof (struct tree_identifier_node));
+	return ops + sizeof (struct tree_identifier_node);
       else if (code == LIST)
-	ret = (tree) malloc (size = ops + sizeof (struct tree_list_node));
+	return ops + sizeof (struct tree_list_node);
       else if (code == ERROR_MARK)
 	{
 	  warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
-	  return error_mark_node;
+	  return 0;
 	}
       else
-	ret = (tree) malloc (size = size + ops);
+	return size + ops;
       break;
 
     case tcl_type:
-      ret = (tree) malloc (size = size + ops);
+      return size + ops;
       break;
 
     case tcl_constant:
       if (code == INTEGER_CST)
-	ret = (tree) malloc (size = ops + sizeof (struct tree_int_cst_node));
+	return ops + sizeof (struct tree_int_cst_node);
       else if (code == STRING_CST)
-	ret = (tree) malloc (size = ops + sizeof (struct tree_string_cst_node));
+	return ops + sizeof (struct tree_string_cst_node);
       else
 	unreachable (0);
       break;
     case tcl_expression:
       if (code == CIRCUMFLEX)
-	ret = (tree) malloc (size = ops + sizeof (struct tree_circumflex_op_node));
+	return ops + sizeof (struct tree_circumflex_op_node);
       else
-	ret = (tree) malloc (size = size + ops);
+	return size + ops;
       break;
 
     default:
       unreachable (0);
       break;
     }
-  //printf("%s %d\n", TREE_CODE_NAME(code), size); 
+    return 0;
+}
+
+tree
+make_tree (enum tree_code code)
+{
+  size_t size = get_tree_size (code);
+  tree ret = (tree) malloc (size);
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
   return ret;
@@ -479,7 +485,7 @@ tree_copy (tree t)
 {
   tree tmp = make_tree (TREE_CODE(t));
   int i = 0;
-  memcpy (tmp, t, sizeof (t));
+  memcpy (tmp, t, get_tree_size (TREE_CODE(t)));
   switch (TREE_CODE(t))
     {
       case (LIST):

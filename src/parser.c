@@ -1047,6 +1047,8 @@ handle_function (struct parser * parser)
 	}
       else
 	{
+	  /* There is a convention that if instruction was a \match
+	     statement, we return NULL  */
 	  if (t != NULL)
 	    tree_list_append(instrs, t);
 	  if (t == error_mark_node)
@@ -2186,7 +2188,6 @@ handle_expr (struct parser * parser)
   tree t = error_mark_node;
   
   /* Try to perform transformations which are recorded in matcher table  */
-  t = perform_transform (parser);
   if ((t = perform_transform (parser)) != NULL)
     return t;
 

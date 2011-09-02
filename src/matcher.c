@@ -57,6 +57,7 @@ delete_match (struct match_table * del)
   free (del);
 }
 
+/* Find a relevant record in hash table by key token  */
 struct 
 match_table* find_match (struct token * tok)
 {
@@ -65,11 +66,16 @@ match_table* find_match (struct token * tok)
   return ret;
 }
 
+/* A recursive function returning a "real" tree according
+   with it's number from the list if there was an "argset" flag set.
+   The old tree is freed.
+   In other case there the there is a recursive descent, in the end the
+   same tree is returned.  */
 tree
 connect_nodes (tree t, struct tree_list_el * list)
 {
   int i;
-  if (TREE_ARGSET(t))
+  if (TREE_CODE_TYPED(TREE_CODE(t)) && TREE_ARGSET(t))
     {
       int counter;
       for (counter = 1; counter < TREE_ARG(t); counter++)
@@ -85,10 +91,11 @@ connect_nodes (tree t, struct tree_list_el * list)
     }
   return t;
 }
+
 tree
 perform_transform (struct parser * parser)
 {
-  tree ret = NULL;
+  tree ret = NULL, tmp = NULL;
   struct tree_list_el * tmp_expr = NULL;
   struct tree_list_el * exprs = NULL;
   struct match_table * record = NULL;
@@ -128,7 +135,10 @@ perform_transform (struct parser * parser)
 	    }
 	}
       ret = tree_copy (MATCHER_REPLACE(record));
-
+      tmp = ret;
+      ret = connect_nodes (ret, exprs);
+      if (tmp != ret)
+	free_tree (ret);
 
     }
   
