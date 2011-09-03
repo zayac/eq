@@ -606,26 +606,38 @@ token_copy (struct token *tok)
 /* Compare two tokens 
    It doesn't take into consideration token locations
  */
-bool
+int
 token_compare (struct token * first, struct token * second)
 {
   if (first == second)
-    return true;
-  if (first->tok_class != second->tok_class)
-    return false;
+    return 0;
+  
+  /* Compare token classes  */
+  if (first->tok_class < second->tok_class)
+    return -1;
+  else if (first->tok_class > second->tok_class)
+    return 1;
+
+  /* Compare by buffer usage  */
   if (first->uses_buf != second->uses_buf)
-    return false;
-  if(first->uses_buf)
     {
-      if (strcmp (first->value.cval, second->value.cval))
-	return false;
+      if (!first->uses_buf)
+	return -1;
+      else
+	return 1;
     }
+
+  if(first->uses_buf)
+      return strcmp (first->value.cval, second->value.cval);
   else
     {
-      if (first->value.tval != second->value.tval)
-	return false;
+      if (first->value.tval < second->value.tval)
+	return -1;
+      else if (first->value.tval > second->value.tval)
+	return 1;
+      else return 0;
     }
-  return true;
+  return 0;
 }
 
 

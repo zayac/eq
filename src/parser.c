@@ -435,7 +435,6 @@ bool
 handle_match (struct parser * parser)
 {
   struct token * tok = NULL;
-  struct token key;
   struct token_list_el * match_head = NULL;
   unsigned braces = 0;
   tree replace = NULL;
@@ -445,12 +444,6 @@ handle_match (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     return false;
   
-
-  key = *parser_get_token (parser);
-  key.loc.line = 0;
-  key.loc.col = 0;
-  parser_unget (parser);
-
   while (true)
     {
       
@@ -492,14 +485,14 @@ handle_match (struct parser * parser)
       replace = handle_expr (parser);
       if (!parser_forward_tval (parser, tv_rbrace))
 	{
-	  add_match (key, match_head, replace);
+	  add_match (token_as_string (match_head->value), match_head, replace);
 	  return false;
 	}
     }
   else
     parser_unget (parser);
   
-  add_match (key, match_head, replace);
+  add_match (token_as_string (match_head->value), match_head, replace);
 
   return true;
 }

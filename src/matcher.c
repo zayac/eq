@@ -25,7 +25,7 @@ matcher_init ()
 
 /* Adds match rule to the hash table  */
 void 
-add_match (struct token key, struct token_list_el* match, 
+add_match (const char * key, struct token_list_el* match, 
 		    tree replace)
 {
   struct match_table * el;
@@ -33,7 +33,8 @@ add_match (struct token key, struct token_list_el* match,
   MATCHER_KEY(el) = key;
   MATCHER_MATCH(el) = match;
   MATCHER_REPLACE(el) = replace;
-  HASH_ADD (hh, matches, key, sizeof (struct token), el);
+  HASH_ADD_KEYPTR (hh, matches, key, strlen(key), el);
+  //HASH_ADD (hh, matches, key, sizeof (struct token), el);
 
 }
 
@@ -59,10 +60,10 @@ delete_match (struct match_table * del)
 
 /* Find a relevant record in hash table by key token  */
 struct 
-match_table* find_match (struct token * tok)
+match_table* find_match (const char* str)
 {
   struct match_table * ret = NULL;
-  HASH_FIND(hh, matches, tok, sizeof (struct token), ret);
+  HASH_FIND_STR (matches, str, ret);
   return ret;
 }
 
@@ -72,7 +73,7 @@ match_table* find_match (struct token * tok)
    In other case there the there is a recursive descent, in the end the
    same tree is returned.  */
 tree
-connect_nodes (tree t, struct tree_list_el * list)
+connect_nodes (tree t, const struct tree_list_el * list)
 {
   int i;
   if (TREE_CODE_TYPED(TREE_CODE(t)) && TREE_ARGSET(t))
@@ -80,14 +81,15 @@ connect_nodes (tree t, struct tree_list_el * list)
       int counter;
       for (counter = 1; counter < TREE_ARG(t); counter++)
 	list = list->next;
-      return list->value;
+      return tree_copy(list->value);
     }
 
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE(t)); i++)
     {
       tree op = TREE_OPERAND (t, i);
       TREE_OPERAND_SET (t, i, connect_nodes(op, list));
-      free_tree (op);
+      if (op != TREE_OPERAND(t, i)) 
+	free_tree (op);
     }
   return t;
 }
@@ -98,12 +100,13 @@ perform_transform (struct parser * parser)
   tree ret = NULL, tmp = NULL;
   struct tree_list_el * tmp_expr = NULL;
   struct tree_list_el * exprs = NULL;
+  struct tree_list_el * expr_el = NULL;
   struct match_table * record = NULL;
   struct token * tok = parser_get_token (parser);
   parser_unget (parser);
   tok->loc.col = 0;
   tok->loc.line = 0;
-  record = find_match (tok);
+  record = find_match ( token_as_string (tok));
 
 
   if (record != NULL)
@@ -124,7 +127,7 @@ perform_transform (struct parser * parser)
 	    {
 	      tok = parser_get_token (parser);
 	      token_count++;
-	      if (!token_compare (tok, el->value))
+	      if (token_compare (tok, el->value))
 		{
 		  while (token_count-- > 0)
 		    {
@@ -139,7 +142,14 @@ perform_transform (struct parser * parser)
       ret = connect_nodes (ret, exprs);
       if (tmp != ret)
 	free_tree (ret);
-
+  
+      /* Free exprs in the end  */
+      LL_FOREACH_SAFE(exprs, expr_el, tmp_expr)
+	{
+	  free_tree (expr_el->value);
+	  free (expr_el);
+	  LL_DELETE (exprs, expr_el);
+	}
     }
   
   return ret;
