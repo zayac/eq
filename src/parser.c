@@ -235,12 +235,32 @@ struct token *
 parser_get_token (struct parser * parser)
 {
   struct token * tok = parser_get_lexer_token (parser);
-  //token_print (tok);
-  if (token_is_keyword (tok, tv_hex))
+  if (token_uses_buf (tok) && 
+	  (!(strcmp (token_as_string (tok), "\\left") && 
+	     strcmp (token_as_string (tok), "\\right"))))
+    {
+      struct token * del = parser_get_token (parser);
+      if (!token_is_delimiter (del))
+	return del;
+      else
+	{
+	  char * conc = (char *) malloc (sizeof (char) *
+	  (strlen (token_as_string (tok)) +
+	       strlen (token_as_string (del)) + 1));
+	  size_t s = parser->buf_size, e = parser->buf_end;
+	  memcpy (conc, token_as_string (tok), strlen (token_as_string (tok)));
+	  memcpy (conc + strlen (token_as_string (tok)), token_as_string (del),
+	      sizeof (token_as_string (del)));
+	  free (tok->value.cval);
+	  tok->value.cval = conc;
+	  token_free (parser->token_buffer[buf_idx_inc (e, -1, s)]);
+	  parser->buf_end = buf_idx_inc (e, -1, s);
+	}
+    }
+  else if (token_is_keyword (tok, tv_hex))
     {
       size_t s = parser->buf_size, e;
       struct token* ret;
-
       
       parser->lex->hex_number = true;
       if(!(tok = parser_forward_tval (parser, tv_lbrace)))

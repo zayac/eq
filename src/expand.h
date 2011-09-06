@@ -98,7 +98,6 @@ extern int warning_count;
     ++ warning_count; \
   } while (0)
 
-
 #define TOKEN_KIND(a, b) a,
 #define KEYWORD(a, b, c, d) tv_ ## a,
 enum token_kind
@@ -173,6 +172,7 @@ __BEGIN_DECLS
 bool lexer_init (struct lexer *, const char *);
 bool lexer_finalize (struct lexer *);
 bool is_id (struct token *, bool);
+bool token_is_delimiter (struct token *);
 struct token *  lexer_get_token (struct lexer *);
 struct token * token_copy (struct token *);
 int token_compare (struct token *, struct token *);

@@ -36,12 +36,12 @@ print_expression (FILE * f, tree exp)
   //printf("%s\n", TREE_CODE_NAME(TREE_CODE(exp)));
       assert (exp != NULL 
           && (   TREE_CODE(exp) == FUNCTION
-							|| TREE_CODE(exp) == LIST
+	      || TREE_CODE(exp) == LIST
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_type
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_expression
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_constant
               || TREE_CODE (exp) == IDENTIFIER
-              || exp == error_mark_node),
+              || TREE_CODE (exp) == ERROR_MARK),
           "attempt to print non-expression tree %s",
           TREE_CODE_NAME (TREE_CODE (exp)));
   

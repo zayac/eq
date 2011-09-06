@@ -67,6 +67,7 @@ match_table* find_match (const char* str)
   return ret;
 }
 
+
 /* A recursive function returning a "real" tree according
    with it's number from the list if there was an "argset" flag set.
    The old tree is freed.
@@ -85,8 +86,8 @@ connect_nodes (tree t, const struct tree_list_el * list)
 	{
 	  tmp = el->entry;
 	  el->entry = connect_nodes (el->entry, list);
-	  if (tmp)
-	    free_tree (tmp);
+	  // (el->entry != tmp)
+	  //free_tree (tmp);
 	}
       return t;
     }
@@ -103,8 +104,8 @@ connect_nodes (tree t, const struct tree_list_el * list)
     {
       tree op = TREE_OPERAND (t, i);
       TREE_OPERAND_SET (t, i, connect_nodes(op, list));
-      if (op != TREE_OPERAND(t, i)) 
-	free_tree (op);
+      //if (op != TREE_OPERAND(t, i)) 
+	//free_tree (op);
     }
   return t;
 }
@@ -122,6 +123,7 @@ void free_tree_list (struct tree_list_el * list, bool delete_tree)
       free (el);
     }
 }
+
 
 tree
 perform_transform (struct parser * parser)

@@ -1,4 +1,5 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+	  ilob = matches->replace->typed_op.operands[1]->list_node.list->entry;
                       Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any
@@ -79,7 +80,6 @@ KEYWORD (oplus,     operator,   false,		"\\oplus")
 KEYWORD (otherwise, keyword,    false,		"\\otherwise")
 KEYWORD (phi,       keyword,    true,		"\\phi")
 KEYWORD (pi,        keyword,    true,		"\\pi")
-KEYWORD (print,     keyword,    false,		"\\print")
 KEYWORD (psi,       keyword,    true,		"\\psi")
 KEYWORD (qquad,     whitespace, false,		"\\qquad")
 KEYWORD (quad,      whitespace, false,		"\\quad")

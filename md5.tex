@@ -17,15 +17,16 @@
 
 
 \match { \lfloor \expr \rfloor } {\call {floor} {\expr {1}}}
-\match { \left ( \expr \right ) } {( \expr {1} ) }
+\match { \left( \expr \right) } {( \expr {1} ) }
 \match { \log _ { \expr } \expr } { \call {log}{\expr {1}, \expr {2}}}
-
-
+\match { \left | \expr \right | } {\call {abs}{\expr{1}}}
+\match { \sin \expr } {\call {sin}{\expr{1}}}
+%
 \begin{document}
 \begin{eqcode}{length}{a}{\type{Z}}{\type{Z}^1_8}
     r \in \type{Z}^1_8 \lend
     r_i\  |\  i : 0 \leq i \leq 7 \gets 0 \lend
-     n \gets 256^{\lfloor \log_{256}\left(a \right)\rfloor} \lend
+     n \gets 256^{\lfloor \log_{256} \left | a \right | \rfloor } \lend
     n^{[0]} \gets n \lend
     r^{[i]}_i \gets \dfrac{a}{n^{[i]}} \lend
     n^{[i]} \gets \dfrac{n^{[i-1]}}{256} \lend
@@ -45,7 +46,7 @@
 \end{eqcode}
 
 \begin{eqcode}{T}{i}{\type{Z}}{\type{Z}}
-    %\return{\lfloor \hex{100000000} \cdot |\sin i| \rfloor } \lend
+    \return{\lfloor \hex{100000000} \cdot \left| \sin i \right| \rfloor } \lend
 \end{eqcode}
 
 \begin{eqcode}{F}{i, x, y, z}{\type{B}, \type{B}, \type{B},

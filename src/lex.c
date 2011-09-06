@@ -51,6 +51,13 @@ const char *token_class_name[] =
 };
 #undef TOKEN_CLASS
 
+#define DELIMITER(a) a,
+const char *token_delimiters[] = 
+{
+#include "delimiters.def"
+};
+#undef DELIMITER
+
 /* This is a pointer to the first token from keywords.def  */
 const char **  keywords = &token_kind_name[(int) tv_boolean];
 size_t keywords_length = tok_kind_length  - tv_boolean;
@@ -68,11 +75,11 @@ kw_bsearch (const char *key, const char *table[], size_t len)
       /* printf ("%s ? %s, [%i, %i, %i]\n", key, table[hit], l, r, i); */
 
       if (i == 0)
-	      return hit;
+	return hit;
       else if (i < 0)
-	      r = hit;
+	r = hit;
       else
-	      l = hit + 1;
+	l = hit + 1;
     }
   return len;
 }
@@ -421,6 +428,12 @@ lexer_get_token (struct lexer *lex)
           tval_tok_init (tok, tok_whitespace, tv_large_space); goto return_token;     
         case ' ':
           tval_tok_init (tok, tok_whitespace, tv_space); goto return_token;     
+	case '{':
+	  tval_tok_init (tok, tok_operator, tv_bslash_lbrace); 
+	  goto return_token;
+	case '}':
+	  tval_tok_init (tok, tok_operator, tv_bslash_rbrace);
+	  goto return_token;
         default:
           lexer_ungetch(lex, c1);
           lexer_read_keyword(lex, tok, &buf, &buf_size, c);
@@ -637,6 +650,16 @@ token_compare (struct token * first, struct token * second)
   return 0;
 }
 
+/* Is needed to concatenate a possible delimiter with \left or \right token.  */
+bool
+token_is_delimiter (struct token * tok)
+{
+  size_t delimiters_length = sizeof (token_delimiters) / sizeof (char *);
+  size_t ret =  kw_bsearch (token_as_string (tok), token_delimiters,
+		  delimiters_length);
+  return ret != delimiters_length;
+
+}
 
 /* Deallocates the memory that token occupies.  */
 void

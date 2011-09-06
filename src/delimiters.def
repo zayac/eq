@@ -1,0 +1,57 @@
+/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+                      Pavel Zaichenkov <zaichenkov@gmail.com>
+
+   Permission to use, copy, modify, and distribute this software for any
+   purpose with or without fee is hereby granted, provkeyworded that the above
+   copyright notice and this permission notice appear in all copies.
+  
+   THE SOFTWARE IS PROVkeywordED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
+
+/*
+  Here are mentioned delimiters, which will be concatinated into only one token
+  with \left or \right, i.e. \left |
+  Use the pair \left s1 or \right s2 to use them in match rules.
+  There are just string representations of tokens,
+  you can define any token class somewhere else, i.e. in token_kind.def
+  The list should be sorted alphabetically.
+*/
+DELIMITER ("(")
+DELIMITER (")")
+DELIMITER ("/")
+DELIMITER ("[")
+DELIMITER ("\\Downarrow")
+DELIMITER ("\\Uparrow")
+DELIMITER ("\\Vert")
+DELIMITER ("\\backslash")
+DELIMITER ("\\downarrow")
+DELIMITER ("\\langle")
+DELIMITER ("\\lceil")
+DELIMITER ("\\lfloor")
+DELIMITER ("\\llcorner")
+DELIMITER ("\\lrcorner")
+DELIMITER ("\\rangle")
+DELIMITER ("\\rceil")
+DELIMITER ("\\rfloor")
+DELIMITER ("\\ulcorner")
+DELIMITER ("\\uparrow")
+DELIMITER ("\\urcorner")
+DELIMITER ("\\vert")
+DELIMITER ("\\{")
+DELIMITER ("\\|")
+DELIMITER ("\\}")
+DELIMITER ("]")
+DELIMITER ("|")
+
+#if 0
+   One of the possible scenarios how to quickly sort the list could be
+      the following unix command:
+      cat delimiters.def | egrep '^DELIMITER'	\
+	| sed -e 's/DELIMITER\s*(\(.*\)).*/\1/g'    \
+	| LC_COLLATE=C sort | sed -e 's/^\(.*\)$/DELIMITER (\1)/g'
+#endif
