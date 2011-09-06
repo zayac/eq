@@ -1,5 +1,4 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
-	  ilob = matches->replace->typed_op.operands[1]->list_node.list->entry;
                       Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any

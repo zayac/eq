@@ -235,6 +235,8 @@ struct token *
 parser_get_token (struct parser * parser)
 {
   struct token * tok = parser_get_lexer_token (parser);
+  
+  /* Check and concatenate \left or \right with delimiters, if necessary  */
   if (token_uses_buf (tok) && 
 	  (!(strcmp (token_as_string (tok), "\\left") && 
 	     strcmp (token_as_string (tok), "\\right"))))
