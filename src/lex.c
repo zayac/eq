@@ -221,6 +221,7 @@ lexer_read_hex_number (struct lexer *lex, struct token* tok,
   lexer_ungetch (lex, c);
   buffer_add_char(buf, &index, size, 0);
   tok->tok_class = tok_number;
+  tok->uses_buf = true;
   lex->hex_number = false;
 }
 
@@ -266,7 +267,10 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
     }
  
   if (**buf != '\\')
-    tok->tok_class = tok_id;
+    {
+      tok->tok_class = tok_id;
+      tok->uses_buf = true;
+    }
   else
     {
       tok->uses_buf = true;
@@ -366,6 +370,7 @@ lexer_get_token (struct lexer *lex)
   char c;
   struct location loc = lex->loc;
   struct token *tok = (struct token *) malloc (sizeof (struct token));
+  tok->uses_buf = false;
   size_t buf_size=16;
   char *buf = NULL;
 
@@ -438,6 +443,7 @@ lexer_get_token (struct lexer *lex)
 	lexer_read_hex_number (lex, tok, &buf, &buf_size, c);
       else
 	tok->tok_class = lexer_read_number (lex, &buf, &buf_size, c);
+      tok->uses_buf = true;
       goto return_token;
     }
 
@@ -539,18 +545,9 @@ return_token:
 /* If the value of the token needs a character buffer or it is
    stored as an enum token_kind variable.  */
 inline bool
-token_uses_buf (enum token_class tclass)
+token_uses_buf (struct token * tok)
 {
-  switch (tclass)
-    {
-    case tok_id:
-    case tok_number:
-    case tok_comments:
-    case tok_unknown:
-      return true;
-    default:
-      return false;
-    }
+  return tok->uses_buf;
 }
 
 /* String representation of the token TOK.  */
@@ -558,7 +555,7 @@ const char *
 token_as_string (struct token * tok)
 {
   
-  if (token_uses_buf (token_class (tok)))
+  if (token_uses_buf (tok))
     return tok->value.cval;
   else
     return token_kind_name [(int) tok->value.tval];
@@ -595,8 +592,8 @@ token_copy (struct token *tok)
   ret = (struct token *) malloc (sizeof (struct token));
   ret->loc = tok->loc;
   ret->tok_class = tok->tok_class;
-  ret->uses_buf = tok->uses_buf;
-  if (token_uses_buf (token_class (tok)))
+  ret->uses_buf = token_uses_buf (tok);
+  if (token_uses_buf (tok))
     ret->value.cval = strdup (tok->value.cval);
   else
     ret->value.tval = tok->value.tval;
@@ -619,15 +616,15 @@ token_compare (struct token * first, struct token * second)
     return 1;
 
   /* Compare by buffer usage  */
-  if (first->uses_buf != second->uses_buf)
+  if (token_uses_buf (first) != token_uses_buf (second))
     {
-      if (!first->uses_buf)
+      if (! token_uses_buf (first))
 	return -1;
       else
 	return 1;
     }
 
-  if(first->uses_buf)
+  if(token_uses_buf(first))
       return strcmp (first->value.cval, second->value.cval);
   else
     {
@@ -647,7 +644,7 @@ token_free (struct token *tok)
 {
   assert (tok, "attempt to free NULL token");
 
-  if (token_uses_buf (token_class (tok)) && tok->value.cval)
+  if (token_uses_buf (tok) && tok->value.cval)
     free (tok->value.cval);
   free (tok);
   tok = NULL;

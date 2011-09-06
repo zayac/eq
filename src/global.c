@@ -141,7 +141,7 @@ type_lists_eq (tree tal, tree tar)
 tree
 function_exists (const char * str)
 {
-  element *  tl;
+  struct tree_list_element *  tl;
   
   assert (function_list != NULL, "function-list is not initialized");
 
@@ -159,7 +159,7 @@ function_exists (const char * str)
 tree
 constant_exists (const char * str)
 {
-  element *  tl;
+  struct tree_list_element *  tl;
   
   assert (constant_list != NULL, "function-list is not initialized");
 

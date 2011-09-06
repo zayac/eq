@@ -23,6 +23,9 @@ struct parser
   int paren_count;
   int square_count;
   int brace_count;
+  /* If we are inside \match, we allowed to use \expr macros there,
+     otherwise we are to ban it  */
+  bool match_expr_allowed;
 };
 
 
@@ -90,6 +93,7 @@ tree handle_idx_numx (struct parser *);
 bool handle_match (struct parser *);
 
 
+#define PARSER_MATCH_EXPR_ALLOWED(parser) ((parser)->match_expr_allowed)
 __END_DECLS
 
 #endif /* __PARSER_H__  */

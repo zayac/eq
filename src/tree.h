@@ -88,15 +88,15 @@ struct tree_type_base_op
   tree operands[];
 };
 
-typedef struct element {
+struct tree_list_element {
 	tree entry;
-	struct element *next, *prev;
-} element;
+	struct tree_list_element *next, *prev;
+};
 
 struct tree_list_node
 {
   struct tree_type_base typed;
-	element *list;
+  struct tree_list_element *list;
 };
 
 struct tree_circumflex_op_node

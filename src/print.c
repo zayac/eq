@@ -34,7 +34,7 @@ print_expression (FILE * f, tree exp)
     printf ("-- enter function %s with exp %s\n", __func__, 
             TREE_CODE_NAME (TREE_CODE (exp)));*/
   //printf("%s\n", TREE_CODE_NAME(TREE_CODE(exp)));
-	assert (exp != NULL 
+      assert (exp != NULL 
           && (   TREE_CODE(exp) == FUNCTION
 							|| TREE_CODE(exp) == LIST
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_type
@@ -55,7 +55,7 @@ print_expression (FILE * f, tree exp)
       return fprintf (f, "%i", TREE_INTEGER_CST (exp));
     case LIST:
       {
-	element * tle = NULL;
+	struct tree_list_element * tle = NULL;
 	fprintf (f, "(");
 	DL_FOREACH (TREE_LIST (exp), tle)
 	  {
@@ -94,7 +94,7 @@ print_expression (FILE * f, tree exp)
       }
     case VECTOR_EXPR:
       {
-	element * tle = NULL;
+	struct tree_list_element * tle = NULL;
 	fprintf(f, "\\begin { tvector }\n");
 	level += 2;
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 0)), tle) 
@@ -119,7 +119,7 @@ print_expression (FILE * f, tree exp)
       }
     case FUNCTION:
       {
-	element *tle = NULL;
+	struct tree_list_element *tle = NULL;
 	assert (TREE_CODE (TREE_FUNC_INSTRS (exp)) == LIST, 0);
 	fprintf (f, "\\begin{ eqcode }{");
 	print_expression (f, TREE_FUNC_NAME (exp));
@@ -195,7 +195,7 @@ print_expression (FILE * f, tree exp)
       return print_expression (f, TREE_OPERAND (exp, 0));
     case WITH_LOOP_EXPR:
       {
-	element *tle = NULL;
+	struct tree_list_element *tle = NULL;
 	print_expression (f, TREE_OPERAND (exp, 0));
 	fprintf (f, " | ");
 	print_expression (f, TREE_OPERAND (exp, 1));

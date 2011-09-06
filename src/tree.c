@@ -80,17 +80,12 @@ get_tree_size (enum tree_code code)
       else if (code == LIST)
 	return ops + sizeof (struct tree_list_node);
       else if (code == ERROR_MARK)
-	{
-	  warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
-	  return 0;
-	}
+        return 0;
       else
 	return size + ops;
-      break;
 
     case tcl_type:
       return size + ops;
-      break;
 
     case tcl_constant:
       if (code == INTEGER_CST)
@@ -105,7 +100,6 @@ get_tree_size (enum tree_code code)
 	return ops + sizeof (struct tree_circumflex_op_node);
       else
 	return size + ops;
-      break;
 
     default:
       unreachable (0);
@@ -118,6 +112,8 @@ tree
 make_tree (enum tree_code code)
 {
   size_t size = get_tree_size (code);
+  if (code == ERROR_MARK)
+    warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
   tree ret = (tree) malloc (size);
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
@@ -204,7 +200,7 @@ free_tree (tree node)
 	}
       else if (code == LIST)
 	{
-	  struct element * el, *tmp;
+	  struct tree_list_element * el, *tmp;
 	  DL_FOREACH_SAFE(TREE_LIST(node), el, tmp) 
 	    {
 	      free_tree (el->entry);
@@ -344,7 +340,8 @@ tree_list_append (tree list, tree elem)
   assert (TREE_CODE (list) == LIST, 
           "appending element of type `%s'", TREE_CODE_NAME (TREE_CODE (list)));
  
-  element * el = (element * ) malloc (sizeof(element));
+  struct tree_list_element * el = (struct tree_list_element * ) 
+	      malloc (sizeof(struct tree_list_element));
   assert (el != NULL, "Can't allocate enough memory for new element `%s`",
   TREE_CODE_NAME(TREE_CODE(list)));
   el->entry = elem;
@@ -468,7 +465,7 @@ tree
 tree_list_copy (tree lst)
 {
   tree cpy;
-
+  struct tree_list_element * el;
   if (lst == NULL)
     return NULL;
 
@@ -476,7 +473,11 @@ tree_list_copy (tree lst)
 	  "cannot copy list from %s", TREE_CODE_NAME (TREE_CODE (lst)));
 
   cpy = make_tree_list ();
-  DL_CONCAT (TREE_LIST(cpy), TREE_LIST(lst));
+
+  DL_FOREACH (TREE_LIST(lst), el)
+    {
+      tree_list_append(cpy, el->entry);
+    }
   return cpy;
 }
 
@@ -513,8 +514,8 @@ tree_copy (tree t)
 void
 free_list (tree lst)
 {
-  struct element * ptr;
-  struct element * tmpptr;
+  struct tree_list_element * ptr;
+  struct tree_list_element * tmpptr;
       
   if (lst == NULL)
     return;

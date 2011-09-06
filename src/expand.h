@@ -179,7 +179,7 @@ int token_compare (struct token *, struct token *);
 void token_free (struct token *);
 void token_print (struct token *);
 const char *  token_as_string (struct token *);
-bool token_uses_buf (enum token_class); 
+bool token_uses_buf (struct token *); 
 __END_DECLS
 
 #endif /* __EXPAND_H__  */
