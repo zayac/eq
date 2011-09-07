@@ -41,7 +41,6 @@ main (int argc, char *argv[])
 
   parser_init (parser, lex);
   parse (parser);
-
 cleanup:
   parser_finalize (parser);
   finalize_global_tree ();

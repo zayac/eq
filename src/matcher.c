@@ -86,8 +86,8 @@ connect_nodes (tree t, const struct tree_list_el * list)
 	{
 	  tmp = el->entry;
 	  el->entry = connect_nodes (el->entry, list);
-	  // (el->entry != tmp)
-	  //free_tree (tmp);
+	  if (el->entry != tmp)
+	    free_tree (tmp);
 	}
       return t;
     }
@@ -104,22 +104,21 @@ connect_nodes (tree t, const struct tree_list_el * list)
     {
       tree op = TREE_OPERAND (t, i);
       TREE_OPERAND_SET (t, i, connect_nodes(op, list));
-      //if (op != TREE_OPERAND(t, i)) 
-	//free_tree (op);
+      if (op != TREE_OPERAND(t, i)) 
+	free_tree (op);
     }
   return t;
 }
 
 
-void free_tree_list (struct tree_list_el * list, bool delete_tree)
+void free_tree_list (struct tree_list_el * list)
 {
   struct tree_list_el * tmp = NULL;
   struct tree_list_el * el = NULL;
   LL_FOREACH_SAFE(list, el, tmp)
     {
       LL_DELETE (list, el);
-      if (delete_tree)
-	free_tree (el->value);
+      free_tree (el->value);
       free (el);
     }
 }
@@ -135,7 +134,6 @@ perform_transform (struct parser * parser)
   struct token * tok = parser_get_token (parser);;
   parser_unget (parser);
   record = find_match (token_as_string (tok));
-
 
   if (record != NULL)
     {
@@ -155,7 +153,7 @@ perform_transform (struct parser * parser)
 		}
 	      else
 		{
-		  free_tree_list (exprs, true);
+		  free_tree_list (exprs);
 		  return error_mark_node;
 		}
 	    }
@@ -166,7 +164,7 @@ perform_transform (struct parser * parser)
 		tok->tok_class = tok_keyword;
 	      if (token_compare (tok, el->value))
 		{
-	          free_tree_list (exprs, true);
+	          free_tree_list (exprs);
 		  error_loc (token_location (tok), 
 		    "invalid token for macros `%s` ",
 		    token_as_string (tok));
@@ -181,7 +179,7 @@ perform_transform (struct parser * parser)
 	free_tree (tmp);
   
       /* Free exprs in the end  */
-      free_tree_list (exprs, false);
+      free_tree_list (exprs);
     }
   
   return ret;

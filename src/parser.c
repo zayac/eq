@@ -246,13 +246,15 @@ parser_get_token (struct parser * parser)
 	return del;
       else
 	{
+	  /* String concatenation  */
 	  char * conc = (char *) malloc (sizeof (char) *
 	  (strlen (token_as_string (tok)) +
 	       strlen (token_as_string (del)) + 1));
 	  size_t s = parser->buf_size, e = parser->buf_end;
 	  memcpy (conc, token_as_string (tok), strlen (token_as_string (tok)));
 	  memcpy (conc + strlen (token_as_string (tok)), token_as_string (del),
-	      sizeof (token_as_string (del)));
+	      strlen (token_as_string (del)) + 1);
+	  /* Leave one token instead of two  */
 	  free (tok->value.cval);
 	  tok->value.cval = conc;
 	  token_free (parser->token_buffer[buf_idx_inc (e, -1, s)]);
@@ -823,7 +825,10 @@ handle_list (struct parser * parser, tree (*handler) (struct parser *),
   t = handler (parser);
 
   if (!token_is_operator (parser_get_token (parser), delim))
-    ret = t;
+    {
+      ret = make_tree_list ();
+      tree_list_append (ret, t);
+    }
   else
     {
       tree list = make_tree_list ();
@@ -1049,7 +1054,8 @@ handle_function (struct parser * parser)
   while (true)
     {
       struct tree_list_element * el, * tmp;
-
+      bool single_instruction = false;
+      
       t = error_mark_node;
 
       /* end of file check */
@@ -1066,44 +1072,43 @@ handle_function (struct parser * parser)
 	break;
 
       t = handle_list (parser, handle_instr, tv_comma);
-      //print_expression(stdout, t);
-      if ( t != NULL && TREE_CODE (t) == LIST)
-	{
-	  DL_FOREACH_SAFE (TREE_LIST(t), el, tmp)
-	    {
-	      tree_list_append(instrs, el->entry);
-	      free (el);
-	      DL_DELETE (TREE_LIST (t), el);
-	    }
-	    free_tree (t);
-	}
-      else
-	{
-	  /* There is a convention that if instruction was a \match
-	     statement, we return NULL  */
-	  if (t != NULL)
-	    tree_list_append(instrs, t);
-	  if (t == error_mark_node)
-	    { 
-	      parser_get_until_tval (parser, tv_lend);
-	      continue;
-	    }
-	}
+      if (TREE_LIST(t)->next == NULL)
+	single_instruction = true;
 
-      /* If last instruction was \match, we can avoid \lend in the end  */
-      if (t == NULL)
+
+      assert (TREE_CODE (t) == LIST, "there should be an instruction list");
+
+      DL_FOREACH_SAFE (TREE_LIST(t), el, tmp)
 	{
-	  if (!token_is_keyword (parser_get_token (parser), tv_lend))
+	  DL_DELETE (TREE_LIST (t), el);
+	  
+	  /* Skip to a delimiter  */
+	  if (el->entry == error_mark_node)
 	    {
-	      parser_unget (parser);
-	      continue;
+	      if (single_instruction)
+		parser_get_until_tval (parser, tv_lend);
+	      else
+		parser_get_until_tval (parser, tv_comma);
 	    }
+	    /* There is a convention that if instruction was a \match
+	       statement, we return NULL.
+	      In this case \lend in the end could be omited.  */
+	  else if ((el->next == NULL) && (el->entry == NULL))
+	    {
+	      if (!token_is_keyword (parser_get_token (parser), tv_lend))
+		  parser_unget (parser);
+	    }
+	  else if (el->next == NULL)
+	    {
+	      parser_expect_tval (parser, tv_lend);
+	      parser_get_token (parser);
+	    }
+	      
+	  if (el->entry != NULL)
+	    tree_list_append(instrs, el->entry);
+	  free (el);
 	}
-      else
-	{
-          parser_expect_tval (parser, tv_lend);
-	  parser_get_token (parser);
-	}
+      free_tree (t);
     }
   
   return make_function (name, args, arg_types, ret, instrs, loc);

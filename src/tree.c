@@ -194,18 +194,22 @@ free_tree (tree node)
     {
 
     case tcl_misc:
+
       if (code == IDENTIFIER)
 	{
 	  free_tree (TREE_ID_NAME (node));
 	}
       else if (code == LIST)
 	{
-	  struct tree_list_element * el, *tmp;
+	  
+	  struct tree_list_element * el = NULL, *tmp = NULL;
 	  DL_FOREACH_SAFE(TREE_LIST(node), el, tmp) 
 	    {
+	      DL_DELETE (TREE_LIST (node), el);
 	      free_tree (el->entry);
 	      free (el);
 	    }
+	  
 	}
       break;
 
@@ -236,13 +240,9 @@ free_tree (tree node)
       unreachable (0);
       break;
     }
-  
+
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {
-      if (code == CIRCUMFLEX)
-	{
-	  //printf("AAA\n");
-	}
       free_tree (TREE_OPERAND (node, i));
       TREE_OPERAND_SET (node, i, NULL);
     }
@@ -476,7 +476,7 @@ tree_list_copy (tree lst)
 
   DL_FOREACH (TREE_LIST(lst), el)
     {
-      tree_list_append(cpy, el->entry);
+      tree_list_append(cpy, tree_copy (el->entry));
     }
   return cpy;
 }
@@ -484,14 +484,20 @@ tree_list_copy (tree lst)
 tree
 tree_copy (tree t)
 {
-  tree tmp = make_tree (TREE_CODE(t));
+  tree tmp;
   int i = 0;
+  
+  if (TREE_CODE (t) == LIST)
+    {
+      tmp = tree_list_copy (t);
+      return tmp;
+    }
+
+  tmp = make_tree (TREE_CODE(t));
   memcpy (tmp, t, get_tree_size (TREE_CODE(t)));
+
   switch (TREE_CODE(t))
     {
-      case (LIST):
-	tmp = tree_list_copy (t);
-	break;
       case (STRING_CST):
 	tmp->string_cst_node.value = strdup (t->string_cst_node.value);
 	break;

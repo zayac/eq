@@ -399,6 +399,7 @@ lexer_get_token (struct lexer *lex)
   if (c == '%')
     {
       tok->tok_class = lexer_read_comments(lex, &buf, &buf_size);
+      tok->uses_buf = true;
       goto return_token;
 
     }
@@ -428,12 +429,6 @@ lexer_get_token (struct lexer *lex)
           tval_tok_init (tok, tok_whitespace, tv_large_space); goto return_token;     
         case ' ':
           tval_tok_init (tok, tok_whitespace, tv_space); goto return_token;     
-	case '{':
-	  tval_tok_init (tok, tok_operator, tv_bslash_lbrace); 
-	  goto return_token;
-	case '}':
-	  tval_tok_init (tok, tok_operator, tv_bslash_rbrace);
-	  goto return_token;
         default:
           lexer_ungetch(lex, c1);
           lexer_read_keyword(lex, tok, &buf, &buf_size, c);
