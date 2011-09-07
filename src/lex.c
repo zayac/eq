@@ -537,6 +537,7 @@ lexer_get_token (struct lexer *lex)
   buf = (char *) malloc (2 * sizeof (char));
   buf[0] = c; buf[1] = 0;
   tok->tok_class = tok_unknown;
+  tok->uses_buf = true;
 
 return_token:
   assert (tok->tok_class >= tok_keyword && tok->tok_class <= tok_unknown,
