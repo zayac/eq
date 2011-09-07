@@ -474,6 +474,15 @@ handle_match (struct parser * parser)
       return false;
     }
   
+  /* Check if match with the same key exist  */
+  tok = parser_get_token (parser);
+  parser_unget (parser);
+  if (find_match (token_as_string (tok)))
+    {
+      error_loc (token_location (tok), 
+	  "A match with key value `%s` is already defined", token_as_string (tok));
+      return false;
+    }
   while (true)
     {
       
