@@ -123,7 +123,6 @@ void free_tree_list (struct tree_list_el * list)
     }
 }
 
-
 tree
 perform_transform (struct parser * parser)
 {
@@ -131,7 +130,8 @@ perform_transform (struct parser * parser)
   struct tree_list_el * tmp_expr = NULL;
   struct tree_list_el * exprs = NULL;
   struct match_table * record = NULL;
-  struct token * tok = parser_get_token (parser);;
+  struct token * tok = parser_get_token (parser);
+
   parser_unget (parser);
   record = find_match (token_as_string (tok));
 
@@ -146,7 +146,7 @@ perform_transform (struct parser * parser)
 	      if (tmp != error_mark_node)
 		{
 		  tmp_expr = (struct tree_list_el *) 
-		    malloc (sizeof (struct tree_list_el));
+		  malloc (sizeof (struct tree_list_el));
 		  tmp_expr->value = tmp;
 		  tmp_expr->next = NULL;
 		  LL_APPEND (exprs, tmp_expr);
@@ -228,9 +228,15 @@ validate_match (struct token_list_el * left, tree right)
 	  left->value->uses_buf)) 
     {
       error_loc (token_location (left->value), 
-		"A new keyword token is allowed here only. `%s` found", 
+		"a new keyword token is allowed here only. `%s` found", 
 		token_as_string (left->value));
       ret = false; 
+    }
+  else if (token_is_keyword (left->value, tv_opt))
+    {
+      error_loc (token_location (left->value),
+		"an optional argument can't be on the first place in match");
+      ret = false;
     }
   
   LL_FOREACH (left, tmp)

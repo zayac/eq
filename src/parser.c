@@ -453,8 +453,20 @@ is_id (struct token * tok, bool error)
 
 /*
    This function handles \match expressions, however in this case we don't need
-   to build a tree
-   Returns false in case an error, otherwise -- true.
+   to build a tree.
+   Aware that in the match's "left part" there MUST be a new unique keyword
+   straight after the opening brace,
+   i.e. \sin, \log, etc. It will be used as a keyword.
+   In addition, \left {, \left |, etc. (the full list is mentioned in
+   delimiters.def) can be used on this place too.
+   Further in the "left part" you can use ANY token sequence. New keywords are
+   accepted as well.
+   In the "right part" there has to be a valid expression.
+   Constructions \expr { <num> } are accepted too
+   Returns false in case of an error, otherwise -- true.
+
+   match:
+   \match { expr } { expr } <-- Not a proper description, see the comment above
  */
 bool
 handle_match (struct parser * parser)
@@ -496,20 +508,19 @@ handle_match (struct parser * parser)
 	  token_free (tok);
 	  break;
 	}
-      if (token_value (tok) == tv_eof)
+      else if (token_value (tok) == tv_eof)
 	{
 	  token_free (tok);
 	  error_loc (token_location (tok), "unexpected end of file");
 	  return false;
 	}
-      if (token_is_keyword (tok, tv_match))
+      else if (token_is_keyword (tok, tv_match))
 	{
 	  error_loc (token_location (tok), 
 	      "it's impossible to have nesting \\match");
 	  parser_get_until_tval (parser, tv_rbrace);
 	  return false;
 	}
-
       else if (token_value (tok) == tv_lbrace)
 	braces++;
       else if (token_value (tok) == tv_rbrace)

@@ -375,14 +375,14 @@ struct token *
 lexer_get_token (struct lexer *lex)
 {
   char c;
-  struct location loc = lex->loc;
+  struct location loc;
   struct token *tok = (struct token *) malloc (sizeof (struct token));
   tok->uses_buf = false;
   size_t buf_size=16;
   char *buf = NULL;
 
-
   c = lexer_getch (lex);
+  loc = lex->loc;
   if (isspace (c))
     {
       while (EOF != (c = lexer_getch (lex)) && isspace (c))
@@ -430,7 +430,7 @@ lexer_get_token (struct lexer *lex)
         case ' ':
           tval_tok_init (tok, tok_whitespace, tv_space); goto return_token;     
         default:
-          lexer_ungetch(lex, c1);
+	  lexer_ungetch(lex, c1);
           lexer_read_keyword(lex, tok, &buf, &buf_size, c);
           goto return_token;
       }

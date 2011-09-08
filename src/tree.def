@@ -50,7 +50,7 @@ DEF_TREE_CODE (INTEGER_CST, "integer_cst", tcl_constant, 0, true)
 /* String constant.  */
 DEF_TREE_CODE (STRING_CST, "string_cst", tcl_constant, 0, true)
 
-/* Expressions */
+/* Expressions.  */
 DEF_TREE_CODE (GENERATOR, "generator_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (FILTER_EXPR, "filter_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (ASSIGN_EXPR, "assign_expr", tcl_expression, 2, true)
@@ -75,7 +75,7 @@ DEF_TREE_CODE (FORALL, "forall_node", tcl_expression, 1, true)
 DEF_TREE_CODE (LOWER, "lower_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (CIRCUMFLEX, "circumflex_node", tcl_expression,  2, true)
 
-/* Comparison  */
+/* Comparison.  */
 DEF_TREE_CODE (EQ_EXPR, "eq_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (GT_EXPR, "gt_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (LT_EXPR, "lt_expr", tcl_expression, 2, true)
@@ -83,23 +83,24 @@ DEF_TREE_CODE (GE_EXPR, "ge_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (LE_EXPR, "le_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (NE_EXPR, "ne_expr", tcl_expression, 2, true)
 
-/* Shifts */
+/* Shifts.  */
 DEF_TREE_CODE (SLEFT_EXPR, "sleft_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (SRIGHT_EXPR, "sright_expr", tcl_expression, 2, true)
 
-/* Boolean expressions  */
+/* Boolean expressions.  */
 DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2, true)
 
-/* Array expressions */
+/* Array expressions.  */
 DEF_TREE_CODE (MATRIX_EXPR, "matrix_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (VECTOR_EXPR, "vector_expr", tcl_expression, 1, true)
 
-/* Related to With Loop */
+/* Related to With Loop.  */
 DEF_TREE_CODE (WITH_LOOP_EXPR, "with_loop_expr", tcl_expression, 3, false)
 DEF_TREE_CODE (CASE_EXPR, "case_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (OTHERWISE_EXPR, "otherwise_expr", tcl_expression, 0, false)
 
-/* A special case used for marking \expr constructions in \match */
+/* Match cases.  */
+/* A special case used for marking \expr constructions in \match.  */
 DEF_TREE_CODE (EXPR_MATCH, "expr_match", tcl_expression, 0, true)
