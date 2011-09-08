@@ -232,12 +232,6 @@ validate_match (struct token_list_el * left, tree right)
 		token_as_string (left->value));
       ret = false; 
     }
-  else if (token_is_keyword (left->value, tv_opt))
-    {
-      error_loc (token_location (left->value),
-		"an optional argument can't be on the first place in match");
-      ret = false;
-    }
   
   LL_FOREACH (left, tmp)
     {
