@@ -11,7 +11,7 @@ Here is a TODO list of the things that must be done very soon.
       - Strings are not considered at all.
       - [DONE] LaTeX specific stuff like escaped underscore.
 
-*  In LaTeX it is possible to write an operation in the form:
+*  [DONE] In LaTeX it is possible to write an operation in the form:
       \left< a + b \right>
       I would assume that we need to consider such an oepration
       as a separate function call. Basically this is always one-argument

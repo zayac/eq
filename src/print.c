@@ -41,7 +41,8 @@ print_expression (FILE * f, tree exp)
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_expression
               || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_constant
               || TREE_CODE (exp) == IDENTIFIER
-              || TREE_CODE (exp) == ERROR_MARK),
+              || TREE_CODE (exp) == ERROR_MARK
+	      || TREE_CODE (exp) == IF_STMT),
           "attempt to print non-expression tree %s",
           TREE_CODE_NAME (TREE_CODE (exp)));
   
@@ -56,14 +57,13 @@ print_expression (FILE * f, tree exp)
     case LIST:
       {
 	struct tree_list_element * tle = NULL;
-	fprintf (f, "(");
 	DL_FOREACH (TREE_LIST (exp), tle)
 	  {
 	    print_expression (f, tle->entry);
 	    if (tle->next != NULL)
 	      fprintf (f, ", ");
 	  }
-	  return fprintf (f, ")");
+	  return 0;
       }
     case IDENTIFIER:
       return print_expression (f, TREE_ID_NAME (exp));
@@ -101,7 +101,7 @@ print_expression (FILE * f, tree exp)
 	  {
 	    indent (f, level);
 	    print_expression (f, tle->entry);
-	    fprintf(f, " \\endl\n");
+	    fprintf(f, " \\lend\n");
 	  }
 	level -=2;
 	return fprintf(f, "\\end{tvector}");
@@ -137,10 +137,45 @@ print_expression (FILE * f, tree exp)
 	  {
 	    indent (f, level);
 	    print_expression (f, tle->entry);
-	    fprintf (f, " \\endl\n");
+	    fprintf (f, " \\lend\n");
 	  }
 	level -= 2;
 	return fprintf (f, "\\end{eqcode}\n");
+      }
+    case IF_STMT:
+      {
+	struct tree_list_element *tle = NULL;
+	int index;
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 0)), tle)
+	  {
+	    struct tree_list_element *instr = NULL;
+	    if (TREE_CODE (tle->entry) == ELSE_STMT)
+	      fprintf (f, "\\qelse\n");
+	    else
+	      {
+		/* check if the element is the first in the list.  */
+		if (tle == TREE_LIST (TREE_OPERAND (exp, 0)))
+		  fprintf (f, "\\qif { ");
+		else
+		  fprintf (f, "\\qifelse { ");
+		print_expression (f, TREE_OPERAND (tle->entry, 0));
+		fprintf (f, " }\n");
+	      }
+	    level += 2;
+	    if (TREE_CODE (tle->entry) == ELSE_STMT)
+	      index = 0;
+	    else
+	      index = 1;
+	    DL_FOREACH (TREE_LIST (TREE_OPERAND (tle->entry, index)), instr)
+	      {
+		indent (f, level);
+		print_expression (f, instr->entry);
+		printf(" \\lend\n");
+	      }
+	    level -= 2;
+	    indent (f, level);
+	  }
+	return fprintf(f, "\\qendif");
       }
     case B_TYPE:
     case N_TYPE:
@@ -207,7 +242,7 @@ print_expression (FILE * f, tree exp)
 	    indent (f, level);
 	    print_expression (f, tle->entry);
 			if (tle->next != NULL)
-	      fprintf (f, " \\endl \n");
+	      fprintf (f, " \\lend \n");
 	    else
 	      fprintf (f, "\n");
 	  }
@@ -291,11 +326,9 @@ print_expression (FILE * f, tree exp)
 	    unreachable (0);
 	  }
 	/* for the time being in parens.  */
-	fprintf (f, "(");
 	ret += print_expression (f, TREE_OPERAND (exp, 0));
 	fprintf (f, " %s ", opcode);
 	ret += print_expression (f, TREE_OPERAND (exp, 1));
-	return fprintf (f, ")");
 	return ret;
       }
     }

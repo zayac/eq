@@ -100,6 +100,8 @@ get_tree_size (enum tree_code code)
 	return ops + sizeof (struct tree_circumflex_op_node);
       else
 	return size + ops;
+    case tcl_statement:
+      return size + ops;
 
     default:
       unreachable (0);
@@ -235,7 +237,9 @@ free_tree (tree node)
 
     case tcl_expression:
       break;
-
+    
+    case tcl_statement:
+      break;
     default:
       unreachable (0);
       break;

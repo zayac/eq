@@ -26,7 +26,8 @@ enum tree_code_class
   tcl_misc,
   tcl_type,
   tcl_constant,
-  tcl_expression
+  tcl_expression,
+  tcl_statement
 };
 
 #define DEF_TREE_CODE(code, desc, class, operands, typed) code,

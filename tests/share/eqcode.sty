@@ -33,12 +33,12 @@
 \RequirePackage{amsmath}
 \RequirePackage{amssymb}
 \RequirePackage{amsfonts}
-\RequirePackage{ifthen}
 %
 
 \newcommand{\pcode@AF}[1]{\mbox{\textsc{#1}}} % Algorithm font
 \newcommand{\pcode@tab}[1]{\hspace*{2ex}}
-\newcolumntype{A}{>{$}l<{$}} 
+\newcolumntype{A}{ >{\quad $}l<{$}
+}
 %
 \newenvironment{eqcode}[5][plain]
 {%
@@ -60,7 +60,10 @@
 {\mbox{\bfseries return }(#1)}}
 \newcommand{\print}[1]{\mbox{\bfseries print }(#1)}
 \newcommand{\otherwise}{\mbox{\bfseries otherwise}}
-\newcommand{\iif}{\mbox{\bfseries if }}
+\newcommand{\qif}[2]{\textbf{if}\ #1\ \textbf{then} \\ \noindent\begin{tabular}{A} #2 }
+\newcommand{\qelseif}[2]{\end{tabular} \\ \textbf{else if}\ #1\ \textbf{then} \\ \noindent\begin{tabular}{A} #2 }
+\newcommand{\qelse}[1]{\end{tabular} \\ \textbf{else} \\  \noindent\begin{tabular}{A} #1 }
+\newcommand{\qendif}{\end{tabular} \\ \textbf{end if} \\}
 \newcommand{\lend}{ \\ }
 \newcommand{\filter}[1]{\textbf{filter}(#1)}
 \newcommand{\hex}[1]{$0x#1$}
@@ -70,7 +73,6 @@
 \newenvironment{tvector}{\left(\begin{array}{c}}{\end{array}\right)}
 \newenvironment{tmatrix}{\left(\begin{array}}{\end{array}\right)}
 \DeclareMathOperator{\genar}{\mathfrak{G}}
+
 \endinput
 %% END eqdcode.sty
-
-

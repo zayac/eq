@@ -979,6 +979,85 @@ is_end (struct parser * parser, enum token_kind tok)
   return false;
 }
 
+tree
+handle_instr_list (struct parser * parser)
+{
+  struct token * tok = NULL;
+  tree instrs = make_tree_list ();
+  tree t;
+
+  while (true)
+    {
+      struct tree_list_element * el, * tmp;
+      bool single_instruction = false;
+      
+      t = error_mark_node;
+
+      tok = parser_get_token (parser);
+      if (!(token_class (tok) == tok_id || 
+	    token_is_keyword (tok, tv_return) ||
+	    token_is_keyword (tok, tv_qif) ||
+	    token_is_keyword (tok, tv_match)))
+	{
+	  parser_unget (parser);
+	  break;
+	}
+
+      /* end of file check,  */
+      if (token_class (tok) == tok_eof)
+	{
+	  error_loc(token_location (tok), "unexpected end of file");
+	  break;
+	}	
+      
+      parser_unget (parser);
+
+      t = handle_list (parser, handle_instr, tv_comma);
+      if (TREE_LIST(t)->next == NULL)
+	single_instruction = true;
+
+
+      assert (TREE_CODE (t) == LIST, "there should be an instruction list");
+
+      DL_FOREACH_SAFE (TREE_LIST(t), el, tmp)
+	{
+	  DL_DELETE (TREE_LIST (t), el);
+	  
+	  /* Skip to a delimiter.  */
+	  if (el->entry == error_mark_node)
+	    {
+	      if (single_instruction)
+		parser_get_until_tval (parser, tv_lend);
+	      else
+		parser_get_until_tval (parser, tv_comma);
+	    }
+	    /* There is a convention that if instruction was a \match
+	       statement, we return NULL.
+	      In this case \lend in the end could be omited.  */
+	  else if ((el->next == NULL) && (el->entry == NULL))
+	    {
+	      if (!token_is_keyword (parser_get_token (parser), tv_lend))
+		  parser_unget (parser);
+	    }
+	  else if (el->next == NULL)
+	    {
+	      parser_unget (parser);
+	      if ( !token_is_keyword (parser_get_token (parser), tv_qendif))
+		{
+		  parser_expect_tval (parser, tv_lend);
+		  parser_get_token (parser);
+		}
+	    }
+	      
+	  if (el->entry != NULL)
+	    tree_list_append(instrs, el->entry);
+	  free (el);
+	}
+      free_tree (t);
+    }
+  return instrs;
+}
+
 /*
  * function:
  * \begin { eqcode } { id }
@@ -1069,68 +1148,13 @@ handle_function (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
-  instrs = make_tree_list ();
-
-  while (true)
-    {
-      struct tree_list_element * el, * tmp;
-      bool single_instruction = false;
-      
-      t = error_mark_node;
-
-      /* end of file check */
-      if (token_class (tok = parser_get_token (parser)) == tok_eof)
-	{
-	  error_loc(token_location (tok), "unexpected end of file");
-	  break;
-	}	
-      else
-	parser_unget (parser);
-
-      /* \end{eqcode} check */
-      if (is_end (parser, tv_eqcode))
-	break;
-
-      t = handle_list (parser, handle_instr, tv_comma);
-      if (TREE_LIST(t)->next == NULL)
-	single_instruction = true;
-
-
-      assert (TREE_CODE (t) == LIST, "there should be an instruction list");
-
-      DL_FOREACH_SAFE (TREE_LIST(t), el, tmp)
-	{
-	  DL_DELETE (TREE_LIST (t), el);
-	  
-	  /* Skip to a delimiter  */
-	  if (el->entry == error_mark_node)
-	    {
-	      if (single_instruction)
-		parser_get_until_tval (parser, tv_lend);
-	      else
-		parser_get_until_tval (parser, tv_comma);
-	    }
-	    /* There is a convention that if instruction was a \match
-	       statement, we return NULL.
-	      In this case \lend in the end could be omited.  */
-	  else if ((el->next == NULL) && (el->entry == NULL))
-	    {
-	      if (!token_is_keyword (parser_get_token (parser), tv_lend))
-		  parser_unget (parser);
-	    }
-	  else if (el->next == NULL)
-	    {
-	      parser_expect_tval (parser, tv_lend);
-	      parser_get_token (parser);
-	    }
-	      
-	  if (el->entry != NULL)
-	    tree_list_append(instrs, el->entry);
-	  free (el);
-	}
-      free_tree (t);
-    }
+  instrs = handle_instr_list (parser);
   
+  parser_forward_tval (parser, tv_end);
+  parser_forward_tval (parser, tv_lbrace);
+  parser_forward_tval (parser, tv_eqcode);
+  parser_forward_tval (parser, tv_rbrace);
+
   return make_function (name, args, arg_types, ret, instrs, loc);
 
 error:
@@ -1487,7 +1511,7 @@ handle_relations (struct parser * parser)
     goto error;
 
   TREE_OPERAND_SET (rel2, 1, t3);
-  return make_binary_op (AND_EXPR, rel1, rel2);
+    return make_binary_op (AND_EXPR, rel1, rel2);
 
 error:
   free_tree (t1);
@@ -1929,9 +1953,134 @@ error:
 }
 
 /*
- * generator:
- * \forall <id> |
- * <id> [ , <id> ]* : sexpr [ comp sexpr ]+ [set_op sexpr [ comp sexpr ]+ ]*
+   if_cond:
+   \qif { cond_block } instr_list
+   [ \qelseif { cond_block } instr_list] *
+   [ \qelse instr_list ] * \qendif
+ */
+tree
+handle_if_cond (struct parser *parser)
+{
+  struct token * tok;
+  tree iftree = error_mark_node;
+  tree cond = error_mark_node;
+  tree instrs = error_mark_node;
+  tree t = error_mark_node;
+  enum first_token { IF, IFELSE, ELSE };
+  enum first_token status = IF;
+
+  tok = parser_get_token (parser);
+  iftree = make_tree (IF_STMT);
+  TREE_OPERAND_SET (iftree, 0, make_tree_list ());
+  TREE_LOCATION (iftree) = tok->loc;
+  parser_unget (parser);
+
+  while (true)
+    {
+      struct location loc; 
+      tok = parser_get_token (parser);
+      loc = tok->loc;
+      if (status == IF)
+	{
+	  if (!token_is_keyword (tok, tv_qif))
+	    {
+	      error_loc (loc, 
+		"token \\qif expected here, `%s` found",
+		token_as_string (tok));
+	      goto error;
+	    }
+	}
+      else if (status == IFELSE)
+	{
+	  if (!token_is_keyword (tok, tv_qifelse))
+	    {
+	      error_loc (loc, 
+		"token \\qifelse expected here, `%s` found",
+		token_as_string (tok));
+	      goto error;
+	    }
+	}
+      else
+	{
+	  if (!token_is_keyword (tok, tv_qelse))
+	    {
+	      error_loc (loc, 
+		"token \\qelse expected here, `%s` found",
+		token_as_string (tok));
+	      goto error;
+	    }
+	}
+
+      if (status != ELSE)
+	{
+	  if (!parser_forward_tval (parser, tv_lbrace))
+	    {
+	      parser_get_until_tval (parser, tv_qendif);
+	      goto error;
+	    }
+      
+	  //cond = handle_cond_block (parser);
+	  cond = handle_cond_block (parser);
+
+	  if (cond == error_mark_node)
+	    parser_get_until_tval (parser, tv_rbrace);
+
+	  parser_forward_tval (parser, tv_rbrace);
+	}
+   
+      instrs = handle_instr_list (parser);
+
+      if (status != ELSE)
+	{
+	  t = make_tree (COND_STMT);
+	  TREE_OPERAND_SET (t, 0, cond);
+	  TREE_OPERAND_SET (t, 1, instrs);
+	}
+      else
+	{
+	  t = make_tree (ELSE_STMT);
+	  TREE_OPERAND_SET (t, 0, instrs);
+	}
+
+      TREE_LOCATION (t) = loc;
+      tree_list_append (TREE_OPERAND (iftree, 0), t);
+  
+      tok = parser_get_token (parser);
+
+      if (token_is_keyword (tok, tv_qifelse ))
+	{
+	  if (status == IF )
+	    status++;
+	  parser_unget (parser);
+	}
+      else if (token_is_keyword (tok, tv_qelse))
+	{
+	  if (status == IFELSE)
+	    status++;
+	  parser_unget (parser);
+	}
+      else if (token_is_keyword (tok, tv_qendif))
+	break;
+      else
+	{
+	  error_loc (token_location (tok), 
+	    "unexpected token `%s` found in if statement", 
+	    token_as_string (tok));
+	  goto error;
+	}
+    }
+  return iftree;
+error:
+  free_tree (iftree);
+  free_tree (cond);
+  free_tree (instrs);
+  free_tree (t);
+  return error_mark_node;
+}
+/*
+   generator:
+   \forall <id> |
+   <id> [ , <id> ]* : sexpr [ comp sexpr ]+ [set_op sexpr [ comp sexpr ]+ ]* 
  */
 tree
 handle_generator (struct parser * parser)
@@ -2421,7 +2570,7 @@ error:
 
 /*
    instr:
-   assign | declare | return
+   assign | declare | return | if_cond
  */
 tree
 handle_instr (struct parser * parser)
@@ -2441,6 +2590,11 @@ handle_instr (struct parser * parser)
 	return error_mark_node;
       else
 	return NULL;
+    }
+  else if (token_is_keyword (tok, tv_qif))
+    {
+      parser_unget (parser);
+      return handle_if_cond (parser);
     }
   else if (is_id (tok, false))
     {
