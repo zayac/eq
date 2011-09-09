@@ -2050,13 +2050,15 @@ handle_if_cond (struct parser *parser)
       if (token_is_keyword (tok, tv_qifelse ))
 	{
 	  if (status == IF )
-	    status++;
+	    status = IFELSE;
 	  parser_unget (parser);
 	}
       else if (token_is_keyword (tok, tv_qelse))
 	{
+	  if (status == IF)
+	    status = ELSE;
 	  if (status == IFELSE)
-	    status++;
+	    status = ELSE;
 	  parser_unget (parser);
 	}
       else if (token_is_keyword (tok, tv_qendif))
