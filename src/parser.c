@@ -1795,14 +1795,14 @@ handle_sexpr (struct parser * parser)
 	      oprec = prec_shift;
 	      ocode = SRIGHT_EXPR;
 	      break;
-	    case tv_land:
+	    /*case tv_land:
 	      oprec = prec_rel;
 	      ocode = AND_EXPR;
 	      break;
 	    case tv_lor:
 	      oprec = prec_rel;
 	      ocode = OR_EXPR;
-	      break;
+	      break;*/
 	    case tv_oplus:
 	      oprec = prec_rel;
 	      ocode = XOR_EXPR;

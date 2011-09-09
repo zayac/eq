@@ -39,4 +39,10 @@ Here is a TODO list of the things that must be done very soon.
    of the next expression, if for example a user missed the closing
    bracket or something similar.
 
+*  A support of boolean operations in `sexpr` is needed.
 
+*  Errors have to be handled better (let's see how it's implemented in gcc).
+
+*  Comments that could be viewed in LaTeX are needed.
+
+*  In addition to `\not \eq`, `\neq` has to be supported too.
