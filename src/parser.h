@@ -47,6 +47,7 @@ bool parser_finalize (struct parser *);
 struct token *parser_get_token (struct parser *);
 void parser_unget (struct parser *);
 
+struct token *parser_get_until_one_of_val (struct parser *, int, ...);
 struct token *parser_get_until_tval (struct parser *, enum token_kind);
 struct token *parser_get_until_tclass (struct parser *, enum token_class);
 struct token *parser_forward_tval (struct parser *, enum token_kind);

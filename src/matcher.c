@@ -153,7 +153,11 @@ perform_transform (struct parser * parser)
 		}
 	      else
 		{
+		  struct token * tmp = NULL;
 		  free_tree_list (exprs);
+		  tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
+		  if (token_class (tmp) != tok_eof) 
+		    parser_unget (parser);
 		  return error_mark_node;
 		}
 	    }
@@ -164,10 +168,14 @@ perform_transform (struct parser * parser)
 		tok->tok_class = tok_keyword;
 	      if (token_compare (tok, el->value))
 		{
+		  struct token * tmp = NULL;
 	          free_tree_list (exprs);
 		  error_loc (token_location (tok), 
 		    "invalid token for macros `%s` ",
 		    token_as_string (tok));
+		  tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
+		  if (token_class (tmp) != tok_eof)
+		  parser_unget (parser);
 		  return error_mark_node;
 		}
 	    }
