@@ -600,7 +600,7 @@ handle_type (struct parser * parser)
   tree t = error_mark_node;
   struct token *tok;
 
-  if (!parser_forward_tval (parser, tv_type))
+ if (!parser_forward_tval (parser, tv_type))
     return error_mark_node;
 
   if (!parser_forward_tval (parser, tv_lbrace))
@@ -1997,22 +1997,19 @@ tree
 handle_if_cond (struct parser *parser)
 {
   struct token * tok;
-  tree iftree = error_mark_node;
+  tree iftree = NULL;
   tree cond = error_mark_node;
-  tree instrs = error_mark_node;
+  tree head = NULL;
   tree t = error_mark_node;
+  tree instrs = error_mark_node;
   enum first_token { IF, ELSEIF, ELSE };
   enum first_token status = IF;
-
   tok = parser_get_token (parser);
-  iftree = make_tree (IF_STMT);
-  TREE_OPERAND_SET (iftree, 0, make_tree_list ());
-  TREE_LOCATION (iftree) = tok->loc;
   parser_unget (parser);
 
   while (true)
     {
-      struct location loc; 
+      struct location loc;
       tok = parser_get_token (parser);
       loc = tok->loc;
       if (status == IF)
@@ -2073,24 +2070,33 @@ handle_if_cond (struct parser *parser)
 		}
 	    }
 	}
-   
+      else
+	cond = NULL;
+
       instrs = handle_instr_list (parser);
 
-      if (status != ELSE)
+      if (status == IF || status == ELSEIF)
 	{
-	  t = make_tree (COND_STMT);
+	  t = make_tree (IF_STMT);
 	  TREE_OPERAND_SET (t, 0, cond);
 	  TREE_OPERAND_SET (t, 1, instrs);
+	  TREE_OPERAND_SET (t, 2, NULL);
+	  TREE_LOCATION (t) = loc;
+	}
+      
+      
+      if (status == IF)
+	  head = iftree = t;
+      else if (status == ELSEIF)
+	{
+	  TREE_OPERAND_SET (iftree, 2, t);
+	  iftree = t;
 	}
       else
 	{
-	  t = make_tree (ELSE_STMT);
-	  TREE_OPERAND_SET (t, 0, instrs);
+	  TREE_OPERAND_SET (iftree, 2, instrs);
 	}
 
-      TREE_LOCATION (t) = loc;
-      tree_list_append (TREE_OPERAND (iftree, 0), t);
-  
       tok = parser_get_token (parser);
 
       if (token_is_keyword (tok, tv_qelseif ))
@@ -2118,11 +2124,11 @@ handle_if_cond (struct parser *parser)
 	  goto error;
 	}
     }
-  return iftree;
+  return head;
 error:
   free_tree (iftree);
   free_tree (cond);
-  free_tree (instrs);
+  free_tree (head);
   free_tree (t);
   return error_mark_node;
 }

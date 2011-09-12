@@ -106,6 +106,4 @@ DEF_TREE_CODE (OTHERWISE_EXPR, "otherwise_expr", tcl_expression, 0, false)
 DEF_TREE_CODE (EXPR_MATCH, "expr_match", tcl_expression, 0, true)
 
 /* Condition statement.  */
-DEF_TREE_CODE (IF_STMT, "if_stmt", tcl_statement, 1, false)
-DEF_TREE_CODE (COND_STMT, "cond_stmt", tcl_statement, 2, false)
-DEF_TREE_CODE (ELSE_STMT, "else_stmt", tcl_statement, 1, false)
+DEF_TREE_CODE (IF_STMT, "if_stmt", tcl_statement, 3, false)

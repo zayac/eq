@@ -144,38 +144,25 @@ print_expression (FILE * f, tree exp)
       }
     case IF_STMT:
       {
-	struct tree_list_element *tle = NULL;
-	int index;
-	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 0)), tle)
+	fprintf (f, "\\qif { ");
+	print_expression (f, TREE_OPERAND (exp, 0));
+	fprintf (f, " }\n");
+	level += 2;
+	indent (f, level);
+	print_expression (f, TREE_OPERAND (exp, 1));
+	fprintf(f, "\n");
+	level -= 2;
+	indent (f, level);
+	if (TREE_OPERAND (exp, 2) != NULL)
 	  {
-	    struct tree_list_element *instr = NULL;
-	    if (TREE_CODE (tle->entry) == ELSE_STMT)
-	      fprintf (f, "\\qelse\n");
-	    else
-	      {
-		/* check if the element is the first in the list.  */
-		if (tle == TREE_LIST (TREE_OPERAND (exp, 0)))
-		  fprintf (f, "\\qif { ");
-		else
-		  fprintf (f, "\\qifelse { ");
-		print_expression (f, TREE_OPERAND (tle->entry, 0));
-		fprintf (f, " }\n");
-	      }
+	    fprintf (f, "\\else\n");
 	    level += 2;
-	    if (TREE_CODE (tle->entry) == ELSE_STMT)
-	      index = 0;
-	    else
-	      index = 1;
-	    DL_FOREACH (TREE_LIST (TREE_OPERAND (tle->entry, index)), instr)
-	      {
-		indent (f, level);
-		print_expression (f, instr->entry);
-		printf(" \\lend\n");
-	      }
+	    indent (f, level);
+	    print_expression (f, TREE_OPERAND (exp, 2));
 	    level -= 2;
 	    indent (f, level);
 	  }
-	return fprintf(f, "\\qendif");
+	return fprintf(f, "\\qendif\n");
       }
     case B_TYPE:
     case N_TYPE:
