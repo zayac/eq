@@ -8,7 +8,7 @@ Here is a TODO list of the things that must be done very soon.
 
 *  Lexer need some major improvement:
       - [DONE] Numbers must be handled properly, including \hex {12fcc}
-      - Strings are not considered at all.
+      - [DONE] Strings are not considered at all.
       - [DONE] LaTeX specific stuff like escaped underscore.
 
 *  [DONE] In LaTeX it is possible to write an operation in the form:
@@ -41,8 +41,8 @@ Here is a TODO list of the things that must be done very soon.
 
 *  A support of boolean operations in `sexpr` is needed.
 
-*  Errors have to be handled better (let's see how it's implemented in gcc).
+*  [PARTLY DONE] Errors have to be handled better (let's see how it's implemented in gcc).
 
-*  Comments that could be viewed in LaTeX are needed.
+*  [DONE] Comments that could be viewed in LaTeX are needed.
 
-*  In addition to `\not \eq`, `\neq` has to be supported too.
+*  [DONE] In addition to `\not \eq`, `\neq` has to be supported too.
