@@ -37,11 +37,29 @@
 \bEnd
 }
 
+\newcommand{\BnfIfCond}{
+\bHead{if\_cond}
+  \bToken{\bs qif} \bSymb{\{} cond\_block \bSymb{\}} \bSkip
+  instr\_list \bSkip
+  \bStar{ \bToken{\bs qelseif} \bSymb{\{} cond\_block \bSymb{\}} \bSkip
+  instr\_list }
+  \bStar{ \bToken{\bs qelse } \bSkip
+  instr\_list }
+  \bToken {\bs qendif }
+\bEnd
+}
+
+\newcommand{\BnfCondBlock}{
+\bHead{cond\_block}
+  expr \bPlus{comp expr} \bSkip \bStar{set\_op expr \bPlus{comp expr}}
+\bEnd
+}
+
 \newcommand{\BnfUpper}{
 \bHead{upper}
   \bSymb{\^} \bSymb{\{} \bAlt{\bSymb{[} expr \bSymb{]}}{expr} \bSymb{\}}
   \bOr
-  \bSymb{\^} \bAlt {\bToken{id} } {\bToken{num}}
+  \bSymb{\^} \bAlt {\bSpecial{id} } {\bSpecial{num}}
 \bEnd
 }
 
@@ -86,6 +104,8 @@
   assign \bOr
   declare \bOr
   with\_loop \bOr
+  comment \bOr
+  if\_cond \bOr
   return
 \bEnd
 }
@@ -139,9 +159,15 @@
 \newcommand{\BnfSExpr}{
 \bHead{sexpr}
   \bAlt{\bToken{\bs lnot}}{\bSymb{-}} sexpr\_op
-  \bStar{\bAlt{binop}{boolop} sexpr\_op } \bOr
+  \bStar{\bAlt{binop}{\bToken{\bs oplus}} sexpr\_op } \bOr
   \bSymb{(} expr \bSymb{)} \bOr
   \bSymb{\{} expr \bSymb{\}}
+\bEnd
+}
+
+\newcommand{\BnfComment}{
+\bHead{comment}
+  \bToken{\bs comment} \bSymb{\{} \bSpecial{string} \bSymb{\}}
 \bEnd
 }
 
@@ -216,8 +242,7 @@
 \newcommand{\BnfGenerator}{
 \bHead{generator}
   \bToken{\bs forall} \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id} } \bOr
-  \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id}} \bSymb{:} expr \bPlus{comp
-  expr} \bSkip \bStar{set\_op expr \bPlus{comp expr}}
+  \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id}} \bSymb{:} cond\_block 
 \bEnd
 }
 

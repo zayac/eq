@@ -271,16 +271,16 @@ print_expression (FILE * f, tree exp)
 	    opcode = ">";
 	    break;
 	  case GE_EXPR:
-	    opcode = ">=";
+	    opcode = "\\geq";
 	    break;
 	  case LT_EXPR:
 	    opcode = "<";
 	    break;
 	  case LE_EXPR:
-	    opcode = "<=";
+	    opcode = "\\leq";
 	    break;
 	  case NE_EXPR:
-	    opcode = "!=";
+	    opcode = "\\neq";
 	    break;
 	  case OR_EXPR:
 	    opcode = "\\lor";

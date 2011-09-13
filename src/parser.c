@@ -1510,6 +1510,9 @@ handle_relations (struct parser * parser)
 	    goto error;
 	  rel1 = make_binary_op (NE_EXPR, t1, NULL);
 	  break;
+	case tv_neq:
+	  rel1 = make_binary_op (NE_EXPR, t1, NULL);
+	  break;
 	case tv_eq:
 	  rel1 = make_binary_op (EQ_EXPR, t1, NULL);
 	  break;
@@ -1552,6 +1555,9 @@ handle_relations (struct parser * parser)
 	  if (!parser_forward_tval (parser, tv_eq))
 	    goto error;
 	  rel2 = make_binary_op (NE_EXPR, t2, NULL);
+	  break;
+	case tv_neq:
+	  rel1 = make_binary_op (NE_EXPR, t1, NULL);
 	  break;
 	case tv_eq:
 	  rel2 = make_binary_op (EQ_EXPR, t2, NULL);
