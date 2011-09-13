@@ -477,6 +477,32 @@ is_id (struct token * tok, bool error)
 }
 
 /*
+   comment:
+   \comment { <string> }
+   In case success returns NULL
+ */
+tree
+handle_comment (struct parser * parser)
+{
+  if (!parser_forward_tval (parser, tv_comment))
+    return error_mark_node;
+
+  if (!parser_forward_tval (parser, tv_lbrace))
+    goto error;
+
+  if (!parser_forward_tclass (parser, tok_string))
+    goto error;
+
+  if (!parser_forward_tval (parser, tv_rbrace))
+    return error_mark_node;
+
+  return NULL;
+error:
+  parser_get_until_tval (parser, tv_rbrace);
+  return error_mark_node;
+}
+
+/*
    This function handles \match expressions, however in this case we don't need
    to build a tree.
    Aware that in the match's "left part" there MUST be a new unique keyword
@@ -1021,7 +1047,8 @@ handle_instr_list (struct parser * parser)
       if (!(is_id (tok, false) || 
 	    token_is_keyword (tok, tv_return) ||
 	    token_is_keyword (tok, tv_qif) ||
-	    token_is_keyword (tok, tv_match)))
+	    token_is_keyword (tok, tv_match) || 
+	    token_is_keyword (tok, tv_comment)))
 	{
 	  parser_unget (parser);
 	  break;
@@ -2645,6 +2672,11 @@ handle_instr (struct parser * parser)
 	return error_mark_node;
       else
 	return NULL;
+    }
+  else if (token_is_keyword (tok, tv_comment))
+    {
+      parser_unget (parser);
+      return handle_comment (parser);
     }
   else if (token_is_keyword (tok, tv_qif))
     {

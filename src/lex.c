@@ -212,6 +212,51 @@ lexer_read_comments (struct lexer *lex, char **buf, size_t *size)
    return tok_comments;
 }
 
+/* Internal function to read until the end of string/char ignoring
+escape sequences. */
+static inline enum token_class
+lexer_read_string (struct lexer *lex, char **buf, size_t *size, char c)
+{
+  char *index = *buf;
+  const char stop = c;
+
+  assert (stop == '"',
+          "inapproriate starting symbol for string or char");
+
+  buffer_add_char (buf, &index, size, stop);
+
+  while (true)
+    {
+      c = lexer_getch (lex);
+      if (c == EOF)
+        {
+          error_loc (lex->loc,
+                     "unexpected end of file in the middle of string");
+          buffer_add_char (buf, &index, size, 0);
+          return tok_unknown;
+        }
+      
+      buffer_add_char (buf, &index, size, c);
+      if (c == '\\')
+        {
+          char cc = lexer_getch (lex);
+          if (cc == EOF)
+            {
+              error_loc (lex->loc,
+                         "unexpected end of file in the middle of string");
+              buffer_add_char (buf, &index, size, 0);
+              return tok_unknown;
+            }
+          buffer_add_char (buf, &index, size, cc);
+        }
+      else if (c == stop)
+        break;
+    }
+
+   buffer_add_char (buf, &index, size, 0);
+   return tok_string;
+}
+
 /* Function to read a hex number */
 static inline void
 lexer_read_hex_number (struct lexer *lex, struct token* tok,
@@ -414,6 +459,13 @@ lexer_get_token (struct lexer *lex)
         }
       else
         lexer_ungetch(lex, c1);
+    }
+
+  if(c =='"')
+    {
+      tok->tok_class = lexer_read_string (lex, &buf, &buf_size, c);
+      tok->uses_buf = true;
+      goto return_token;
     }
 
   if(c == '\\')
