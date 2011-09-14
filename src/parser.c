@@ -600,6 +600,7 @@ handle_match (struct parser * parser)
       PARSER_MATCH_EXPR_ALLOWED (parser) = false;
       if (!parser_forward_tval (parser, tv_rbrace))
 	{
+	  parser_unget (parser);
 	  if (validate_match (match_head, replace))
 	    add_match (token_as_string (match_head->value), match_head, replace);
 	  return false;
@@ -898,7 +899,8 @@ handle_list (struct parser * parser, tree (*handler) (struct parser *),
   if (!token_is_operator (parser_get_token (parser), delim))
     {
       ret = make_tree_list ();
-      tree_list_append (ret, t);
+      if (t != error_mark_node)
+	tree_list_append (ret, t);
     }
   else
     {
@@ -908,7 +910,7 @@ handle_list (struct parser * parser, tree (*handler) (struct parser *),
 	{
 	  t = handler (parser);
 	  
-	  if (t != NULL)
+	  if (t != NULL && t != error_mark_node)
 	    tree_list_append (list, t);
 	  if (!token_is_operator (parser_get_token (parser), delim))
 	    {
@@ -1722,7 +1724,9 @@ handle_expr_match (struct parser *parser)
 
   if (!parser_forward_tval (parser, tv_lbrace))
     {
-      parser_get_until_tval (parser, tv_rbrace);
+      parser_unget (parser);
+      if (!token_is_operator (parser_get_token (parser), tv_rbrace))
+	parser_get_until_tval (parser, tv_rbrace);
       return error_mark_node;
     }
 

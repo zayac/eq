@@ -58,9 +58,11 @@ const char *token_delimiters[] =
 };
 #undef DELIMITER
 
+
 /* This is a pointer to the first token from keywords.def  */
 const char **  keywords = &token_kind_name[(int) tv_boolean];
 size_t keywords_length = tok_kind_length  - tv_boolean;
+
 
 /* Binary search function to search string in a char** table.  */
 static inline size_t
@@ -371,20 +373,16 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 
   if (c == '.')
     {
-      /*if (ishex)
-        {
-          error_loc(lex->loc, "\'%c\' found in hex number", c);
-          return tok_unknown;
-        }
-      */
       buffer_add_char(buf, &index, size, c);
       
       c = lexer_getch (lex);
       buffer_add_char(buf, &index, size, c);
       if (!isdigit(c))
         {
-          error_loc(lex->loc, "there should be at least one digit after dot. \'%c\' found", c);
-          return tok_unknown;
+          lexer_ungetch (lex, c);
+	  lexer_ungetch (lex, c);
+	  //error_loc(lex->loc, "there should be at least one digit after dot. \'%c\' found", c);
+          return tok_number;
         }
 
       while((c = lexer_getch (lex)) && isdigit(c))
@@ -401,8 +399,10 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
         buffer_add_char(buf, &index, size, c);
       else
         {
-          error_loc(lex->loc, "there should be at least one digit after \'E\'. \'%c\' found", c);
-          return tok_unknown;
+	  lexer_ungetch (lex, c);
+	  lexer_ungetch (lex, c);
+          //error_loc(lex->loc, "there should be at least one digit after \'E\'. \'%c\' found", c);
+          return tok_number;
         }
 
       while((c = lexer_getch (lex)) && isdigit(c))

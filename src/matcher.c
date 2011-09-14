@@ -155,9 +155,22 @@ perform_transform (struct parser * parser)
 		{
 		  struct token * tmp = NULL;
 		  free_tree_list (exprs);
-		  tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
-		  if (token_class (tmp) != tok_eof) 
-		    parser_unget (parser);
+		  /* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
+		      we are inside another \match, 
+		      and we are to skip until right brace.  */
+		  if (PARSER_MATCH_EXPR_ALLOWED (parser))
+		    {
+		      parser_unget (parser);
+		      if (!token_is_operator 
+			(parser_get_token (parser), tv_rbrace))
+			tmp = parser_get_until_tval (parser, tv_rbrace);
+		    }
+		  else
+		    {
+		      tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
+		      if (tmp != NULL && token_class (tmp) != tok_eof) 
+			parser_unget (parser);
+		    }
 		  return error_mark_node;
 		}
 	    }
@@ -173,9 +186,15 @@ perform_transform (struct parser * parser)
 		  error_loc (token_location (tok), 
 		    "invalid token for macros `%s` ",
 		    token_as_string (tok));
-		  tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
+		  /* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
+		      we are inside another \match, 
+		      and we are to skip until right brace.  */
+		  if (PARSER_MATCH_EXPR_ALLOWED (parser))
+		    tmp = parser_get_until_tval (parser, tv_rbrace);
+		  else
+		    tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
 		  if (token_class (tmp) != tok_eof)
-		  parser_unget (parser);
+		    parser_unget (parser);
 		  return error_mark_node;
 		}
 	    }
