@@ -199,12 +199,14 @@ perform_transform (struct parser * parser)
 		}
 	    }
 	}
-      ret = tree_copy (MATCHER_REPLACE(record));
-      tmp = ret;
-      ret = connect_nodes (ret, exprs);
-      if (tmp != ret)
-	free_tree (tmp);
-  
+      if (MATCHER_REPLACE (record) != error_mark_node)
+	{
+	  ret = tree_copy (MATCHER_REPLACE(record));
+	  tmp = ret;
+	  ret = connect_nodes (ret, exprs);
+	  if (tmp != ret)
+	    free_tree (tmp);
+	}
       /* Free exprs in the end  */
       free_tree_list (exprs);
     }

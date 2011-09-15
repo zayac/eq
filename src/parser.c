@@ -601,8 +601,12 @@ handle_match (struct parser * parser)
       if (!parser_forward_tval (parser, tv_rbrace))
 	{
 	  parser_unget (parser);
+	  /* If an error occured, it's not essential to add invalid match rule
+	     to the table. However, in this way we can avoid future error
+	     messages. To mark this match as invalid we will mark a relevant
+	     tree as an error tree.  */
 	  if (validate_match (match_head, replace))
-	    add_match (token_as_string (match_head->value), match_head, replace);
+	    add_match (token_as_string (match_head->value), match_head, error_mark_node);
 	  return false;
 	}
     }
@@ -831,6 +835,9 @@ handle_indexes (struct parser * parser, tree prefix)
   tree idx = NULL;
   tree t = NULL;
   bool circumflex_first = true;
+
+  if (prefix == error_mark_node)
+    return error_mark_node;
 
   if (token_is_operator (parser_get_token (parser), tv_circumflex))
     {
@@ -1273,7 +1280,7 @@ handle_function_call (struct parser * parser)
     {
       parser_unget (parser);
       args = handle_list (parser, handle_expr, tv_comma);
-      if (args != NULL && args != error_mark_node)
+      if (args != NULL && args != error_mark_node && TREE_LIST (args) != NULL)
 	TREE_OPERAND_SET (t, 1, args);
       else
 	goto error;
@@ -1284,6 +1291,7 @@ handle_function_call (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     {
       free_tree (t);
+      free_tree (args);
       return error_mark_node;
     }
 
@@ -1292,6 +1300,7 @@ handle_function_call (struct parser * parser)
 error:
   parser_get_until_tval (parser, tv_rbrace);
   free_tree (t);
+  free_tree (args);
   return error_mark_node;
 }
 
@@ -1732,14 +1741,12 @@ handle_expr_match (struct parser *parser)
 
   if (!(tok = parser_forward_tclass (parser, tok_number)))
     {
-      token_free (tok);
       parser_get_until_tval (parser, tv_rbrace);
       return error_mark_node;
     }
 
   if (!parser_forward_tval (parser, tv_rbrace))
     {
-      token_free (tok);
       return error_mark_node;
     }
 
@@ -1993,25 +2000,20 @@ handle_sexpr_op (struct parser * parser)
       /* Try to perform transformations which are recorded in matcher table  */
       parser_unget (parser);
       t1 = perform_transform (parser);
-      
       if (t1 == NULL)
-	{
-	  error_loc (token_location (tok), "unexpected token `%s`",
-	    token_as_string (tok));
-	  goto error;
-	}
+	return error_mark_node;
     }
 
   if (prefix)
     {
-      if (t1 != NULL && t1 != error_mark_node)
+      if (t1 != error_mark_node)
 	TREE_OPERAND_SET (t, 0, t1);
       else
 	goto error;
     }
   else
     {
-      if (t1 != NULL && t1 != error_mark_node)
+      if (t1 != error_mark_node)
 	t = t1;
       else
 	goto error;
