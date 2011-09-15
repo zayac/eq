@@ -130,6 +130,14 @@
 \bEnd
 }
 
+\newcommand{\BnfLogOp}{
+\bHead{logop}
+  \bToken{\bs cup} \bOr
+  \bToken{\bs cap} \bOr
+  \bToken{\bs oplus}
+\bEnd
+}
+
 \newcommand{\BnfBinOp}{
 \bHead{binop}
   \bSymb{+} \bOr
@@ -159,7 +167,7 @@
 \newcommand{\BnfSExpr}{
 \bHead{sexpr}
   \bAlt{\bToken{\bs lnot}}{\bSymb{-}} sexpr\_op
-  \bStar{\bAlt{binop}{\bToken{\bs oplus}} sexpr\_op } \bOr
+  \bStar{\bAlt{binop}{boolop} sexpr\_op } \bOr
   \bSymb{(} expr \bSymb{)} \bOr
   \bSymb{\{} expr \bSymb{\}}
 \bEnd
@@ -258,6 +266,6 @@
 
 \newcommand{\BnfSetOp}{
 \bHead{set\_op}
-  \bAlt{\bToken{\bs land}}{\bToken{\bs lor}}
+  \bAlt{\bToken{\bs cup}}{\bToken{\bs cap}}
 \bEnd
 }

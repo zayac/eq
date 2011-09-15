@@ -88,9 +88,14 @@ DEF_TREE_CODE (SLEFT_EXPR, "sleft_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (SRIGHT_EXPR, "sright_expr", tcl_expression, 2, true)
 
 /* Boolean expressions.  */
-DEF_TREE_CODE (AND_EXPR, "and_expr", tcl_expression, 2, true)
-DEF_TREE_CODE (OR_EXPR, "or_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (BAND_EXPR, "band_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (BOR_EXPR, "bor_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (XOR_EXPR, "xor_expr", tcl_expression, 2, true)
+
+/* Logical expressions.  */
+DEF_TREE_CODE (LAND_EXPR, "land_expr", tcl_expression, 2, true)
+DEF_TREE_CODE (LOR_EXPR, "lor_expr", tcl_expression, 2, true)
+
 
 /* Array expressions.  */
 DEF_TREE_CODE (MATRIX_EXPR, "matrix_expr", tcl_expression, 2, true)

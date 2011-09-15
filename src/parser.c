@@ -1590,7 +1590,7 @@ handle_relations (struct parser * parser)
     goto error;
 
   TREE_OPERAND_SET (rel2, 1, t3);
-    return make_binary_op (AND_EXPR, rel1, rel2);
+    return make_binary_op (LAND_EXPR, rel1, rel2);
 
 error:
   free_tree (t1);
@@ -1652,13 +1652,13 @@ handle_cond_block (struct parser * parser)
 	{
 	  switch (token_value (tok))
 	    {
-	    case tv_land:
+	    case tv_cap:
 	      oprec = prec_logand;
-	      ocode = AND_EXPR;
+	      ocode = LAND_EXPR;
 	      break;
-	    case tv_lor:
+	    case tv_cup:
 	      oprec = prec_logor;
-	      ocode = OR_EXPR;
+	      ocode = LOR_EXPR;
 	      break;
 	    default:
 	      parser_unget (parser);
@@ -1874,14 +1874,14 @@ handle_sexpr (struct parser * parser)
 	      oprec = prec_shift;
 	      ocode = SRIGHT_EXPR;
 	      break;
-	    /*case tv_land:
+	    case tv_land:
 	      oprec = prec_rel;
-	      ocode = AND_EXPR;
+	      ocode = BAND_EXPR;
 	      break;
 	    case tv_lor:
 	      oprec = prec_rel;
-	      ocode = OR_EXPR;
-	      break;*/
+	      ocode = BOR_EXPR;
+	      break;
 	    case tv_oplus:
 	      oprec = prec_rel;
 	      ocode = XOR_EXPR;
@@ -1968,7 +1968,7 @@ handle_sexpr_op (struct parser * parser)
       t = make_unary_op (UMINUS_EXPR, NULL, token_location (tok));
       prefix = true;
     }
-  else if (token_is_keyword (tok, tv_lnot))
+  else if (token_is_operator (tok, tv_lnot))
     {
       t = make_unary_op (NOT_EXPR, NULL, token_location (tok));
       prefix = true;

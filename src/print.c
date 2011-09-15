@@ -282,10 +282,16 @@ print_expression (FILE * f, tree exp)
 	  case NE_EXPR:
 	    opcode = "\\neq";
 	    break;
-	  case OR_EXPR:
+	  case LOR_EXPR:
+	    opcode = "\\cup";
+	    break;
+	  case LAND_EXPR:
+	    opcode = "\\cap";
+	    break;
+	  case BOR_EXPR:
 	    opcode = "\\lor";
 	    break;
-	  case AND_EXPR:
+	  case BAND_EXPR:
 	    opcode = "\\land";
 	    break;
 	  case XOR_EXPR:
