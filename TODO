@@ -39,7 +39,7 @@ Here is a TODO list of the things that must be done very soon.
    of the next expression, if for example a user missed the closing
    bracket or something similar.
 
-*  A support of boolean operations in `sexpr` is needed.
+*  [DONE] A support of boolean operations in `sexpr` is needed.
 
 *  [PARTLY DONE] Errors have to be handled better (let's see how it's implemented in gcc).
 
