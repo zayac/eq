@@ -203,18 +203,26 @@ print_expression (FILE * f, tree exp)
 	return fprintf (f, " } ");
       }
     case UMINUS_EXPR:
-      fprintf (f, " -");
-      return print_expression (f, TREE_OPERAND (exp, 0));
+      {
+	fprintf (f, " -");
+	return print_expression (f, TREE_OPERAND (exp, 0));
+      }
     case NOT_EXPR:
-      fprintf (f, "\\lnot ");
-      return print_expression (f, TREE_OPERAND (exp, 0));
+      {
+	fprintf (f, "\\lnot ");
+	return print_expression (f, TREE_OPERAND (exp, 0));
+      }
     case RETURN_EXPR:
-      fprintf (f, "\\return {");
-      print_expression (f, TREE_OPERAND (exp, 0));
-      return fprintf (f, "} ");
+      {
+	fprintf (f, "\\return {");
+	print_expression (f, TREE_OPERAND (exp, 0));
+	return fprintf (f, "} ");
+      }
     case FORALL:
-      fprintf (f, "\\forall ");
-      return print_expression (f, TREE_OPERAND (exp, 0));
+      {
+	fprintf (f, "\\forall ");
+	return print_expression (f, TREE_OPERAND (exp, 0));
+      }
     case WITH_LOOP_EXPR:
       {
 	struct tree_list_element *tle = NULL;
@@ -239,9 +247,33 @@ print_expression (FILE * f, tree exp)
 	return 0;
       }
     case CASE_EXPR:
-      print_expression (f, TREE_OPERAND (exp, 0));
-      fprintf (f, " & ");
-      return print_expression (f, TREE_OPERAND (exp, 1));
+      {
+	print_expression (f, TREE_OPERAND (exp, 0));
+	fprintf (f, " & ");
+	return print_expression (f, TREE_OPERAND (exp, 1));
+      }
+    case MATRIX_EXPR:
+      {
+	struct tree_list_element *tle = NULL;
+	struct tree_list_element *tle2 = NULL;
+	fprintf (f, "\\begin{tmatrix}{");
+	print_expression (f, TREE_OPERAND (exp, 0));
+	fprintf (f, "}\n");
+	level += 2;
+	DL_FOREACH (TREE_LIST (TREE_OPERAND(exp, 1)), tle)
+	  {
+	    indent (f, level);
+	    DL_FOREACH (TREE_LIST (tle->entry), tle2)
+	      {
+		print_expression (f, tle2->entry);
+		fprintf (f, " & ");
+	      }
+	    fprintf (f, "\\lend\n");
+	  }
+	level -= 2;
+	indent (f, level);
+	return fprintf (f, "\\end{tmatrix}");
+      }
     case OTHERWISE_EXPR:
       return fprintf (f, "\\otherwise");
     case EXPR_MATCH:

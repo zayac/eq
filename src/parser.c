@@ -1950,7 +1950,7 @@ out:
 
 /*
  * sexpr_op:
- * [ (\lnot | - ) ] ( idx_numx | function_call | { sexpr } | ( sexpr ) )
+ * [ (\lnot | - ) ] ( idx_numx | function_call | matrix | vector | { sexpr } | ( sexpr ) )
  */
 
 tree
@@ -1982,7 +1982,9 @@ handle_sexpr_op (struct parser * parser)
       || token_is_keyword (tok, tv_frac) || token_is_keyword (tok, tv_dfrac))
     {
       parser_unget (parser);
-      t1 = handle_idx_numx (parser);
+      t1 = perform_transform (parser);
+      if (t1 == NULL)
+	t1 = handle_idx_numx (parser);
     }
   else if (token_is_operator (tok, tv_lbrace) || 
 	      token_is_operator (tok, tv_lparen))
@@ -1994,6 +1996,30 @@ handle_sexpr_op (struct parser * parser)
     {
       parser_unget (parser);
       t1 = handle_function_call (parser);
+    }
+  else if (token_is_keyword (tok, tv_begin))
+    {
+      if (token_is_operator (parser_get_token (parser), tv_lbrace))
+	{
+	  if (token_is_keyword (tok = parser_get_token (parser), tv_tmatrix))
+	    {
+	      parser_unget (parser);
+	      parser_unget (parser);
+	      parser_unget (parser);
+	      t1 = handle_matrix (parser);
+	    }
+	  else if (token_is_keyword (tok, tv_tvector))
+	    {
+	      parser_unget (parser);
+	      parser_unget (parser);
+	      parser_unget (parser);
+	      t1 = handle_vector (parser);
+	    }
+	  else
+	    parser_unget (parser);
+	}
+      else
+	parser_unget (parser);
     }
   else
     {
@@ -2355,22 +2381,31 @@ handle_matrix (struct parser * parser)
   if (!parser_expect_tval (parser, tv_rbrace))
     goto shift;
 
+  parser_get_token (parser);
   list = make_tree_list ();
   do
     {
+      if (token_is_keyword (parser_get_token (parser), tv_end))
+	{
+	  parser_unget (parser);
+	  break;
+	}
+      else
+	parser_unget (parser);
+      
       t = handle_list (parser, handle_expr, tv_delimiter);
       tree_list_append (list, t);
     }
   while (token_value (tok = parser_get_token (parser)) == tv_lend);
 
-  if (token_value (tok) != tv_end)
+  if (!parser_forward_tval (parser, tv_end))
     goto error;
 
-  if (token_value (parser_get_token (parser)) != tv_lbrace)
+  if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
-  if (token_value (parser_get_token (parser)) != tv_tmatrix)
+  if (!parser_forward_tval (parser, tv_tmatrix))
     goto error;
-  if (token_value (parser_get_token (parser)) != tv_rbrace)
+  if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
   return make_matrix (format, list, loc);
@@ -2515,7 +2550,7 @@ error:
 
 /*
    expr:
-   ( sexpr | filter | genarray | vector | matrix ) indexes
+   ( sexpr | filter | genarray ) indexes
  */
 tree
 handle_expr (struct parser * parser)
@@ -2532,30 +2567,6 @@ handle_expr (struct parser * parser)
     {
       parser_unget (parser);
       t = handle_genarray (parser);
-    }
-  else if (token_is_keyword (tok, tv_begin))
-    {
-      if (token_is_operator (parser_get_token (parser), tv_lbrace))
-	{
-	  if (token_is_keyword (tok = parser_get_token (parser), tv_tmatrix))
-	    {
-	      parser_unget (parser);
-	      parser_unget (parser);
-	      parser_unget (parser);
-	      t = handle_matrix (parser);
-	    }
-	  else if (token_is_keyword (tok, tv_tvector))
-	    {
-	      parser_unget (parser);
-	      parser_unget (parser);
-	      parser_unget (parser);
-	      t = handle_vector (parser);
-	    }
-	  else
-	    parser_unget (parser);
-	}
-      else
-	parser_unget (parser);
     }
   else
   {
@@ -2726,7 +2737,7 @@ handle_instr (struct parser * parser)
 
 /*
    with_loop:
-   idx | condition \gets ( expr | with_loop_cases )
+   idx | generator \gets ( expr | with_loop_cases )
  */
 tree
 handle_with_loop (struct parser * parser, tree prefix_id)

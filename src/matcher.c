@@ -253,11 +253,11 @@ validate_match (struct token_list_el * left, tree right)
   bool ret = true; 
   assert (left != NULL && right != NULL, "arguments can't be NULL");
   
-  if (!(token_class (left->value) == tok_keyword &&
-	  left->value->uses_buf)) 
+  if ((!(token_class (left->value) == tok_keyword &&
+	  left->value->uses_buf)) && !(is_id(left->value, false)))
     {
       error_loc (token_location (left->value), 
-		"a new keyword token is allowed here only. `%s` found", 
+		"a new keyword or id token is allowed here only. `%s` found", 
 		token_as_string (left->value));
       ret = false; 
     }

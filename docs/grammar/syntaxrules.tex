@@ -181,7 +181,8 @@
 
 \newcommand{\BnfSExprOp}{
 \bHead{sexpr\_op}
-  \bAlt{\bSpecial{idx\_numx}}{ function\_call}
+  \bAltBegin \bSpecial{idx\_numx} \bDAlt function\_call \bDAlt vector \bDAlt
+  matrix \bAltEnd
 \bEnd
 }
 
@@ -220,7 +221,7 @@
 
 \newcommand{\BnfExpr}{
 \bHead{expr}
-  \bAltBegin sexpr \bDAlt filter \bDAlt genarray \bDAlt vector \bDAlt matrix
+  \bAltBegin sexpr \bDAlt filter \bDAlt genarray
   \bAltEnd indexes
 \bEnd
 }

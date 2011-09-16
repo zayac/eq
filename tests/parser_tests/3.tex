@@ -1,0 +1,18 @@
+\documentclass[12pt,a4paper]{book}
+
+\usepackage{eqcode}
+
+\begin{document}
+
+\begin{eqcode}{a}{b}{\type{Z}}{\type{Z}}
+  \match {\sin \expr } {\call {sin}{\expr{1}}}
+  \match {\arcsin \expr } {\call {arcsin} { \expr{1}}}
+  \match {\lfloor \expr \rfloor} {\call {floor} {\expr{1}}}
+  a \gets \sin 5 \lend
+  b \gets \sin 6 \lend
+  c \gets  \arcsin \sin {2} \lend
+  d \gets \lfloor 5 \rfloor \lend
+  a \gets \hex { FfaA } \lend
+\end{eqcode}
+
+\end{document}

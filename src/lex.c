@@ -394,9 +394,15 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
     {
       buffer_add_char(buf, &index, size, c);
 
-      c = lexer_getch(lex);
-      if(isdigit(c))
-        buffer_add_char(buf, &index, size, c);
+      c = lexer_getch (lex);
+
+      if (c == '-' || c == '+')
+	{
+	  buffer_add_char (buf, &index, size, c);
+	  c = lexer_getch (lex);
+	}
+      if (isdigit (c))
+        buffer_add_char (buf, &index, size, c);
       else
         {
 	  lexer_ungetch (lex, c);
