@@ -1,4 +1,9 @@
-It's a simple LaTeX to SaC compiler
+A stream-based LaTeX to SaC compiler
+Version: 0.1.1
+
+Contribution:
+Pavel Zaichenkov <zaichenkov@gmail.com>
+Artem Shinkarov  <artyom.shinkaroff@gmail.com>
 
 In order to build the compiler do the following:
   $cd build/
