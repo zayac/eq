@@ -13,6 +13,7 @@ usage (const char *  prog)
   return;
 }
 
+#ifndef LEXER_BINARY
 int
 main (int argc, char *argv[])
 {
@@ -56,3 +57,4 @@ cleanup:
 
   return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+#endif
