@@ -22,7 +22,7 @@ project (eq C)
 # makefile. It is useful for debugging. 
 # set (CMAKE_VERBOSE_MAKEFILE ON)
 
-set (CFLAGS "-g -Wall -std=c99")
+#set (LEXER)
 
 include (cmake/version.cmake)
 
@@ -35,8 +35,14 @@ include_directories ("${PROJECT_BINARY_DIR}")
 
 add_subdirectory (src)
 
+if (LEXER)
+  set (CFLAGS "-g -Wall -std=c99 -DLEXER_BINARY")
+  add_executable (eq src/lex.c)
+else()
+  set (CFLAGS "-g -Wall -std=c99")
+  add_executable (eq src/main.c)
+endif()
 add_definitions (${CFLAGS})
-add_executable (eq src/main.c)
 target_link_libraries (eq eqlib)
 
 

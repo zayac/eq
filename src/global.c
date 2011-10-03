@@ -28,13 +28,7 @@ int error_count = 0;
    time when an error is happening.  */
 int warning_count = 0;
 
-
-/* Here we would like to store all the constants
-   defined outside the functions and expands. As an
-   example consider strlist construction.  */
-tree constant_list = NULL ;
-
-/* A global list to store functions and expands.  */
+/* A global list to store functions.  */
 tree function_list = NULL;
 
 /* Allocat all the global structures that are going to be used
@@ -42,10 +36,8 @@ tree function_list = NULL;
 void 
 init_global ()
 {
-  assert (constant_list == NULL, "constant list is already allocated");
   assert (function_list == NULL, "function list is already allocated");
 
-  constant_list = make_tree_list();
   function_list = make_tree_list();
   error_count = 0;
   warning_count = 0;
@@ -54,7 +46,6 @@ init_global ()
 void
 finalize_global ()
 {
-  free_tree (constant_list);
   free_tree (function_list);
 }
 
@@ -152,32 +143,4 @@ function_exists (const char * str)
 	}
 
   return NULL;
-}
-
-
-/* XXX Currently we support only strlist constants.  */
-tree
-constant_exists (const char * str)
-{
-  struct tree_list_element *  tl;
-  
-  assert (constant_list != NULL, "function-list is not initialized");
-
-	DL_FOREACH (TREE_LIST(function_list), tl)
-	{
-		tree t; 
-		
-	  assert (TREE_CODE (tl->entry) == ASSIGN_EXPR, 
-              "Constant should be defined using assign_expr");
-      
-    t = TREE_OPERAND (tl->entry, 0);
-    assert (TREE_CODE (t) == IDENTIFIER, 0);
-
-    if (strcmp (TREE_STRING_CST (TREE_ID_NAME (t)), str) == 0)
-      return tl->entry;
- 	
-	}
-
-  return NULL;
-
 }

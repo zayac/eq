@@ -340,27 +340,11 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
   char *index = *buf;
 
   buffer_add_char (buf, &index, size, c);
-  /*if (c == '0')
-    {
-      c = lexer_getch (lex);
-
-      if (c == 'x' || c == 'X')
-        {
-          ishex = true;
-          buffer_add_char (buf, &index, size, c);
-        }
-        else
-          lexer_ungetch(lex, c);
-    }
-  */
-
-  /* middle of the number */
 
   while (true)
     {
       c = lexer_getch (lex);
-      if (isdigit (c)
-              /* ||  (ishex && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))*/)
+      if (isdigit (c))
         buffer_add_char (buf, &index, size, c);
       else
         {
