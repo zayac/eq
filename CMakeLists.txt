@@ -23,6 +23,8 @@ project (eq C)
 # set (CMAKE_VERBOSE_MAKEFILE ON)
 
 option (BUILD_LEXER "compiling lexer")
+# Set BUILD_LEXER variable value to ON if you want to compile the lexer only
+set (BUILD_LEXER ON)
 
 set (CFLAGS "-g -Wall -std=c99")
 

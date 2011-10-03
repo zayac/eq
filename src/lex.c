@@ -336,72 +336,89 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
 static inline enum token_class
 lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 {
-  //bool ishex = false;
+  bool isreal = false;
+  bool saw_dot = false;
+  bool saw_exp = false;
   char *index = *buf;
 
   buffer_add_char (buf, &index, size, c);
 
+  if (c == '.')
+    {
+      isreal = true;
+      saw_dot = true;
+
+      c = lexer_getch (lex);
+
+      if (!isdigit (c))
+	{
+	  error_loc (lex->loc, "digit expected, '%c' found instead", c);
+	  lexer_ungetch (lex, c);
+	  goto return_unknown;
+	}
+    }
+
   while (true)
     {
       c = lexer_getch (lex);
-      if (isdigit (c))
-        buffer_add_char (buf, &index, size, c);
-      else
-        {
-          lexer_ungetch(lex, c);
-          break;
-        }
-    }
-
-  c = lexer_getch(lex);
-
-  if (c == '.')
-    {
-      buffer_add_char(buf, &index, size, c);
-      
-      c = lexer_getch (lex);
-      buffer_add_char(buf, &index, size, c);
-      if (!isdigit(c))
-        {
-          lexer_ungetch (lex, c);
-	  lexer_ungetch (lex, c);
-	  //error_loc(lex->loc, "there should be at least one digit after dot. \'%c\' found", c);
-          return tok_number;
-        }
-
-      while((c = lexer_getch (lex)) && isdigit(c))
-        buffer_add_char(buf, &index, size, c);
-
-    }
-
-  if (c == 'e' || c == 'E')
-    {
-      buffer_add_char(buf, &index, size, c);
-
-      c = lexer_getch (lex);
-
-      if (c == '-' || c == '+')
+      if (c == EOF)
 	{
-	  buffer_add_char (buf, &index, size, c);
-	  c = lexer_getch (lex);
+	  error_loc (lex->loc, "unexpected end of file");
+	  goto return_unknown;
 	}
-      if (isdigit (c))
-        buffer_add_char (buf, &index, size, c);
-      else
-        {
-	  lexer_ungetch (lex, c);
-	  lexer_ungetch (lex, c);
-          //error_loc(lex->loc, "there should be at least one digit after \'E\'. \'%c\' found", c);
-          return tok_number;
-        }
+      else if (c == 'e' || c == 'E')
+	{
+	  if (saw_exp)
+	    {
+	      error_loc (lex->loc, "exponent is specified more than once");
+	      goto return_unknown;
+	    }
+	  saw_exp = true;
+	  isreal = true;
 
-      while((c = lexer_getch (lex)) && isdigit(c))
-        buffer_add_char(buf, &index, size, c);
+	  c = lexer_getch (lex);
+
+	  if (c == '+' || c == '-')
+	    buffer_add_char (buf, &index, size, c);
+
+	  c = lexer_getch (lex);
+
+	  if (!isdigit (c))
+	    {
+	      error_loc (lex->loc, "digit expected after exponent sign");
+	      goto return_unknown;
+	    }
+	  else
+	    buffer_add_char (buf, &index, size, c);
+
+	  while (isdigit (c = lexer_getch (lex)))
+	    buffer_add_char (buf, &index, size, c);
+
+	  break;
+	}
+      else if (c == '.')
+	{
+	  if (saw_dot)
+	    {
+	      error_loc (lex->loc, "more than one dot in the number ");
+	      goto return_unknown;
+	    }
+	  saw_dot = true;
+	  isreal = true;
+	}
+      else
+	break;
+
+      buffer_add_char (buf, &index, size, c):
     }
   lexer_ungetch (lex, c);
   buffer_add_char (buf, &index, size, 0);
 
   return tok_number;
+
+return_unknown:
+  buffer_add_Char (buf, &index, size, 0);
+  return tok_unknown;
 }
 
 /* Reads the stream from lexer and returns dynamically allocated token
