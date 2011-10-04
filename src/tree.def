@@ -47,6 +47,9 @@ DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 2, false)
 /* Integer constant.  */
 DEF_TREE_CODE (INTEGER_CST, "integer_cst", tcl_constant, 0, true)
 
+/* Real constant.  */
+DEF_TREE_CODE (REAL_CST, "real_cst", tcl_constant, 0, true)
+
 /* String constant.  */
 DEF_TREE_CODE (STRING_CST, "string_cst", tcl_constant, 0, true)
 

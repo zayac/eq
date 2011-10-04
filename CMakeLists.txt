@@ -41,13 +41,12 @@ add_subdirectory (src)
 
 add_definitions (${CFLAGS})
 if (BUILD_LEXER)
-  add_executable (eq src/lex.c)
   add_definitions(-DLEXER_BINARY)
+  add_executable (eq src/lex.c)
 else()
   add_executable (eq src/main.c)
+  target_link_libraries (eq eqlib)
 endif()
-
-target_link_libraries (eq eqlib)
 
 
 # Testing routines

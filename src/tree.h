@@ -71,7 +71,7 @@ struct tree_type_base
   struct tree_base base;
   tree type;
   unsigned int is_constant:1;
-  /* These options are needed when \match parsing  */
+  /* These options are needed while parsing \match.  */
   bool argset:1;
   unsigned arg:6;
 };
@@ -90,8 +90,8 @@ struct tree_type_base_op
 };
 
 struct tree_list_element {
-	tree entry;
-	struct tree_list_element *next, *prev;
+  tree entry;
+  struct tree_list_element *next, *prev;
 };
 
 struct tree_list_node
@@ -120,6 +120,12 @@ struct tree_int_cst_node
   int value;
 };
 
+struct tree_real_cst_node
+{
+  struct tree_type_base typed;
+  double value;
+};
+
 struct tree_identifier_node
 {
   struct tree_type_base typed;
@@ -136,6 +142,7 @@ union tree_node
   struct tree_identifier_node identifier_node;
   struct tree_list_node list_node;
   struct tree_int_cst_node int_cst_node;
+  struct tree_real_cst_node real_cst_node;
   struct tree_string_cst_node string_cst_node;
   struct tree_circumflex_op_node circumflex_op_node;
 };
@@ -222,6 +229,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_OPERAND_SET(node, i, value) set_tree_operand ((node), (i), (value))
 
 #define TREE_INTEGER_CST(node) ((node)->int_cst_node.value)
+#define TREE_REAL_CST(node)  ((node)->real_cst_node.value)
 #define TREE_STRING_CST(node) ((node)->string_cst_node.value)
 #define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
 
@@ -257,6 +265,7 @@ tree make_string_cst_tok (struct token *);
 tree make_string_cst_str (const char *);
 tree make_identifier_tok (struct token *);
 tree make_integer_tok (struct token *);
+tree make_real_tok (struct token *);
 tree make_tree_list ();
 bool tree_list_append (tree, tree);
 tree make_function (tree, tree, tree, tree, tree, struct location);

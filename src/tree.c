@@ -90,6 +90,8 @@ get_tree_size (enum tree_code code)
     case tcl_constant:
       if (code == INTEGER_CST)
 	return ops + sizeof (struct tree_int_cst_node);
+      else if (code == REAL_CST)
+	return ops + sizeof (struct tree_real_cst_node);
       else if (code == STRING_CST)
 	return ops + sizeof (struct tree_string_cst_node);
       else
@@ -231,6 +233,10 @@ free_tree (tree node)
 	{
 	
 	}
+      else if (code == REAL_CST)
+	{
+
+	}
       else
 	unreachable (0);
       break;
@@ -328,12 +334,26 @@ tree
 make_integer_tok (struct token * tok)
 {
   tree t;
-  assert (token_class (tok) == tok_number,
-	  "attempt to build number from %s",
+  assert (token_class (tok) == tok_intnum,
+	  "attempt to build integer number from %s",
 	  token_class_as_string (token_class (tok)));
 
   t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
+  TREE_LOCATION (t) = token_location (tok);
+  return t;
+}
+
+tree
+make_real_tok (struct token * tok)
+{
+  tree t;
+  assert (token_class (tok) == tok_realnum,
+	  "attempt to build real number from %s",
+	  token_class_as_string (token_class (tok)));
+  
+  t = make_tree (REAL_CST);
+  TREE_REAL_CST (t) = atof (token_as_string (tok));
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }

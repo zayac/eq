@@ -40,6 +40,12 @@ token_is_ ## a (struct token *  tok, enum token_kind tkind) \
 #include "token_class.def"
 #undef TOKEN_CLASS
 
+static inline bool
+token_is_number (struct token * tok)
+{
+  return (token_class (tok) == tok_realnum ||
+	  token_class (tok) == tok_intnum);
+}
 int parse (struct parser *);
 bool parser_init (struct parser *, struct lexer *);
 bool parser_finalize (struct parser *);

@@ -294,8 +294,15 @@ parser_get_token (struct parser * parser)
       parser->lex->hex_number = true;
       if(!(tok = parser_forward_tval (parser, tv_lbrace)))
 	return tok;
-      if(!(ret = parser_forward_tclass (parser, tok_number)))
-	return ret;
+      
+      ret = parser_get_token (parser);
+      if (!token_is_number (ret))
+	{
+	  error_loc (token_location (ret), "unexpected token `%s` ", 
+	    token_as_string (ret));
+	  return ret;
+	}
+
       if(!(tok = parser_forward_tval (parser, tv_rbrace)))
 	return tok;
       ret->value.cval = transform_hex_to_dec (ret->value.cval); 
@@ -676,7 +683,7 @@ upper_type_wrapper (struct parser * parser)
   tree dim = error_mark_node;
 
   tok = parser_get_token (parser);
-  if (token_class (tok) == tok_number)
+  if (token_class (tok) == tok_intnum)
     dim = make_integer_tok (tok);
   else if (is_id (tok, false))
     dim = make_identifier_tok (tok);
@@ -746,8 +753,10 @@ handle_ext_type (struct parser * parser)
 	     here?  */
 	  goto error;
     }
-  else if (token_class (tok) == tok_number)
+  else if (token_class (tok) == tok_intnum)
     shape = make_integer_tok (tok);
+  else if (token_class (tok) == tok_realnum)
+    shape = make_real_tok (tok);
   else if (is_id (tok, false))
     shape = make_identifier_tok (tok);
   else
@@ -991,7 +1000,7 @@ handle_lower (struct parser * parser)
     }
   else
     {
-      if (token_class (tok) == tok_number)
+      if (token_class (tok) == tok_intnum)
 	t = make_integer_tok (tok);
       else if (is_id (tok, false))
 	t = make_identifier_tok (tok);
@@ -1331,7 +1340,7 @@ handle_upper (struct parser * parser)
     TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
     TREE_OPERAND_SET (circumflex, 1, t);
   }
-  else if (token_class (tok) == tok_number)
+  else if (token_class (tok) == tok_intnum || token_class (tok) == tok_realnum)
   {
     t = make_integer_tok (tok);
     TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
@@ -1387,6 +1396,7 @@ error:
   return error_mark_node;
 }
 
+#if 0
 /* linear:
  * (<num> | <id> [ ( + | - ) <num> ] )
  */
@@ -1428,6 +1438,7 @@ handle_linear (struct parser * parser)
 
   return id;
 }
+#endif
 
 /*
  * ( \frac | \dfrac) { expr } { expr }
@@ -1739,8 +1750,10 @@ handle_expr_match (struct parser *parser)
       return error_mark_node;
     }
 
-  if (!(tok = parser_forward_tclass (parser, tok_number)))
+  if (!token_is_number (tok))
     {
+      error_loc (token_location (tok), "unexpected token `%s` ",
+		 token_as_string (tok));
       parser_get_until_tval (parser, tv_rbrace);
       return error_mark_node;
     }
@@ -1978,7 +1991,7 @@ handle_sexpr_op (struct parser * parser)
     tok = parser_get_token (parser);
 
   
-  if (token_class (tok) == tok_number || is_id (tok, false)
+  if (token_is_number (tok) || is_id (tok, false)
       || token_is_keyword (tok, tv_frac) || token_is_keyword (tok, tv_dfrac))
     {
       parser_unget (parser);
@@ -2861,7 +2874,7 @@ handle_numx (struct parser * parser)
   tree t = error_mark_node;
 
   tok = parser_get_token (parser);
-  if (token_class (tok) == tok_number)
+  if (token_is_number (tok))
     t = make_integer_tok (tok);
   else
     {
