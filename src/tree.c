@@ -366,6 +366,20 @@ make_real_tok (struct token * tok)
   return t;
 }
 
+tree
+make_real_tok (struct token * tok)
+{
+  tree t;
+  assert (token_class (tok) == tok_realnum,
+	  "attempt to build real number from %s",
+	  token_class_as_string (token_class (tok)));
+  
+  t = make_tree (REAL_CST);
+  TREE_REAL_CST (t) = atof (token_as_string (tok));
+  TREE_LOCATION (t) = token_location (tok);
+  return t;
+}
+
 bool
 tree_list_append (tree list, tree elem)
 {

@@ -1751,6 +1751,7 @@ handle_expr_match (struct parser *parser)
     }
 
   tok = parser_get_token (parser);
+  
   if (!token_is_number (tok))
     {
       error_loc (token_location (tok), "unexpected token `%s` ",
