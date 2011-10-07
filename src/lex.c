@@ -274,7 +274,7 @@ lexer_read_hex_number (struct lexer *lex, struct token* tok,
 
   lexer_ungetch (lex, c);
   buffer_add_char(buf, &index, size, 0);
-  tok->tok_class = tok_number;
+  tok->tok_class = tok_intnum;
   tok->uses_buf = true;
   lex->hex_number = false;
 }
@@ -356,6 +356,8 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 	  lexer_ungetch (lex, c);
 	  goto return_unknown;
 	}
+      else
+	buffer_add_char (buf, &index, size, c);
     }
 
   while (true)
@@ -375,13 +377,15 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 	    }
 	  saw_exp = true;
 	  isreal = true;
-
+	  
+	  buffer_add_char (buf, &index, size, c);
 	  c = lexer_getch (lex);
 
 	  if (c == '+' || c == '-')
-	    buffer_add_char (buf, &index, size, c);
-
-	  c = lexer_getch (lex);
+	    {
+	      buffer_add_char (buf, &index, size, c);
+	      c = lexer_getch (lex);
+	    }
 
 	  if (!isdigit (c))
 	    {
@@ -406,18 +410,21 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 	  saw_dot = true;
 	  isreal = true;
 	}
-      else
+      else if (!isdigit (c))
 	break;
 
-      buffer_add_char (buf, &index, size, c):
+      buffer_add_char (buf, &index, size, c);
     }
   lexer_ungetch (lex, c);
   buffer_add_char (buf, &index, size, 0);
 
-  return tok_number;
+  if (isreal)
+    return tok_realnum;
+  else
+    return tok_intnum;
 
 return_unknown:
-  buffer_add_Char (buf, &index, size, 0);
+  buffer_add_char (buf, &index, size, 0);
   return tok_unknown;
 }
 
@@ -451,7 +458,6 @@ lexer_get_token (struct lexer *lex)
   if (c == '%')
     {
       tok->tok_class = lexer_read_comments(lex, &buf, &buf_size);
-      tok->uses_buf = true;
       goto return_token;
 
     }
@@ -471,7 +477,6 @@ lexer_get_token (struct lexer *lex)
   if(c =='"')
     {
       tok->tok_class = lexer_read_string (lex, &buf, &buf_size, c);
-      tok->uses_buf = true;
       goto return_token;
     }
 
@@ -503,6 +508,12 @@ lexer_get_token (struct lexer *lex)
 	lexer_read_keyword(lex, tok, &buf, &buf_size, c);
       goto return_token;
     }
+  
+  if (c == '.')
+    {
+      tok->tok_class = lexer_read_number (lex, &buf, &buf_size, c);
+      goto return_token;
+    }
 
   if (isdigit (c))
     {
@@ -510,7 +521,6 @@ lexer_get_token (struct lexer *lex)
 	lexer_read_hex_number (lex, tok, &buf, &buf_size, c);
       else
 	tok->tok_class = lexer_read_number (lex, &buf, &buf_size, c);
-      tok->uses_buf = true;
       goto return_token;
     }
 
@@ -596,14 +606,16 @@ lexer_get_token (struct lexer *lex)
   buf = (char *) malloc (2 * sizeof (char));
   buf[0] = c; buf[1] = 0;
   tok->tok_class = tok_unknown;
-  tok->uses_buf = true;
 
 return_token:
   assert (tok->tok_class >= tok_keyword && tok->tok_class <= tok_unknown,
           "token type was not provided");
   
   if (buf != NULL)
-    tok->value.cval = buf;
+    {
+      tok->uses_buf = true;
+      tok->value.cval = buf;
+    }
   
   tok->loc = loc;
   return tok;

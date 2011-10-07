@@ -15,7 +15,8 @@
 
 TOKEN_CLASS (keyword,       "keyword")
 TOKEN_CLASS (id,            "id")
-TOKEN_CLASS (number,        "number")
+TOKEN_CLASS (realnum,	    "real number")
+TOKEN_CLASS (intnum,	    "integer number")
 TOKEN_CLASS (operator,      "operator")
 TOKEN_CLASS (string,	    "string")
 TOKEN_CLASS (whitespace,    "whitespace")

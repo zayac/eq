@@ -90,6 +90,8 @@ get_tree_size (enum tree_code code)
     case tcl_constant:
       if (code == INTEGER_CST)
 	return ops + sizeof (struct tree_int_cst_node);
+      else if (code == REAL_CST)
+	return ops + sizeof (struct tree_real_cst_node);
       else if (code == STRING_CST)
 	return ops + sizeof (struct tree_string_cst_node);
       else
@@ -203,7 +205,6 @@ free_tree (tree node)
 	}
       else if (code == LIST)
 	{
-	  
 	  struct tree_list_element * el = NULL, *tmp = NULL;
 	  DL_FOREACH_SAFE(TREE_LIST(node), el, tmp) 
 	    {
@@ -216,8 +217,6 @@ free_tree (tree node)
       break;
 
     case tcl_type:
-      free_tree (TREE_TYPE_NAME (node));
-      free_tree (TREE_TYPE_SIZE (node));
       break;
 
     case tcl_constant:
@@ -230,6 +229,10 @@ free_tree (tree node)
       if (code == INTEGER_CST)
 	{
 	
+	}
+      else if (code == REAL_CST)
+	{
+
 	}
       else
 	unreachable (0);
@@ -244,7 +247,13 @@ free_tree (tree node)
       unreachable (0);
       break;
     }
-
+  /*
+  if (TREE_CODE_TYPED (code))
+    {
+      free_tree (TREE_TYPE_NAME (node));
+      free_tree (TREE_TYPE_SIZE (node));
+    }
+  */
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {
       free_tree (TREE_OPERAND (node, i));
@@ -279,6 +288,8 @@ make_string_cst_str (const char *value)
   t = make_tree (STRING_CST);
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
+  assert (TREE_CODE_TYPED (STRING_CST), "string has to have a type");
+  TREE_TYPE_NAME (t) = make_tree (STRING_TYPE);
   /* FIXME Add is_char modifier to the tree.  */
 
   return t;
@@ -298,7 +309,6 @@ make_string_cst_tok (struct token * tok)
   str = token_as_string (tok);
   t = make_string_cst_str (str);
   TREE_LOCATION (t) = token_location (tok);
-
   return t;
 }
 
@@ -328,12 +338,30 @@ tree
 make_integer_tok (struct token * tok)
 {
   tree t;
-  assert (token_class (tok) == tok_number,
-	  "attempt to build number from %s",
+  assert (token_class (tok) == tok_intnum,
+	  "attempt to build integer number from %s",
 	  token_class_as_string (token_class (tok)));
 
   t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
+  assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
+  TREE_TYPE_NAME (t) = make_type (Z_TYPE);
+  TREE_LOCATION (t) = token_location (tok);
+  return t;
+}
+
+tree
+make_real_tok (struct token * tok)
+{
+  tree t;
+  assert (token_class (tok) == tok_realnum,
+	  "attempt to build real number from %s",
+	  token_class_as_string (token_class (tok)));
+  
+  t = make_tree (REAL_CST);
+  TREE_REAL_CST (t) = atof (token_as_string (tok));
+  assert (TREE_CODE_TYPED (REAL_CST), "real number has to have a type");
+  TREE_TYPE_NAME (t) = make_type (R_TYPE);
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
@@ -361,6 +389,11 @@ make_type (enum tree_code code)
   assert (TREE_CODE_CLASS (code) == tcl_type,
 	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
   t = make_tree (code);
+  if (TREE_CODE_OPERANDS (code))
+    {
+      TREE_OPERAND_SET (t, 0, NULL);
+      TREE_OPERAND_SET (t, 1, NULL);
+    }
   return t;
 }
 
@@ -376,6 +409,8 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, lhs);
   TREE_OPERAND_SET (t, 1, rhs);
+  if (TREE_CODE_TYPED (code) && TREE_CODE_OPERANDS (code))
+      TREE_TYPE_NAME (t) = TREE_TYPE_NAME (rhs);
   if (lhs != NULL)
     TREE_LOCATION (t) = TREE_LOCATION (lhs);
   return t;
@@ -479,9 +514,7 @@ tree_list_copy (tree lst)
   cpy = make_tree_list ();
 
   DL_FOREACH (TREE_LIST(lst), el)
-    {
-      tree_list_append(cpy, tree_copy (el->entry));
-    }
+    tree_list_append(cpy, tree_copy (el->entry));
   return cpy;
 }
 

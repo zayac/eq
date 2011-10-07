@@ -41,11 +41,15 @@ DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 2, false)
 DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 2, false)
 DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 2, false)
 DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 2, false)
+DEF_TREE_CODE (STRING_TYPE, "string type", tcl_type, 0, false)
 
 /* Constant nodes.  */
 
 /* Integer constant.  */
 DEF_TREE_CODE (INTEGER_CST, "integer_cst", tcl_constant, 0, true)
+
+/* Real constant.  */
+DEF_TREE_CODE (REAL_CST, "real_cst", tcl_constant, 0, true)
 
 /* String constant.  */
 DEF_TREE_CODE (STRING_CST, "string_cst", tcl_constant, 0, true)
