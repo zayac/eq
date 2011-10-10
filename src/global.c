@@ -31,16 +31,35 @@ int warning_count = 0;
 /* A global list to store functions.  */
 tree function_list = NULL;
 
-/* Allocat all the global structures that are going to be used
+/* A global lists to store types.  */
+tree type_name_list = NULL;
+tree type_size_list = NULL;
+
+/* Allocate all the global structures that are going to be used
    during the compilation.  */
 void 
 init_global ()
 {
   assert (function_list == NULL, "function list is already allocated");
 
-  function_list = make_tree_list();
+  function_list = make_tree_list ();
+  type_name_list = make_tree_list ();
+  type_size_list = make_tree_List ();
+
   error_count = 0;
   warning_count = 0;
+}
+
+void
+add_primitive_type_names ()
+{
+
+}
+
+void 
+add_primitive_type_sizes ()
+{
+
 }
 
 void

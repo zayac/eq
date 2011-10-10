@@ -69,18 +69,12 @@ struct tree_base_op
 struct tree_type_base
 {
   struct tree_base base;
-  tree type;
+  tree name;
+  tree size;
   unsigned int is_constant:1;
   /* These options are needed while parsing \match.  */
   bool argset:1;
   unsigned arg:6;
-};
-
-struct tree_type_node
-{
-  struct tree_base base;
-  tree name;
-  tree size;
 };
 
 struct tree_type_base_op
@@ -138,7 +132,6 @@ union tree_node
   struct tree_base_op base_op;
   struct tree_type_base typed;
   struct tree_type_base_op typed_op;
-  struct tree_type_node type_node;
   struct tree_identifier_node identifier_node;
   struct tree_list_node list_node;
   struct tree_int_cst_node int_cst_node;
@@ -168,9 +161,8 @@ enum tree_global_code
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
-#define TREE_TYPE(node)  ((node)->typed.type)
-#define TREE_TYPE_NAME(node) ((node)->typed.type->type_node.name)
-#define TREE_TYPE_SIZE(node) ((node)->typed.type->type_node.size)
+#define TREE_TYPE_NAME(node) ((node)->typed.name)
+#define TREE_TYPE_SIZE(node) ((node)->typed.size)
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)

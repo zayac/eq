@@ -21,7 +21,7 @@
 
 /* Structure to store a list of user-defined types
    FIXME it should be a hash-table!  */
-extern tree constant_list;
+extern tree type_list;
 extern tree function_list;
 
 extern int error_count;

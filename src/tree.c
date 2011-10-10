@@ -288,9 +288,8 @@ make_string_cst_str (const char *value)
   t = make_tree (STRING_CST);
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
-  TREE_TYPE (t) = make_tree (TYPE);
-  //TREE_TYPE_NAME (t) = make_type (STRING_TYPE);
-  //TREE_TYPE_SIZE (t) = make_integer_cst (strlen (value) + 1);
+  TREE_TYPE_NAME (t) = make_type (STRING_TYPE);
+  TREE_TYPE_SIZE (t) = make_integer_cst (strlen (value) + 1);
   /* FIXME Add is_char modifier to the tree.  */
 
   return t;
@@ -341,16 +340,14 @@ make_integer_cst (int value)
   tree type;
   tree t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = value;
-  TREE_TYPE (t) = make_tree (TYPE);
   TREE_TYPE_NAME (t) = make_type (Z_TYPE);
   /* If we assign size node in a usual way (commonly we use make_integer_cst),
      we will fall into an infinite recursion. To avoid this we initialize size
      node separately in a tricky way.  */ 
   type = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = sizeof (int);
-  TREE_TYPE (type) = make_tree (TYPE);
   TREE_TYPE_NAME (type) = make_type (Z_TYPE);
-  TREE_TYPE_SIZE (type) = TREE_TYPE (type);
+  TREE_TYPE_SIZE (type) = type;
   TREE_TYPE_SIZE (t) = type;
   return t;
 }
@@ -366,9 +363,8 @@ make_integer_tok (struct token * tok)
   t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
   assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
-  TREE_TYPE (t) = make_tree (TYPE);
-  //TREE_TYPE_NAME (t) = make_type (Z_TYPE);
-  //TREE_TYPE_SIZE (t) = make_integer_cst (sizeof (int));
+  TREE_TYPE_NAME (t) = make_type (Z_TYPE);
+  TREE_TYPE_SIZE (t) = make_integer_cst (sizeof (int));
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
@@ -384,9 +380,8 @@ make_real_tok (struct token * tok)
   t = make_tree (REAL_CST);
   TREE_REAL_CST (t) = atof (token_as_string (tok));
   assert (TREE_CODE_TYPED (REAL_CST), "real number has to have a type");
-  TREE_TYPE (t) = make_tree (TYPE);
-  //TREE_TYPE_NAME (t) = make_type (R_TYPE);
-  //TREE_TYPE_SIZE (t) = make_integer_cst (sizeof (double));
+  TREE_TYPE_NAME (t) = make_type (R_TYPE);
+  TREE_TYPE_SIZE (t) = make_integer_cst (sizeof (double));
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
