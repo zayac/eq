@@ -168,7 +168,7 @@ enum tree_global_code
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
-#define TREE_TYPE(node)  ((node)->typed)
+#define TREE_TYPE(node)  ((node)->typed.type)
 #define TREE_TYPE_NAME(node) ((node)->typed.type->type_node.name)
 #define TREE_TYPE_SIZE(node) ((node)->typed.type->type_node.size)
 
@@ -265,6 +265,7 @@ void free_atomic_trees ();
 tree make_string_cst_tok (struct token *);
 tree make_string_cst_str (const char *);
 tree make_identifier_tok (struct token *);
+tree make_integer_cst (int);
 tree make_integer_tok (struct token *);
 tree make_real_tok (struct token *);
 tree make_tree_list ();
