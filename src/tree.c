@@ -98,11 +98,13 @@ get_tree_size (enum tree_code code)
       else
 	unreachable (0);
       break;
+    
     case tcl_expression:
       if (code == CIRCUMFLEX)
 	return ops + sizeof (struct tree_circumflex_op_node);
       else
 	return size + ops;
+    
     case tcl_statement:
       return size + ops;
 
@@ -118,7 +120,7 @@ make_tree (enum tree_code code)
 {
   size_t size = get_tree_size (code);
   if (code == ERROR_MARK)
-    warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
+      warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
   tree ret = (tree) malloc (size);
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
@@ -129,7 +131,7 @@ make_tree (enum tree_code code)
 static inline void
 atomic_trees_add (tree t)
 {
-	assert (TREE_CODE (t) == EMPTY_MARK,
+  assert (TREE_CODE (t) == EMPTY_MARK,
 	  "only EMPTY_MARK nodes can be added to atomic_tres");
 
   if (atomic_trees_size == 0)
@@ -150,7 +152,7 @@ atomic_trees_add (tree t)
 
   /* Most likely we don't need to search anything.  */
 
-  {				/* For testing purposes only.  */
+  {/* For testing purposes only.  */
     size_t i;
     for (i = 0; i < atomic_trees_idx; i++)
       if (atomic_trees[i] == t)
@@ -193,12 +195,9 @@ free_tree (tree node)
  
   code = TREE_CODE (node);
   
-  //printf("free %s\n", TREE_CODE_NAME(code));
   switch (TREE_CODE_CLASS (code))
     {
-
     case tcl_misc:
-
       if (code == IDENTIFIER)
 	{
 	  free_tree (TREE_ID_NAME (node));
@@ -212,7 +211,6 @@ free_tree (tree node)
 	      free_tree (el->entry);
 	      free (el);
 	    }
-	  
 	}
       break;
 
@@ -265,8 +263,8 @@ free_tree (tree node)
 }
 
 tree
-make_function (tree name, tree args, tree args_types, tree ret, tree instrs,
-	       struct location loc)
+make_function (tree name, tree args, tree args_types, 
+	       tree ret, tree instrs, struct location loc)
 {
   tree t = make_tree (FUNCTION);
   TREE_OPERAND_SET (t, 0, name);
@@ -344,14 +342,13 @@ make_integer_cst (int value)
   tree t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = value;
   
-  /* If we assign size node in a usual way (commonly we use make_integer_cst),
-     we will fall into an infinite recursion. To avoid this we initialize size
-     node separately in a tricky way.  */ 
-  
+  /* If we assign size node in a usual way (commonly we use
+     make_integer_cst), we will fall into an infinite recursion. To
+     avoid this we initialize size node separately in a tricky way.  */ 
   type_name = find_primitive_name_in_list (Z_TYPE);
   type_size = find_primitive_size_in_list (sizeof (int));
-  if (type_name == NULL || type_size == NULL || 
-	(el = types_find_in_table (type_name, type_size)) == NULL)
+  if (type_name == NULL || type_size == NULL 
+      || NULL == (el = types_find_in_table (type_name, type_size)))
     {
       type = make_tree (INTEGER_CST);
       TREE_INTEGER_CST (type) = sizeof (int);
@@ -407,12 +404,13 @@ make_real_tok (struct token * tok)
 bool
 tree_list_append (tree list, tree elem)
 {
+  struct tree_list_element * el;
   assert (TREE_CODE (list) == LIST, 
           "appending element of type `%s'", TREE_CODE_NAME (TREE_CODE (list)));
- 
-  struct tree_list_element * el = (struct tree_list_element * ) 
-	      malloc (sizeof(struct tree_list_element));
-  assert (el != NULL, "Can't allocate enough memory for new element `%s`",
+  
+  el = (struct tree_list_element *) malloc (sizeof(struct tree_list_element));
+  
+  assert (el != NULL, "Can't allocate enough memory for new element `%s'",
   TREE_CODE_NAME(TREE_CODE(list)));
   el->entry = elem;
 
@@ -440,7 +438,6 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
 {
   tree t;
 
-  //printf ("-- %s enter with code %s\n", __func__, TREE_CODE_NAME (code));
   assert (TREE_CODE_CLASS (code) == tcl_expression
 	  && code != UMINUS_EXPR && code != NOT_EXPR,
 	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
@@ -524,7 +521,6 @@ make_assign (enum token_kind tk, tree lhs, tree rhs)
   assert (is_assignment_operator (tk),
 	  "attempt to make assignment from %s", token_kind_as_string (tk));
 
-  //printf ("-- %s enter\n", __func__);
   switch (tk)
     {
     case tv_gets:
