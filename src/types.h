@@ -13,29 +13,39 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
-#ifndef __GLOBAL_H__
-#define __GLOBAL_H__
+#ifndef __TYPES_H__
+#define __TYPES_H__
 
-#include <stdarg.h>
 #include "tree.h"
+#include "uthash.h"
 
-/* Structure to store a list of user-defined types
-   FIXME it should be a hash-table!  */
-extern tree function_list;
+/* Lists of pointers to store names and sizes of types.  */
+extern tree type_name_list;
+extern tree type_size_list;
 
-extern int error_count;
-extern int warning_count;
-extern tree global_tree[];
+/* A structure which is used as the key for type table.  */
+struct type_table_key
+{
+  tree name;
+  tree size;
+};
 
-void init_global ();
-void finalize_global ();
-void init_global_tree ();
-void finalize_global_tree ();
+/* A hash table for storing types.  */
+struct type_hash_table
+{
+  struct type_table_key key;
+  UT_hash_handle hh;
+};
 
-tree type_defined (const char *  name);
-tree add_user_type (tree type);
-tree function_exists (const char *);
-tree constant_exists (const char *);
-bool type_lists_eq (tree, tree);
+/* A global table to store types.  */
+struct type_hash_table * type_table;
 
-#endif /* __GLOBAL_H__  */
+void types_init ();
+struct type_hash_table*  types_add_type (tree, tree);
+void types_add_primitive_types ();
+struct type_hash_table* types_set_simple_type (enum tree_code, size_t);
+struct type_hash_table* types_find_in_table (tree, tree);
+tree find_primitive_size_in_list (size_t);
+tree find_primitive_name_in_list (enum tree_code);
+
+#endif /* __TYPES_H__  */

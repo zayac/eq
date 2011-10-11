@@ -15,10 +15,11 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "types.h"
 #include "expand.h"
 #include "tree.h"
+#include "uthash.h"
 #include "global.h"
-
 
 /* Variable that is going to be increased every 
    time when an error is happening.  */
@@ -31,7 +32,7 @@ int warning_count = 0;
 /* A global list to store functions.  */
 tree function_list = NULL;
 
-/* A global lists to store types.  */
+/* Hash tables of pointers to store names and sizes of types.  */
 tree type_name_list = NULL;
 tree type_size_list = NULL;
 
@@ -44,22 +45,12 @@ init_global ()
 
   function_list = make_tree_list ();
   type_name_list = make_tree_list ();
-  type_size_list = make_tree_List ();
+
+  types_init ();
+  types_add_primitive_types ();
 
   error_count = 0;
   warning_count = 0;
-}
-
-void
-add_primitive_type_names ()
-{
-
-}
-
-void 
-add_primitive_type_sizes ()
-{
-
 }
 
 void
