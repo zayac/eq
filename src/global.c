@@ -36,6 +36,7 @@ tree function_list = NULL;
 tree type_name_list = NULL;
 tree type_size_list = NULL;
 
+tree type_basic[4];
 /* Allocate all the global structures that are going to be used
    during the compilation.  */
 void 
@@ -47,7 +48,6 @@ init_global ()
   type_name_list = make_tree_list ();
 
   types_init ();
-  types_add_primitive_types ();
 
   error_count = 0;
   warning_count = 0;

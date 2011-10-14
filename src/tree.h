@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include "utlist.h"
+#include "uthash.h"
 
 #include "expand.h"
 
@@ -69,7 +70,7 @@ struct tree_base_op
 struct tree_type_base
 {
   struct tree_base base;
-  struct type_hash_table * type;
+  tree type;
   unsigned int is_constant:1;
   /* These options are needed while parsing \match.  */
   bool argset:1;
@@ -80,6 +81,14 @@ struct tree_type_base_op
 {
   struct tree_type_base typed;
   tree operands[];
+};
+
+/* A hash table for storing types.  */
+struct tree_type_hash_table
+{
+  struct tree_base base;
+  size_t size;
+  UT_hash_handle hh;
 };
 
 struct tree_list_element {
@@ -131,6 +140,7 @@ union tree_node
   struct tree_base_op base_op;
   struct tree_type_base typed;
   struct tree_type_base_op typed_op;
+  struct tree_type_hash_table type_node;
   struct tree_identifier_node identifier_node;
   struct tree_list_node list_node;
   struct tree_int_cst_node int_cst_node;
@@ -161,6 +171,8 @@ enum tree_global_code
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
 #define TREE_TYPE(node) ((node)->typed.type)
+#define TYPE_HASH(node) ((node)->type_node)
+#define TYPE_SIZE(node) ((node)->type_node.size)
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)

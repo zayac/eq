@@ -19,33 +19,18 @@
 #include "tree.h"
 #include "uthash.h"
 
-/* Lists of pointers to store names and sizes of types.  */
-extern tree type_name_list;
-extern tree type_size_list;
+extern tree type_basic[4];
 
-/* A structure which is used as the key for type table.  */
-struct type_table_key
-{
-  tree name;
-  tree size;
-};
-
-/* A hash table for storing types.  */
-struct type_hash_table
-{
-  struct type_table_key key;
-  UT_hash_handle hh;
-};
+#define BASIC_TYPE_B (type_basic[0])
+#define BASIC_TYPE_N (type_basic[1])
+#define BASIC_TYPE_R (type_basic[2])
+#define BASIC_TYPE_Z (type_basic[3])
 
 /* A global table to store types.  */
-struct type_hash_table * type_table;
+struct type_type_hash_table * type_table;
 
 void types_init ();
-struct type_hash_table*  types_add_type (tree, tree);
-void types_add_primitive_types ();
-struct type_hash_table* types_set_simple_type (enum tree_code, size_t);
-struct type_hash_table* types_find_in_table (tree, tree);
-tree find_primitive_size_in_list (size_t);
-tree find_primitive_name_in_list (enum tree_code);
+tree types_add_type (enum tree_code, size_t);
+struct type_hash_table* types_find_in_table (enum tree_code, size_t);
 
 #endif /* __TYPES_H__  */

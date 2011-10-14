@@ -86,7 +86,7 @@ get_tree_size (enum tree_code code)
 	return size + ops;
 
     case tcl_type:
-      return size + ops;
+      return ops + sizeof (struct tree_type_hash_table);
 
     case tcl_constant:
       if (code == INTEGER_CST)
@@ -287,7 +287,7 @@ make_string_cst_str (const char *value)
   t = make_tree (STRING_CST);
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
-  TREE_TYPE (t) = types_set_simple_type (STRING_TYPE, 0);
+  TREE_TYPE (t) = types_add_type (STRING_TYPE, ((strlen (value) + 1 * 8)));
   /* FIXME Add is_char modifier to the tree.  */
 
   return t;
@@ -335,37 +335,9 @@ make_tree_list ()
 tree
 make_integer_cst (int value)
 {
-  struct type_hash_table * el;
-  tree type;
-  tree type_size = NULL;
-  tree type_name = NULL;
   tree t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = value;
-  
-  /* If we assign size node in a usual way (commonly we use
-     make_integer_cst), we will fall into an infinite recursion. To
-     avoid this we initialize size node separately in a tricky way.  */ 
-  type_name = find_primitive_name_in_list (Z_TYPE);
-  type_size = find_primitive_size_in_list (sizeof (int));
-  if (type_name == NULL || type_size == NULL 
-      || NULL == (el = types_find_in_table (type_name, type_size)))
-    {
-      type = make_tree (INTEGER_CST);
-      TREE_INTEGER_CST (type) = sizeof (int);
-      if (type_name == NULL)
-	{
-	  type_name = make_type (Z_TYPE);
-	  tree_list_append (type_name_list, type_name);
-	}
-      if (type_size == NULL)
-	{
-	  type_size = type;
-	  tree_list_append (type_name_list, type_size);
-	}
-      
-      el = types_add_type (type_name, type_size);
-    }
-  TREE_TYPE (t) = el;
+  TREE_TYPE (t) = BASIC_TYPE_Z; 
   return t;
 }
 
@@ -380,7 +352,7 @@ make_integer_tok (struct token * tok)
   t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
   assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
-  TREE_TYPE (t) = types_set_simple_type (Z_TYPE, sizeof (int));
+  TREE_TYPE (t) = BASIC_TYPE_Z;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
@@ -396,7 +368,7 @@ make_real_tok (struct token * tok)
   t = make_tree (REAL_CST);
   TREE_REAL_CST (t) = atof (token_as_string (tok));
   assert (TREE_CODE_TYPED (REAL_CST), "real number has to have a type");
-  TREE_TYPE (t) = types_set_simple_type (R_TYPE, sizeof (double));
+  TREE_TYPE (t) = BASIC_TYPE_R;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
