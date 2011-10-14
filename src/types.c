@@ -16,6 +16,8 @@
 #include "types.h"
 #include "tree.h"
 
+struct tree_type_node * type_table;
+
 /* Data structures related to types initialization.  */
 void
 types_init ()
@@ -32,28 +34,28 @@ tree
 types_add_type (enum tree_code code, size_t size)
 {
   tree el = NULL;
-  size_t keylen = offsetof (struct tree_type_hash_table, size);
+  size_t keylen = offsetof (struct tree_type_node, hh);
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
   TYPE_SIZE (el) = size;
 
-  HASH_ADD_KEYPTR (hh, type_table, (&TYPE_HASH (el)), keylen, (&TYPE_HASH (el)));
+  HASH_ADD_KEYPTR (hh, type_table, &TYPE_HASH (el), keylen, &TYPE_HASH (el));
   return el;
 }
 
-struct type_hash_table * 
+struct tree_type_node * 
 types_find_in_table (enum tree_code code, size_t size)
 {
   tree el = NULL;
-  struct type_hash_table* ret = NULL;
-  size_t keylen = offsetof (struct tree_type_hash_table, size);
+  struct tree_type_node* ret = NULL;
+  size_t keylen = offsetof (struct tree_type_node, hh);
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
   TYPE_SIZE (el) = size;
 
-  //HASH_FIND (hh, type_table, TREE_CODE (el), keylen, ret);
+  HASH_FIND (hh, type_table, &TYPE_HASH (el), keylen, ret);
   return ret;
 }
 

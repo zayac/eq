@@ -86,7 +86,7 @@ get_tree_size (enum tree_code code)
 	return size + ops;
 
     case tcl_type:
-      return ops + sizeof (struct tree_type_hash_table);
+      return ops + sizeof (struct tree_type_node);
 
     case tcl_constant:
       if (code == INTEGER_CST)

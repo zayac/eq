@@ -84,7 +84,7 @@ struct tree_type_base_op
 };
 
 /* A hash table for storing types.  */
-struct tree_type_hash_table
+struct tree_type_node
 {
   struct tree_base base;
   size_t size;
@@ -140,7 +140,7 @@ union tree_node
   struct tree_base_op base_op;
   struct tree_type_base typed;
   struct tree_type_base_op typed_op;
-  struct tree_type_hash_table type_node;
+  struct tree_type_node type_node;
   struct tree_identifier_node identifier_node;
   struct tree_list_node list_node;
   struct tree_int_cst_node int_cst_node;

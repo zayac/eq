@@ -27,10 +27,10 @@ extern tree type_basic[4];
 #define BASIC_TYPE_Z (type_basic[3])
 
 /* A global table to store types.  */
-struct type_type_hash_table * type_table;
+extern struct tree_type_node * type_table;
 
 void types_init ();
 tree types_add_type (enum tree_code, size_t);
-struct type_hash_table* types_find_in_table (enum tree_code, size_t);
+struct tree_type_node* types_find_in_table (enum tree_code, size_t);
 
 #endif /* __TYPES_H__  */
