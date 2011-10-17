@@ -22,6 +22,7 @@
 #include "print.h"
 #include "parser.h"
 #include "matcher.h"
+#include "types.h"
 
 /* Check if parser is not in any parenthesis/bracket expression.  */
 static inline bool
@@ -659,8 +660,6 @@ handle_type (struct parser * parser)
   else
     goto error;
 
-  TREE_TYPE_DIM (t) = NULL;
-  TREE_TYPE_SHAPE (t) = NULL;
   TREE_LOCATION (t) = token_location (tok);
 
   if (!parser_forward_tval (parser, tv_rbrace))
@@ -715,11 +714,16 @@ tree
 handle_ext_type (struct parser * parser)
 {
   struct token *tok;
-  bool circumflex_first = true; 
+  bool circumflex_first = true;
+  enum tree_code code;
+  size_t size = 0;
 
   tree t = handle_type (parser);
+  code = TREE_CODE (t);
+  size = TYPE_SIZE (t);
+  free_tree (t);
   tree dim = NULL;
-  tree shape = error_mark_node;
+  tree shape = NULL;
 
   if (!token_is_operator (parser_get_token (parser), tv_circumflex))
     {
@@ -732,7 +736,6 @@ handle_ext_type (struct parser * parser)
       if (dim == error_mark_node)
 	goto error_shift;
       
-      TREE_TYPE_DIM (t) = dim;
     }
 
   tok = parser_get_token (parser);
@@ -740,7 +743,7 @@ handle_ext_type (struct parser * parser)
   if (!token_is_operator (tok, tv_lower_index))
     {
       parser_unget (parser);
-      return t;
+      return types_assign_type (code, size, dim, shape);
     }
   
   tok = parser_get_token (parser);
@@ -764,8 +767,6 @@ handle_ext_type (struct parser * parser)
 
   if (shape == NULL || shape == error_mark_node)
     goto error;
-  else
-    TREE_TYPE_SHAPE (t) = shape;
   
   if (!circumflex_first)
     {
@@ -774,7 +775,6 @@ handle_ext_type (struct parser * parser)
 	  dim = upper_type_wrapper (parser);
 	  if (dim == error_mark_node )
 	    goto error_shift;
-	  TREE_TYPE_DIM (t) = dim;
 	}
       else
       {
@@ -784,12 +784,12 @@ handle_ext_type (struct parser * parser)
 	parser_unget (parser);
       }
     }
-   
-  return t;
+  
+
+  return types_assign_type (code, size, dim, shape);
 error_shift:
   parser_get_until_tval (parser, tv_rbrace);
 error:
-  free_tree (t);
   free_tree (dim);
   free_tree (shape);
   return error_mark_node;

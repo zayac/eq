@@ -181,15 +181,15 @@ print_expression (FILE * f, tree exp)
 	else
 	  fprintf (f, "R");
 
-	if (TREE_TYPE_DIM (exp) != NULL)
+	if (TYPE_DIM (exp) != NULL)
 	  {
 	    fprintf (f, "^{");
-	    print_expression (f, TREE_TYPE_DIM (exp));
+	    print_expression (f, TYPE_DIM (exp));
 	    fprintf (f, "}");
-	    if (TREE_TYPE_SHAPE (exp) != NULL)
+	    if (TYPE_SHAPE (exp) != NULL)
 	      {
 		fprintf (f, "_{");
-		print_expression (f, TREE_TYPE_SHAPE (exp));
+		print_expression (f, TYPE_SHAPE (exp));
 	      }
 	    else
 	      return fprintf (f, "}");

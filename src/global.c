@@ -57,6 +57,7 @@ void
 finalize_global ()
 {
   free_tree (function_list);
+  types_finalize ();
 }
 
 void

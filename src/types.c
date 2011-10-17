@@ -23,39 +23,84 @@ void
 types_init ()
 {
   type_table = NULL;
-  types_add_type (B_TYPE, 1);
-  types_add_type (N_TYPE, sizeof (unsigned) * 8);
-  types_add_type (R_TYPE, sizeof (double) * 8);
-  types_add_type (Z_TYPE, sizeof (int) * 8); 
+  types_add_type (B_TYPE, 1, NULL, NULL);
+  types_add_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
+  types_add_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
+  types_add_type (Z_TYPE, sizeof (int) * 8, NULL, NULL); 
 }
 
 /* Add a new type to hash table.  */
-tree
-types_add_type (enum tree_code code, size_t size)
+struct tree_type_node *
+types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
 {
   tree el = NULL;
-  size_t keylen = offsetof (struct tree_type_node, hh);
+  size_t keylen = offsetof (struct tree_type_node, hh)
+		- offsetof (struct tree_base, code);
+  void* keystart;
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
   TYPE_SIZE (el) = size;
+  TYPE_DIM (el) = dim;
+  TYPE_SHAPE (el) = shape;
+  keystart  = el + offsetof (struct tree_base, code);
 
-  HASH_ADD_KEYPTR (hh, type_table, &TYPE_HASH (el), keylen, &TYPE_HASH (el));
-  return el;
+
+  HASH_ADD_KEYPTR (hh, type_table, keystart, keylen, &TYPE_HASH (el));
+  return ((struct tree_type_node *) el);
 }
 
 struct tree_type_node * 
-types_find_in_table (enum tree_code code, size_t size)
+types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
 {
   tree el = NULL;
   struct tree_type_node* ret = NULL;
-  size_t keylen = offsetof (struct tree_type_node, hh);
+  size_t keylen = offsetof (struct tree_type_node, hh) 
+		- offsetof (struct tree_base, code);
+  void* keystart;
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
   TYPE_SIZE (el) = size;
+  TYPE_DIM (el) = dim;
+  TYPE_SHAPE (el) = shape;
+  keystart  = el + offsetof (struct tree_base, code);
 
-  HASH_FIND (hh, type_table, &TYPE_HASH (el), keylen, ret);
+  HASH_FIND (hh, type_table, keystart, keylen, ret);
   return ret;
 }
+
+/* Try to find a corresponded type, if not found -- add a new one.
+   FIXME: Now works properly only when dim is NULL and shape is NULL. Need to
+   compare trees.  */
+tree
+types_assign_type (enum tree_code code, size_t size, tree dim, tree shape)
+{
+  struct tree_type_node * found = 
+      types_find_in_table (code, size, dim, shape);
+  if (found == NULL)
+    return ((tree) types_add_type (code, size, dim, shape));
+  else
+    return ((tree) types_find_in_table (code, size, dim, shape));
+}
+
+
+/* We call free function for trees, as tree is a tree node too.  */
+void
+types_free_type (struct tree_type_node * type)
+{
+  free_tree ((tree) type);
+}
+
+void types_finalize ()
+{
+  struct tree_type_node *current, *tmp;
+  HASH_ITER (hh, type_table, current, tmp)
+    {
+      HASH_DEL (type_table, current);
+      free_tree_type ((tree) current);
+    }
+  type_table = NULL;
+}
+
 

@@ -55,8 +55,8 @@ typedef union tree_node *tree;
 /* Basic information each node should have.  */
 struct tree_base
 {
-  enum tree_code code;
   struct location loc;
+  enum tree_code code;
 };
 
 /* Base tree with operands pointer */
@@ -88,6 +88,8 @@ struct tree_type_node
 {
   struct tree_base base;
   size_t size;
+  tree dim;
+  tree shape;
   UT_hash_handle hh;
 };
 
@@ -173,6 +175,8 @@ enum tree_global_code
 #define TREE_TYPE(node) ((node)->typed.type)
 #define TYPE_HASH(node) ((node)->type_node)
 #define TYPE_SIZE(node) ((node)->type_node.size)
+#define TYPE_DIM(node) ((node)->type_node.dim)
+#define TYPE_SHAPE(node) ((node)->type_node.shape)
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)
@@ -238,9 +242,6 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
 
-#define TREE_TYPE_DIM(node) ((node)->base_op.operands[0])
-#define TREE_TYPE_SHAPE(node) ((node)->base_op.operands[1])
-
 #define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
 #define TREE_FUNC_ARGS_TYPES(node) ((node)->base_op.operands[2])
@@ -263,6 +264,7 @@ is_assignment_operator (enum token_kind tk)
 size_t get_tree_size (enum tree_code);
 tree make_tree (enum tree_code);
 void free_tree (tree);
+void free_tree_type (tree);
 void free_atomic_trees ();
 tree make_string_cst_tok (struct token *);
 tree make_string_cst_str (const char *);
@@ -285,5 +287,6 @@ tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
 tree tree_copy (tree);
 void free_list (tree);
+
 
 #endif /* __TREE_H__  */

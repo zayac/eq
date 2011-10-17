@@ -189,8 +189,11 @@ free_tree (tree node)
   int i;
   enum tree_code code;
 
-  if (node == NULL
-      || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK)
+  
+  if (node == NULL 
+      /* Types are removed separetely.  */
+      || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type
+      || node == error_mark_node || TREE_CODE(node) == EMPTY_MARK)
     return;
  
   code = TREE_CODE (node);
@@ -212,9 +215,6 @@ free_tree (tree node)
 	      free (el);
 	    }
 	}
-      break;
-
-    case tcl_type:
       break;
 
     case tcl_constant:
@@ -245,17 +245,48 @@ free_tree (tree node)
       unreachable (0);
       break;
     }
-  /*
+  
+  /* Types are stored in global hash table. That's why we delete them
+     separetely.  */
   if (TREE_CODE_TYPED (code))
-    {
-      free_tree (TREE_TYPE_NAME (node));
-      free_tree (TREE_TYPE_SIZE (node));
-    }
-  */
+    TREE_TYPE (node) = NULL;
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {
       free_tree (TREE_OPERAND (node, i));
       TREE_OPERAND_SET (node, i, NULL);
+    }
+
+  TREE_CODE_SET (node, EMPTY_MARK);
+  atomic_trees_add (node);
+}
+
+void free_tree_type (tree node)
+{
+  enum tree_code code;
+  if (node == NULL)
+    return;
+  code  = TREE_CODE (node);
+  assert (TREE_CODE_CLASS (code) == tcl_type, 
+    "Only types are allowed to be deleted in free_tree_type function");
+
+  if (TYPE_DIM (node) != NULL)
+    {
+      if (TREE_CODE_CLASS (TREE_CODE (TYPE_DIM (node))) != tcl_type)
+	free_tree (TYPE_DIM (node));
+      else
+	free_tree_type (TYPE_DIM (node));
+ 
+      TYPE_DIM (node) = NULL;
+    }
+
+  if (TYPE_SHAPE (node) != NULL)
+    {
+      if (TREE_CODE_CLASS (TREE_CODE (TYPE_SHAPE (node))) != tcl_type)
+	free_tree (TYPE_SHAPE (node));
+      else
+	free_tree_type (TYPE_SHAPE (node));
+  
+      TYPE_SHAPE (node) = NULL;
     }
 
   TREE_CODE_SET (node, EMPTY_MARK);
@@ -287,7 +318,8 @@ make_string_cst_str (const char *value)
   t = make_tree (STRING_CST);
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
-  TREE_TYPE (t) = types_add_type (STRING_TYPE, ((strlen (value) + 1 * 8)));
+  TREE_TYPE (t) = 
+      types_assign_type (STRING_TYPE, (strlen (value) + 1 * 8), NULL, NULL);
   /* FIXME Add is_char modifier to the tree.  */
 
   return t;
@@ -397,11 +429,8 @@ make_type (enum tree_code code)
   assert (TREE_CODE_CLASS (code) == tcl_type,
 	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
   t = make_tree (code);
-  if (TREE_CODE_OPERANDS (code))
-    {
-      TREE_OPERAND_SET (t, 0, NULL);
-      TREE_OPERAND_SET (t, 1, NULL);
-    }
+  TYPE_SHAPE(t) = NULL;
+  TYPE_DIM(t) = NULL;
   return t;
 }
 

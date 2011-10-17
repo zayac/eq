@@ -30,7 +30,10 @@ extern tree type_basic[4];
 extern struct tree_type_node * type_table;
 
 void types_init ();
-tree types_add_type (enum tree_code, size_t);
-struct tree_type_node* types_find_in_table (enum tree_code, size_t);
+struct tree_type_node* types_add_type (enum tree_code, size_t, tree, tree);
+struct tree_type_node* types_find_in_table (enum tree_code, size_t, tree, tree);
+tree types_assign_type (enum tree_code, size_t, tree, tree);
+void types_free_type (struct tree_type_node *);
+void types_finalize ();
 
 #endif /* __TYPES_H__  */
