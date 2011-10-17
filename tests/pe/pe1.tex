@@ -1,0 +1,38 @@
+
+\title{An algorithm example in \LaTeX\  and Eq}
+\author{
+        Pavel Zaichenkov \\
+        Compiler Technology and Computer Architecture Group\\
+	University of Hertfordshire\\
+        Hatfield, \underline{United Kingdom}
+}
+\date{\today}
+
+\documentclass[12pt]{article}
+
+\usepackage{eqcode}
+\begin{document}
+\maketitle
+
+\section{Formulation of a problem}
+If we list all the natural numbers below 10 that are multiples of 3 or 5, we
+get 3, 5, 6 and 9. The sum of these multiples is 23. \\
+\emph{Find the sum of all the multiples of 3 or 5 below 1000.}
+
+\section{Algorithm}
+\begin{eqcode}{main}{\ }{\ }{\type{Z}}
+  \return{\call{\gamma}{3, 999} + \call{\gamma}{5, 999} - \call{\gamma}{15,
+  999}} \lend
+\end{eqcode}
+
+\begin{eqcode}{\gamma}{n, m}{\type{Z}, \type{Z}}{\type{Z}}
+  \match{\lfloor \expr \rfloor}{\call{floor}{\expr {1}}}
+  \match{\left \lfloor \expr \right \rfloor}{\lfloor \expr{1} \rfloor}
+  f \gets \left \lfloor  \dfrac{m}{n} \right \rfloor \lend
+  \return{n + f \cdot \frac{f+1}{2}} \lend
+\end{eqcode}
+
+\section{Answer}
+  The answer is \bf{233168}
+
+\end{document}
