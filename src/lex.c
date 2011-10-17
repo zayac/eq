@@ -99,7 +99,7 @@ lexer_init (struct lexer *lex, const char *fname)
   lex->loc = (struct location) {1, 0};
   lex->fname = fname;
   lex->file = fopen (fname, "r");
-
+  lex->error_notifications = false;
   if (!lex->file)
     {
       warn ("error opening file `%s'", fname);
@@ -232,9 +232,10 @@ lexer_read_string (struct lexer *lex, char **buf, size_t *size, char c)
       c = lexer_getch (lex);
       if (c == EOF)
         {
-          error_loc (lex->loc,
-                     "unexpected end of file in the middle of string");
-          buffer_add_char (buf, &index, size, 0);
+	  if (lex->error_notifications)
+	      error_loc (lex->loc,
+			"unexpected end of file in the middle of string");
+	  buffer_add_char (buf, &index, size, 0);
           return tok_unknown;
         }
       
@@ -244,9 +245,10 @@ lexer_read_string (struct lexer *lex, char **buf, size_t *size, char c)
           char cc = lexer_getch (lex);
           if (cc == EOF)
             {
-              error_loc (lex->loc,
-                         "unexpected end of file in the middle of string");
-              buffer_add_char (buf, &index, size, 0);
+	      if (lex->error_notifications)
+		  error_loc (lex->loc,
+		           "unexpected end of file in the middle of string");
+	      buffer_add_char (buf, &index, size, 0);
               return tok_unknown;
             }
           buffer_add_char (buf, &index, size, cc);
@@ -352,7 +354,8 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 
       if (!isdigit (c))
 	{
-	  error_loc (lex->loc, "digit expected, '%c' found instead", c);
+	  if (lex->error_notifications)
+	    error_loc (lex->loc, "digit expected, '%c' found instead", c);
 	  lexer_ungetch (lex, c);
 	  goto return_unknown;
 	}
@@ -365,14 +368,16 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
       c = lexer_getch (lex);
       if (c == EOF)
 	{
-	  error_loc (lex->loc, "unexpected end of file");
+	  if (lex->error_notifications)
+	    error_loc (lex->loc, "unexpected end of file");
 	  goto return_unknown;
 	}
       else if (c == 'e' || c == 'E')
 	{
 	  if (saw_exp)
 	    {
-	      error_loc (lex->loc, "exponent is specified more than once");
+	      if (lex->error_notifications) 
+		error_loc (lex->loc, "exponent is specified more than once");
 	      goto return_unknown;
 	    }
 	  saw_exp = true;
@@ -389,7 +394,8 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 
 	  if (!isdigit (c))
 	    {
-	      error_loc (lex->loc, "digit expected after exponent sign");
+	      if (lex->error_notifications)
+	        error_loc (lex->loc, "digit expected after exponent sign");
 	      goto return_unknown;
 	    }
 	  else
@@ -404,7 +410,8 @@ lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
 	{
 	  if (saw_dot)
 	    {
-	      error_loc (lex->loc, "more than one dot in the number ");
+	      if (lex->error_notifications)
+		error_loc (lex->loc, "more than one dot in the number ");
 	      goto return_unknown;
 	    }
 	  saw_dot = true;

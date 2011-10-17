@@ -140,8 +140,12 @@ struct lexer
     struct location loc;
     struct token curtoken;
     bool is_eof;
-    bool hex_number; /* if set true, a token consisting of digits and a-f
-			letters will be considering as number  */
+    /* if set true, a token consisting of digits and a-f
+       letters will be considering as number.  */
+    bool hex_number;
+    /* Mark and print possible errors in case of true.
+       NOTE When lexer is beyond function, we can skip all errors.  */
+    bool error_notifications;
 };
 
 #define tval_tok_init(_tok, _cls, _val)             \

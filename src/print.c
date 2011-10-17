@@ -52,6 +52,8 @@ print_expression (FILE * f, tree exp)
       return fprintf (f, "<<ERROR>>");
     case STRING_CST:
       return fprintf (f, "%s", TREE_STRING_CST (exp));
+    case REAL_CST:
+      return fprintf (f, "%f", TREE_REAL_CST (exp));
     case INTEGER_CST:
       return fprintf (f, "%i", TREE_INTEGER_CST (exp));
     case LIST:

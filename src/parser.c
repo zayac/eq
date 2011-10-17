@@ -1342,7 +1342,10 @@ handle_upper (struct parser * parser)
   }
   else if (token_class (tok) == tok_intnum || token_class (tok) == tok_realnum)
   {
-    t = make_integer_tok (tok);
+    if (token_class (tok) == tok_intnum)
+      t = make_integer_tok (tok);
+    else
+      t = make_real_tok (tok);
     TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
     TREE_OPERAND_SET (circumflex, 1, t);
   }
@@ -2876,8 +2879,10 @@ handle_numx (struct parser * parser)
   tree t = error_mark_node;
 
   tok = parser_get_token (parser);
-  if (token_is_number (tok))
+  if (token_class (tok) == tok_intnum)
     t = make_integer_tok (tok);
+  else if (token_class (tok) == tok_realnum)
+    t = make_real_tok (tok);
   else
     {
       parser_unget (parser);
@@ -2924,14 +2929,20 @@ parse (struct parser *parser)
       parser_unget (parser);
       
       if (token_is_keyword (tok, tv_match))
-	handle_match (parser);
+	{
+	  parser->lex->error_notifications = true;
+	  handle_match (parser);
+	  parser->lex->error_notifications = false;
+	}
       else
 	{
+	  parser->lex->error_notifications = true;
 	  tree t = handle_function (parser);
 	  if (t != NULL && t != error_mark_node)
 	    {
 	      tree_list_append (function_list, t);
 	    }
+	  parser->lex->error_notifications = false;
 	}
     }
 
