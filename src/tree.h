@@ -286,6 +286,8 @@ tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
 tree tree_copy (tree);
+bool tree_compare (tree, tree);
+unsigned long* tree_get_hash_data (tree, unsigned long *, size_t*);
 void free_list (tree);
 
 

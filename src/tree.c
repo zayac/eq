@@ -606,3 +606,172 @@ free_list (tree lst)
     }
   free (lst);
 }
+
+/* Get some data from the tree to use it for hashing.  */
+#define FORMAT_DATA(data, value) \
+do { \
+  int step = 1;	\
+  while (step <= value) \
+    step *= 10; \
+  data = data * step + value; \
+} while (0)
+unsigned long *
+tree_get_hash_data (tree t, unsigned long* arr, size_t* size)
+{
+  unsigned long data = 0;
+  int i;
+  if (arr == NULL)
+    {
+      *size = 0;
+      arr = (unsigned long*) malloc (sizeof (unsigned long));
+      memset (arr, 0, sizeof (arr));
+    }
+  else if (*size == (sizeof (arr) / sizeof (unsigned long)))
+    {
+      unsigned long* tmp = (unsigned long*) malloc (2 * sizeof (arr));
+      memset (tmp, 0, sizeof (tmp));
+      memcpy (tmp, arr, sizeof (arr));
+      free (arr);
+      arr = tmp;
+    }
+  
+  if (t == NULL)
+    {
+      arr[(*size)++] = data;
+      return arr;
+    }
+
+  data = (unsigned long) TREE_CODE (t) + 1; 
+
+  switch (TREE_CODE (t))
+    {
+      case IDENTIFIER:
+	FORMAT_DATA (data, strlen(TREE_STRING_CST (TREE_ID_NAME (t))));
+	break;
+      case LIST:
+	{
+	  struct tree_list_element *el = NULL;
+	  DL_FOREACH (TREE_LIST (t), el)
+	    {
+	      arr[(*size)++] = data;
+	      tree_get_hash_data (el->entry, arr, size);
+	    }
+	  return arr;
+	}
+      case INTEGER_CST:
+	FORMAT_DATA (data, TREE_INTEGER_CST (t));
+	break;
+      case REAL_CST:
+	FORMAT_DATA (data, (int) TREE_REAL_CST (t));
+	break;
+      case STRING_CST:
+	FORMAT_DATA (data, strlen (TREE_STRING_CST (t)));
+	break;
+      default:
+	break;
+    }
+  arr[(*size)++] = data;
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
+    tree_get_hash_data (TREE_OPERAND (t, i), arr, size);
+    
+  return arr;
+}
+#undef FORMAT_DATA
+
+bool
+tree_compare (tree left, tree right)
+{
+  struct tree_list_element *lel = NULL, *rel = NULL;
+  int i; 
+  if (left == NULL)
+    return right == NULL;
+
+  if (left == error_mark_node)
+    return right == error_mark_node;
+
+  if (TREE_CODE (left) != TREE_CODE (right))
+    return false;
+
+  if (TREE_CODE (left) == LIST)
+    {
+      /* compare lists.  */
+      for (lel = TREE_LIST(left), rel = TREE_LIST(right);
+	    lel && rel; lel=lel->next, rel=rel->next)
+	{
+	  if (!tree_compare (lel->entry, rel->entry)) 
+	    return false;
+	}
+      return true;
+    }
+
+  /* comparision of typed nodes.  */
+  if (TREE_CODE_TYPED(TREE_CODE (left)))
+    {
+      if (!tree_compare (TREE_TYPE (left), TREE_TYPE (right)))
+	return false;
+
+      if  (left->typed.argset != right->typed.argset 
+	|| left->typed.arg != right->typed.arg
+	|| left->typed.is_constant != right->typed.is_constant)
+	return false;
+    }
+
+  /* types comparision.  */
+  if (TREE_CODE_CLASS (TREE_CODE (left)) == tcl_type)
+    {
+      if (TYPE_SIZE (left) != TYPE_SIZE (right))
+	return false;
+
+      if (!tree_compare (TYPE_DIM (left), TYPE_DIM (right)))
+	return false;
+
+      if (!tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right)))
+	return false;
+    }
+
+  /* circumflex comparision.  */
+  if (TREE_CODE (left) == CIRCUMFLEX)
+    {
+      if (   TREE_CIRCUMFLEX_INDEX_STATUS (left) 
+	  != TREE_CIRCUMFLEX_INDEX_STATUS (right))
+	return false;
+    }
+
+  
+  if (TREE_CODE (left) == STRING_TYPE)
+    {
+      if (TREE_STRING_CST_LENGTH (left) != TREE_STRING_CST_LENGTH (right))
+	return false;
+
+      if (strcmp(TREE_STRING_CST (left), TREE_STRING_CST (right)))
+	return false;
+    }
+
+  if (TREE_CODE (left) == INTEGER_CST)
+    {
+      if (TREE_INTEGER_CST (left) != TREE_INTEGER_CST (right))
+	return false;
+    }
+
+  if (TREE_CODE (left) == REAL_CST)
+    {
+      if (TREE_REAL_CST (left) != TREE_REAL_CST (right))
+	return false;
+    }
+
+  if (TREE_CODE (left) == IDENTIFIER)
+    {
+      if (!tree_compare (TREE_ID_NAME (left), TREE_ID_NAME (right)))
+	return false;
+    }
+
+  /* Operand comparision.  */
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (left)); i++)
+    {
+      if (!tree_compare (TREE_OPERAND (left, i), TREE_OPERAND (right, i)))
+	return false;
+    }
+    
+    return true;
+
+}
