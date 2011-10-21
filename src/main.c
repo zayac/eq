@@ -17,6 +17,7 @@
 #include "global.h"
 #include "parser.h"
 #include "config.h"
+#include "types.h"
 
 void usage (const char *);
 

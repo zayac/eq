@@ -30,21 +30,15 @@ types_init ()
 }
 
 /* Generate data for hash.  */
-unsigned long* 
+UT_array* 
 gen_hash_data (enum tree_code code, size_t size, tree dim, tree shape)
 {
-  size_t hash_data_size = 0;
-  unsigned long* hash_dim = tree_get_hash_data (dim, NULL, &hash_data_size);
-  unsigned long* hash_shape = tree_get_hash_data (shape, NULL, &hash_data_size);
-  unsigned long* hash_data = (unsigned long*) 
-      malloc (sizeof (hash_dim) + sizeof (hash_shape) + 2);
-  hash_data[0] = (unsigned long) code;
-  hash_data[1] = (unsigned long) size;
-  memcpy (&(hash_data[2]), hash_dim, sizeof (hash_dim));
-  memcpy (&(hash_data[2 + sizeof (hash_dim) / sizeof (unsigned long)]), 
-	hash_shape, sizeof(hash_shape));
-  free (hash_dim);
-  free (hash_shape);
+  UT_array *hash_data;
+  utarray_new (hash_data, &ut_int_icd);
+  utarray_push_back (hash_data, &code);
+  utarray_push_back (hash_data, &size);
+  tree_get_hash_data (dim, hash_data);
+  tree_get_hash_data (shape, hash_data);
   return hash_data;
 }
 
@@ -53,7 +47,7 @@ struct tree_type_node *
 types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
 {
   tree el = NULL;
-  unsigned long* hash_data = gen_hash_data (code, size, dim, shape);
+  UT_array* hash_data = gen_hash_data (code, size, dim, shape);
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
@@ -61,8 +55,9 @@ types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
   TYPE_DIM (el) = dim;
   TYPE_SHAPE (el) = shape;
 
-  HASH_ADD_KEYPTR (hh, type_table, hash_data, 1, &TYPE_HASH (el));
-  free (hash_data);
+  HASH_ADD_KEYPTR (hh, type_table, utarray_eltptr (hash_data, 0), 
+    utarray_len (hash_data) * sizeof (int), &TYPE_HASH (el));
+  utarray_free (hash_data);
   return ((struct tree_type_node *) el);
 }
 
@@ -71,7 +66,7 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
 {
   tree el = NULL;
   struct tree_type_node* ret = NULL;
-  unsigned long* hash_data = gen_hash_data (code, size, dim, shape);
+  UT_array* hash_data = gen_hash_data (code, size, dim, shape);
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
@@ -79,8 +74,9 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
   TYPE_DIM (el) = dim;
   TYPE_SHAPE (el) = shape;
   
-  HASH_FIND (hh, type_table, hash_data, sizeof (hash_data), ret);
-  free (hash_data);
+  HASH_FIND (hh, type_table, utarray_eltptr (hash_data, 0), 
+    utarray_len (hash_data) * sizeof (int), ret);
+  utarray_free (hash_data);
   return ret;
 }
 

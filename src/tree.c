@@ -425,7 +425,7 @@ tree_list_append (tree list, tree elem)
 tree
 make_type (enum tree_code code)
 {
-  tree t;
+  tree t = NULL;
   assert (TREE_CODE_CLASS (code) == tcl_type,
 	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
   t = make_tree (code);
@@ -615,33 +615,18 @@ do { \
     step *= 10; \
   data = data * step + value; \
 } while (0)
-unsigned long *
-tree_get_hash_data (tree t, unsigned long* arr, size_t* size)
+UT_array*
+tree_get_hash_data (tree t, UT_array* arr)
 {
-  unsigned long data = 0;
-  int i;
-  if (arr == NULL)
-    {
-      *size = 0;
-      arr = (unsigned long*) malloc (sizeof (unsigned long));
-      memset (arr, 0, sizeof (arr));
-    }
-  else if (*size == (sizeof (arr) / sizeof (unsigned long)))
-    {
-      unsigned long* tmp = (unsigned long*) malloc (2 * sizeof (arr));
-      memset (tmp, 0, sizeof (tmp));
-      memcpy (tmp, arr, sizeof (arr));
-      free (arr);
-      arr = tmp;
-    }
-  
+  int i = 0;
+  int data = 0;
   if (t == NULL)
     {
-      arr[(*size)++] = data;
+      utarray_push_back (arr, &data);
       return arr;
     }
 
-  data = (unsigned long) TREE_CODE (t) + 1; 
+  data = (int) TREE_CODE (t) + 1; 
 
   switch (TREE_CODE (t))
     {
@@ -653,8 +638,8 @@ tree_get_hash_data (tree t, unsigned long* arr, size_t* size)
 	  struct tree_list_element *el = NULL;
 	  DL_FOREACH (TREE_LIST (t), el)
 	    {
-	      arr[(*size)++] = data;
-	      tree_get_hash_data (el->entry, arr, size);
+	      utarray_push_back (arr, &data);
+	      tree_get_hash_data (el->entry, arr);
 	    }
 	  return arr;
 	}
@@ -670,9 +655,9 @@ tree_get_hash_data (tree t, unsigned long* arr, size_t* size)
       default:
 	break;
     }
-  arr[(*size)++] = data;
+  utarray_push_back (arr, &data);
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
-    tree_get_hash_data (TREE_OPERAND (t, i), arr, size);
+    tree_get_hash_data (TREE_OPERAND (t, i), arr);
     
   return arr;
 }
