@@ -23,8 +23,11 @@ project (eq C)
 # set (CMAKE_VERBOSE_MAKEFILE ON)
 
 option (BUILD_LEXER "compiling lexer")
+option (DEBUG_ENABLE "set debugging flag")
+
 # Set BUILD_LEXER variable value to ON if you want to compile the lexer only
 set (BUILD_LEXER OFF)
+set (DEBUG_ENABLE ON)
 
 set (CFLAGS "-g -Wall -std=c99")
 
@@ -40,6 +43,9 @@ include_directories ("${PROJECT_BINARY_DIR}")
 add_subdirectory (src)
 
 add_definitions (${CFLAGS})
+if (DEBUG_ENABLE)
+  add_definitions(-DDEBUG_ENABLE)
+endif()
 if (BUILD_LEXER)
   add_definitions(-DLEXER_BINARY)
   add_executable (eq src/lex.c)

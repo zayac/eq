@@ -29,6 +29,12 @@ types_init ()
   types_add_type (Z_TYPE, sizeof (int) * 8, NULL, NULL); 
 }
 
+/* For debugging purposes only.  */
+char* get_array_ptr(UT_array * arr, int i)
+{
+  return utarray_eltptr (arr, i);
+}
+
 /* Generate data for hash.  */
 UT_array* 
 gen_hash_data (enum tree_code code, size_t size, tree dim, tree shape)
@@ -46,8 +52,17 @@ gen_hash_data (enum tree_code code, size_t size, tree dim, tree shape)
 struct tree_type_node *
 types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
 {
+  int i = 0;
   tree el = NULL;
   UT_array* hash_data = gen_hash_data (code, size, dim, shape);
+  printf ("Adding element with key: ");
+  for(i = 0; i < utarray_len (hash_data); i++)
+    {
+      if (i > 0)
+	printf(", ");
+      printf("%d", (int) *utarray_eltptr(hash_data, i));
+    }
+  printf("\n");
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
@@ -64,9 +79,18 @@ types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
 struct tree_type_node * 
 types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
 {
+  int i = 0;
   tree el = NULL;
   struct tree_type_node* ret = NULL;
   UT_array* hash_data = gen_hash_data (code, size, dim, shape);
+  printf ("Looking for an  element with key: ");
+  for(i = 0; i < utarray_len (hash_data); i++)
+    {
+      if (i > 0)
+	printf(", ");
+      printf("%d", (int) *utarray_eltptr(hash_data, i));
+    }
+  printf("\n");
 
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
@@ -89,9 +113,15 @@ types_assign_type (enum tree_code code, size_t size, tree dim, tree shape)
   struct tree_type_node * found = 
       types_find_in_table (code, size, dim, shape);
   if (found == NULL)
-    return ((tree) types_add_type (code, size, dim, shape));
+    {
+      printf ("not found\n");
+      return ((tree) types_add_type (code, size, dim, shape));
+    }
   else
-    return ((tree) types_find_in_table (code, size, dim, shape));
+    {
+      printf("found\n");
+      return ((tree) types_find_in_table (code, size, dim, shape));
+    }
 }
 
 /* We call free function for trees, as tree is a tree node too.  */

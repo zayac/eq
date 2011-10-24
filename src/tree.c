@@ -319,7 +319,7 @@ make_string_cst_str (const char *value)
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
   TREE_TYPE (t) = 
-      types_assign_type (STRING_TYPE, (strlen (value) + 1 * 8), NULL, NULL);
+      types_assign_type (STRING_TYPE, ((strlen (value) + 1) * 8), NULL, NULL);
   /* FIXME Add is_char modifier to the tree.  */
 
   return t;
@@ -429,6 +429,14 @@ make_type (enum tree_code code)
   assert (TREE_CODE_CLASS (code) == tcl_type,
 	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
   t = make_tree (code);
+  if (TREE_CODE (t) == B_TYPE)
+    TYPE_SIZE (t) = 8;
+  else if (TREE_CODE (t) == N_TYPE)
+    TYPE_SIZE (t) = 8 * sizeof (unsigned);
+  else if (TREE_CODE (t) == Z_TYPE)
+    TYPE_SIZE (t) = 8 * sizeof (int);
+  else if (TREE_CODE (t) == R_TYPE)
+    TYPE_SIZE (t) = 8 * sizeof (double);
   TYPE_SHAPE(t) = NULL;
   TYPE_DIM(t) = NULL;
   return t;

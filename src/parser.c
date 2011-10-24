@@ -1133,10 +1133,12 @@ handle_function (struct parser * parser)
   struct token *tok;
   struct location loc;
 
+  /* \begin.  */
   tok = parser_get_token (parser);
   if ( !token_is_keyword (tok, tv_begin))
     return NULL;
 
+  /* {eqcode}.  */
   loc = token_location (tok);
   if (!token_is_operator (parser_get_token (parser), tv_lbrace))
     return NULL;
@@ -1146,7 +1148,8 @@ handle_function (struct parser * parser)
     return NULL;
   if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     return NULL;
-
+  
+  /* { <id> }.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
 
@@ -1158,6 +1161,7 @@ handle_function (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
+  /* argument name list.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
 
@@ -1176,6 +1180,7 @@ handle_function (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
+  /* argument type list.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
 
@@ -1195,6 +1200,7 @@ handle_function (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
+  /* return type.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
 
