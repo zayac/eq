@@ -57,19 +57,19 @@ main (int argc, char *argv[])
     }
 
   parser_init (parser, lex);
-  parse (parser);
+  //parse (parser);
 cleanup:
   parser_finalize (parser);
   finalize_global_tree ();
   finalize_global ();
 
   /* That should be called at the very end.  */
-  free_atomic_trees ();
+  //free_atomic_trees ();
 
-  if (parser)
-    free (parser);
-  if (lex)
-    free (lex);
+  //if (parser)
+  //  free (parser);
+  //if (lex)
+  //  free (lex);
 
   return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

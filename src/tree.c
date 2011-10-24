@@ -679,6 +679,9 @@ tree_compare (tree left, tree right)
   if (left == NULL)
     return right == NULL;
 
+  if (right == NULL)
+    return false;
+
   if (left == error_mark_node)
     return right == error_mark_node;
 
