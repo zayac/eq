@@ -677,7 +677,12 @@ tree_compare (tree left, tree right)
   struct tree_list_element *lel = NULL, *rel = NULL;
   int i; 
   if (left == NULL)
-    return right == NULL;
+    {
+      if (right == NULL)
+	return true;
+      else
+	return false;
+    }
 
   if (right == NULL)
     return false;

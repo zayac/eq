@@ -15,6 +15,7 @@
 
 #include "tree.h"
 #include "types.h"
+#include <time.h>
 
 #ifndef UTHASH_TREE_H
 #define UTHASH_TREE_H
@@ -23,23 +24,24 @@
 #undef HASH_FIND_IN_BKT
 #define HASH_FIND_IN_BKT(tbl,hh,head,keyptr,keylen_in,out)                       \
 do {                                                                             \
- if (head.hh_head) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,head.hh_head));          \
- else out=NULL;                                                                  \
- while (out) {                                                                   \
-  if (out->hh.keylen == keylen_in) {                                             \
-        if (((HASH_KEYCMP(out->hh.key,keyptr,keylen_in))  == 0) &&		 \
-	     HASH_TREECMP(out->hh.key + keylen_in, keyptr + keylen_in)		 \
-	  && (HASH_TREECMP(out->hh.key + keylen_in + 				 \
+  if (head.hh_head) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,head.hh_head));         \
+  else out=NULL;                                                                 \
+  while (out) {                                                                  \
+    if (out->hh.keylen == keylen_in) {                                           \
+      if (((HASH_KEYCMP(out->hh.key,keyptr,keylen_in))  == 0) &&		 \
+	     (HASH_TREECMP(out->hh.key + keylen_in,				 \
+				keyptr + keylen_in)) &&				 \
+	     (HASH_TREECMP(out->hh.key + keylen_in + 				 \
 		  offsetof (struct tree_type_node, shape) -	    		 \
-		  offsetof (struct tree_type_node, dim),			 \
+		  offsetof (struct tree_type_node, dim) + 8,			 \
 				keyptr + keylen_in +				 \
 		  offsetof (struct tree_type_node, shape) -			 \
-		  offsetof (struct tree_type_node, dim))))			 \
+		  offsetof (struct tree_type_node, dim) + 8)))			 \
 		    break;							 \
     }                                                                            \
     if (out->hh.hh_next) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,out->hh.hh_next)); \
     else out = NULL;                                                             \
- }\
+  }\
 } while(0)
 #endif
 
@@ -49,15 +51,13 @@ struct tree_type_node * type_table;
 void
 types_init ()
 {
+  int i = 0;
   tree t = make_type (Z_TYPE);
   type_table = NULL;
   types_assign_type (B_TYPE, 1, NULL, NULL);
-  types_find_in_table (B_TYPE, 1, NULL, NULL);
-  types_find_in_table (B_TYPE, 1, t, NULL);
-//  types_add_type (B_TYPE, 1, NULL, NULL);
-//  types_add_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
-//  types_add_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
-//  types_add_type (Z_TYPE, sizeof (int) * 8, NULL, NULL); 
+  types_assign_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
+  types_assign_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
+  types_assign_type (Z_TYPE, sizeof (int) * 8, NULL, NULL); 
 }
 
 /* For debugging purposes only.  */
@@ -86,15 +86,6 @@ types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
   int i = 0;
   tree el = NULL;
   //UT_array* hash_data = gen_hash_data (code, size, dim, shape);
-  printf ("Adding element with key: %d, %d", (int) code, (int) size);
-  /*for(i = 0; i < utarray_len (hash_data); i++)
-    {
-      if (i > 0)
-	printf(", ");
-      printf("%d", (int) *utarray_eltptr(hash_data, i));
-    }
-  printf("\n");
-*/
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
   TYPE_SIZE (el) = size;
@@ -115,20 +106,12 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
   tree el = NULL;
   struct tree_type_node* ret = NULL;
   //UT_array* hash_data = gen_hash_data (code, size, dim, shape);
-  printf ("Looking for an  element with key %d %d\n ", (int) code, (int) size);
-  /*for(i = 0; i < utarray_len (hash_data); i++)
-    {
-      if (i > 0)
-	printf(", ");
-      printf("%d", (int) *utarray_eltptr(hash_data, i));
-    }
-  printf("\n");
-  */
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
   TYPE_SIZE (el) = size;
   TYPE_DIM (el) = dim;
   TYPE_SHAPE (el) = shape;
+
   HASH_FIND (hh, type_table, &(el->base.code), 
     offsetof (struct tree_type_node, dim) - offsetof (struct tree_base, loc), ret);
   //utarray_free (hash_data);
