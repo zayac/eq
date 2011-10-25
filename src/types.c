@@ -28,19 +28,28 @@ do {                                                                            
   else out=NULL;                                                                 \
   while (out) {                                                                  \
     if (out->hh.keylen == keylen_in) {						 \
+      size_t a = out->hh.key +					 \
+		  offsetof (struct tree_type_node, dim) -			 \
+		 (offsetof (struct tree_type_node, base) +			 \
+		  offsetof (struct tree_base, code));				 \
+      printf("%x %d\n", a, (*((tree*) a)));						 \
       if (((HASH_KEYCMP(out->hh.key,keyptr,keylen_in))  == 0) &&		 \
 	     (HASH_TREECMP(out->hh.key +					 \
 		  offsetof (struct tree_type_node, dim) -			 \
-		  offsetof (struct tree_base, code),				 \
+		 (offsetof (struct tree_type_node, base) +			 \
+		  offsetof (struct tree_base, code)),	  			 \
 				keyptr +					 \
 		  offsetof (struct tree_type_node, dim) -			 \
+		 (offsetof (struct tree_type_node, base) +			 \
 		  offsetof (struct tree_base, code))) &&			 \
 	     (HASH_TREECMP(out->hh.key +				 	 \
-		  offsetof (struct tree_type_node, shape) -	    		 \
-		  offsetof (struct tree_base, code),				 \
+		  offsetof (struct tree_type_node, shape) -			 \
+		 (offsetof (struct tree_type_node, base) +			 \
+		  offsetof (struct tree_base, code)),				 \
 				keyptr +					 \
 		  offsetof (struct tree_type_node, shape) -			 \
-		  offsetof (struct tree_base, code))))				 \
+		 (offsetof (struct tree_type_node, base) +			 \
+		  offsetof (struct tree_base, code))))))			 \
 		    break;							 \
     }                                                                            \
     if (out->hh.hh_next) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,out->hh.hh_next)); \
@@ -59,9 +68,13 @@ types_init ()
   tree t = make_type (Z_TYPE);
   type_table = NULL;
   types_assign_type (B_TYPE, 1, NULL, NULL);
-  types_assign_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
-  types_assign_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
-  types_assign_type (Z_TYPE, sizeof (int) * 8, NULL, NULL); 
+  if (!types_find_in_table (B_TYPE, 1, NULL, NULL))
+    printf ("not found\n");
+  else
+    printf ("found\n");
+  //types_assign_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
+  //types_assign_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
+  //types_assign_type (Z_TYPE, sizeof (int) * 8, NULL, NULL); 
 }
 
 /* For debugging purposes only.  */
@@ -95,11 +108,11 @@ types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
   TYPE_SIZE (el) = size;
   TYPE_DIM (el) = dim;
   TYPE_SHAPE (el) = shape;
-
+  printf("%x %d\n", &TYPE_DIM(el), TYPE_DIM(el));
   HASH_ADD_KEYPTR (hh, type_table, &(el->base.code), 
-      offsetof (struct tree_type_node, size) + sizeof (size)
-    - offsetof (struct tree_base, code), 
-    &TYPE_HASH (el));
+       offsetof (struct tree_type_node, size) + sizeof (size)
+    - (offsetof (struct tree_type_node, base)
+    + offsetof (struct tree_base, code)), (struct tree_type_node *) el);
   //utarray_free (hash_data);
   return ((struct tree_type_node *) el);
 }
@@ -118,8 +131,9 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
   TYPE_SHAPE (el) = shape;
 
   HASH_FIND (hh, type_table, &(el->base.code), 
-      offsetof (struct tree_type_node, size) + sizeof (size)
-    - offsetof (struct tree_base, code), ret);
+       offsetof (struct tree_type_node, size) + sizeof (size)
+    - (offsetof (struct tree_type_node, base)
+    +  offsetof (struct tree_base, code)), ret);
   //utarray_free (hash_data);
   return ret;
 }
