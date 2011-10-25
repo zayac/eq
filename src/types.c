@@ -27,16 +27,20 @@ do {                                                                            
   if (head.hh_head) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,head.hh_head));         \
   else out=NULL;                                                                 \
   while (out) {                                                                  \
-    if (out->hh.keylen == keylen_in) {                                           \
+    if (out->hh.keylen == keylen_in) {						 \
       if (((HASH_KEYCMP(out->hh.key,keyptr,keylen_in))  == 0) &&		 \
-	     (HASH_TREECMP(out->hh.key + keylen_in,				 \
-				keyptr + keylen_in)) &&				 \
-	     (HASH_TREECMP(out->hh.key + keylen_in + 				 \
+	     (HASH_TREECMP(out->hh.key +					 \
+		  offsetof (struct tree_type_node, dim) -			 \
+		  offsetof (struct tree_base, code),				 \
+				keyptr +					 \
+		  offsetof (struct tree_type_node, dim) -			 \
+		  offsetof (struct tree_base, code))) &&			 \
+	     (HASH_TREECMP(out->hh.key +				 	 \
 		  offsetof (struct tree_type_node, shape) -	    		 \
-		  offsetof (struct tree_type_node, dim) + 8,			 \
-				keyptr + keylen_in +				 \
+		  offsetof (struct tree_base, code),				 \
+				keyptr +					 \
 		  offsetof (struct tree_type_node, shape) -			 \
-		  offsetof (struct tree_type_node, dim) + 8)))			 \
+		  offsetof (struct tree_base, code))))				 \
 		    break;							 \
     }                                                                            \
     if (out->hh.hh_next) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,out->hh.hh_next)); \
@@ -93,7 +97,8 @@ types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
   TYPE_SHAPE (el) = shape;
 
   HASH_ADD_KEYPTR (hh, type_table, &(el->base.code), 
-    offsetof(struct tree_type_node, dim) - offsetof (struct tree_base, loc), 
+      offsetof (struct tree_type_node, size) + sizeof (size)
+    - offsetof (struct tree_base, code), 
     &TYPE_HASH (el));
   //utarray_free (hash_data);
   return ((struct tree_type_node *) el);
@@ -113,7 +118,8 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
   TYPE_SHAPE (el) = shape;
 
   HASH_FIND (hh, type_table, &(el->base.code), 
-    offsetof (struct tree_type_node, dim) - offsetof (struct tree_base, loc), ret);
+      offsetof (struct tree_type_node, size) + sizeof (size)
+    - offsetof (struct tree_base, code), ret);
   //utarray_free (hash_data);
   return ret;
 }
