@@ -4,7 +4,7 @@
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -17,10 +17,10 @@
 #define __TREE_H__
 
 #include <stdlib.h>
+#include "expand.h"
 #include "utlist.h"
 #include "uthash.h"
 #include "utarray.h"
-#include "expand.h"
 
 enum tree_code_class
 {
@@ -157,7 +157,7 @@ enum tree_global_code
   TG_B_TYPE,
   TG_N_TYPE,
   TG_Z_TYPE,
-  TH_R_TYPE,
+  TG_R_TYPE,
   TG_MAX
 };
 
@@ -195,7 +195,7 @@ static inline tree
 get_tree_operand (tree node, int idx)
 {
   enum tree_code code = TREE_CODE (node);
-  
+
   assert (tree_operand_in_range (code, idx),
 	  "operand index out of range or no operands in the node");
 

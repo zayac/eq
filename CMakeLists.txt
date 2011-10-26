@@ -29,7 +29,7 @@ option (DEBUG_ENABLE "set debugging flag")
 set (BUILD_LEXER OFF)
 set (DEBUG_ENABLE ON)
 
-set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99")
+set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE")
 
 include (cmake/version.cmake)
 

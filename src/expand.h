@@ -1,10 +1,10 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
                       Pavel Zaichenkov <zaichenkov@gmail.com>
-  
+
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -16,7 +16,6 @@
 #ifndef __EXPAND_H__
 #define __EXPAND_H__
 
-#define __USE_BSD
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +41,7 @@ xfprintf (FILE *f, const char *fmt, ...)
 
   if (fmt == 0 || strlen (fmt) == 0)
     return 0;
-  else 
+  else
     {
       va_start (args, fmt);
       vfprintf (f, fmt, args);
@@ -68,7 +67,7 @@ extern int warning_count;
                     __FILE__, __LINE__), \
            xfprintf (stderr, __VA_ARGS__), \
            abort ()))
-          
+
 #define error_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "error:%d:%d: ", (int)loc.line, (int)loc.col); \
@@ -183,7 +182,7 @@ int token_compare (struct token *, struct token *);
 void token_free (struct token *);
 void token_print (struct token *);
 const char *  token_as_string (struct token *);
-bool token_uses_buf (struct token *); 
+bool token_uses_buf (struct token *);
 __END_DECLS
 
 #endif /* __EXPAND_H__  */

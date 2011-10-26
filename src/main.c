@@ -4,7 +4,7 @@
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -19,13 +19,17 @@
 #include "config.h"
 #include "types.h"
 
-void usage (const char *);
+void usage ();
+
+static char *  progname;
 
 void
-usage (const char *  prog)
+usage ()
 {
-  fprintf (stderr, "%s:%s (revision: %s) <input-file>\n",
-	   prog, VERSION, COMMIT_DATE);
+  fprintf (stderr, "usage:\n"
+		   "\t%s <input-file>\n"
+		   "version: %s revision: %s\n",
+	   progname, VERSION, COMMIT_DATE);
   return;
 }
 
@@ -39,25 +43,31 @@ main (int argc, char *argv[])
 
   init_global ();
   init_global_tree ();
-  
+
+  progname = strrchr (argv[0], '/');
+  if (NULL == progname)
+    progname = argv[0];
+  else
+    progname++;
+
   if (argc <= 1)
     {
-      fprintf (stderr, "%s:%s filename argument required\n", argv[0], VERSION);
-      usage (argv[0]);
+      fprintf (stderr, "%s:error: filename argument required\n", progname);
+      usage ();
       ret = -1;
       goto cleanup;
     }
 
   if (!lexer_init (lex, argv[1]))
     {
-      fprintf (stderr, "%s:%s cannot create a lexer for file %s\n", 
-	       argv[1], argv[0], VERSION);
+      fprintf (stderr, "%s cannot create a lexer for file %s\n",
+	       argv[1], argv[0]);
       ret = -2;
       goto cleanup;
     }
 
   parser_init (parser, lex);
-  //parse (parser);
+  parse (parser);
 cleanup:
   parser_finalize (parser);
   finalize_global_tree ();

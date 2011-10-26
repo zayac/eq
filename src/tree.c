@@ -4,7 +4,7 @@
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -62,12 +62,12 @@ static tree *  atomic_trees = NULL;
 static size_t  atomic_trees_size = 0;
 static size_t  atomic_trees_idx = 0;
 
-size_t 
+size_t
 get_tree_size (enum tree_code code)
 {
   size_t size, ops;
   ops = TREE_CODE_OPERANDS (code) * sizeof (tree);
-  size = TREE_CODE_TYPED (code) 
+  size = TREE_CODE_TYPED (code)
 	 ? (ops ? sizeof (struct tree_type_base_op)
 		 : sizeof (struct tree_type_base))
 	 : (ops ? sizeof (struct tree_base_op)
@@ -98,13 +98,13 @@ get_tree_size (enum tree_code code)
       else
 	unreachable (0);
       break;
-    
+
     case tcl_expression:
       if (code == CIRCUMFLEX)
 	return ops + sizeof (struct tree_circumflex_op_node);
       else
 	return size + ops;
-    
+
     case tcl_statement:
       return size + ops;
 
@@ -172,7 +172,7 @@ free_atomic_trees ()
   for (i = 0; i < atomic_trees_idx; i++)
     {
       assert (TREE_CODE (atomic_trees[i]) == EMPTY_MARK, 0);
-      free(atomic_trees[i]); 
+      free(atomic_trees[i]);
     }
   if (atomic_trees)
     free (atomic_trees);
@@ -189,15 +189,15 @@ free_tree (tree node)
   int i;
   enum tree_code code;
 
-  
-  if (node == NULL 
+
+  if (node == NULL
       /* Types are removed separetely.  */
       || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type
       || node == error_mark_node || TREE_CODE(node) == EMPTY_MARK)
     return;
- 
+
   code = TREE_CODE (node);
-  
+
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:
@@ -208,7 +208,7 @@ free_tree (tree node)
       else if (code == LIST)
 	{
 	  struct tree_list_element * el = NULL, *tmp = NULL;
-	  DL_FOREACH_SAFE(TREE_LIST(node), el, tmp) 
+	  DL_FOREACH_SAFE(TREE_LIST(node), el, tmp)
 	    {
 	      DL_DELETE (TREE_LIST (node), el);
 	      free_tree (el->entry);
@@ -226,7 +226,7 @@ free_tree (tree node)
       else
       if (code == INTEGER_CST)
 	{
-	
+
 	}
       else if (code == REAL_CST)
 	{
@@ -238,14 +238,14 @@ free_tree (tree node)
 
     case tcl_expression:
       break;
-    
+
     case tcl_statement:
       break;
     default:
       unreachable (0);
       break;
     }
-  
+
   /* Types are stored in global hash table. That's why we delete them
      separetely.  */
   if (TREE_CODE_TYPED (code))
@@ -266,7 +266,7 @@ void free_tree_type (tree node)
   if (node == NULL)
     return;
   code  = TREE_CODE (node);
-  assert (TREE_CODE_CLASS (code) == tcl_type, 
+  assert (TREE_CODE_CLASS (code) == tcl_type,
     "Only types are allowed to be deleted in free_tree_type function");
 
   if (TYPE_DIM (node) != NULL)
@@ -275,7 +275,7 @@ void free_tree_type (tree node)
 	free_tree (TYPE_DIM (node));
       else
 	free_tree_type (TYPE_DIM (node));
- 
+
       TYPE_DIM (node) = NULL;
     }
 
@@ -285,7 +285,7 @@ void free_tree_type (tree node)
 	free_tree (TYPE_SHAPE (node));
       else
 	free_tree_type (TYPE_SHAPE (node));
-  
+
       TYPE_SHAPE (node) = NULL;
     }
 
@@ -294,7 +294,7 @@ void free_tree_type (tree node)
 }
 
 tree
-make_function (tree name, tree args, tree args_types, 
+make_function (tree name, tree args, tree args_types,
 	       tree ret, tree instrs, struct location loc)
 {
   tree t = make_tree (FUNCTION);
@@ -314,11 +314,11 @@ make_string_cst_str (const char *value)
 
   assert (value != NULL, 0);
   assert (TREE_CODE_TYPED (STRING_CST), "string has to have a type");
-  
+
   t = make_tree (STRING_CST);
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
-  TREE_TYPE (t) = 
+  TREE_TYPE (t) =
       types_assign_type (STRING_TYPE, ((strlen (value) + 1) * 8), NULL, NULL);
   /* FIXME Add is_char modifier to the tree.  */
 
@@ -369,7 +369,7 @@ make_integer_cst (int value)
 {
   tree t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = value;
-  TREE_TYPE (t) = BASIC_TYPE_Z; 
+  TREE_TYPE (t) = z_type_node;
   return t;
 }
 
@@ -384,7 +384,7 @@ make_integer_tok (struct token * tok)
   t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
   assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
-  TREE_TYPE (t) = BASIC_TYPE_Z;
+  TREE_TYPE (t) = z_type_node;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
@@ -396,11 +396,11 @@ make_real_tok (struct token * tok)
   assert (token_class (tok) == tok_realnum,
 	  "attempt to build real number from %s",
 	  token_class_as_string (token_class (tok)));
-  
+
   t = make_tree (REAL_CST);
   TREE_REAL_CST (t) = atof (token_as_string (tok));
   assert (TREE_CODE_TYPED (REAL_CST), "real number has to have a type");
-  TREE_TYPE (t) = BASIC_TYPE_R;
+  TREE_TYPE (t) = r_type_node;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
@@ -409,11 +409,11 @@ bool
 tree_list_append (tree list, tree elem)
 {
   struct tree_list_element * el;
-  assert (TREE_CODE (list) == LIST, 
+  assert (TREE_CODE (list) == LIST,
           "appending element of type `%s'", TREE_CODE_NAME (TREE_CODE (list)));
-  
+
   el = (struct tree_list_element *) malloc (sizeof(struct tree_list_element));
-  
+
   assert (el != NULL, "Can't allocate enough memory for new element `%s'",
   TREE_CODE_NAME(TREE_CODE(list)));
   el->entry = elem;
@@ -564,7 +564,7 @@ tree_copy (tree t)
 {
   tree tmp;
   int i = 0;
-  
+
   if (TREE_CODE (t) == LIST)
     {
       tmp = tree_list_copy (t);
@@ -600,7 +600,7 @@ free_list (tree lst)
 {
   struct tree_list_element * ptr;
   struct tree_list_element * tmpptr;
-      
+
   if (lst == NULL)
     return;
 
@@ -634,7 +634,7 @@ tree_get_hash_data (tree t, UT_array* arr)
       return arr;
     }
 
-  data = (int) TREE_CODE (t) + 1; 
+  data = (int) TREE_CODE (t) + 1;
 
   switch (TREE_CODE (t))
     {
@@ -666,7 +666,7 @@ tree_get_hash_data (tree t, UT_array* arr)
   utarray_push_back (arr, &data);
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
     tree_get_hash_data (TREE_OPERAND (t, i), arr);
-    
+
   return arr;
 }
 #undef FORMAT_DATA
@@ -675,7 +675,7 @@ bool
 tree_compare (tree left, tree right)
 {
   struct tree_list_element *lel = NULL, *rel = NULL;
-  int i; 
+  int i;
   if (left == NULL)
     {
       if (right == NULL)
@@ -699,7 +699,7 @@ tree_compare (tree left, tree right)
       for (lel = TREE_LIST(left), rel = TREE_LIST(right);
 	    lel && rel; lel=lel->next, rel=rel->next)
 	{
-	  if (!tree_compare (lel->entry, rel->entry)) 
+	  if (!tree_compare (lel->entry, rel->entry))
 	    return false;
 	}
       return true;
@@ -711,7 +711,7 @@ tree_compare (tree left, tree right)
       if (!tree_compare (TREE_TYPE (left), TREE_TYPE (right)))
 	return false;
 
-      if  (left->typed.argset != right->typed.argset 
+      if  (left->typed.argset != right->typed.argset
 	|| left->typed.arg != right->typed.arg
 	|| left->typed.is_constant != right->typed.is_constant)
 	return false;
@@ -733,12 +733,12 @@ tree_compare (tree left, tree right)
   /* circumflex comparision.  */
   if (TREE_CODE (left) == CIRCUMFLEX)
     {
-      if (   TREE_CIRCUMFLEX_INDEX_STATUS (left) 
+      if (   TREE_CIRCUMFLEX_INDEX_STATUS (left)
 	  != TREE_CIRCUMFLEX_INDEX_STATUS (right))
 	return false;
     }
 
-  
+
   if (TREE_CODE (left) == STRING_TYPE)
     {
       if (TREE_STRING_CST_LENGTH (left) != TREE_STRING_CST_LENGTH (right))
@@ -772,7 +772,7 @@ tree_compare (tree left, tree right)
       if (!tree_compare (TREE_OPERAND (left, i), TREE_OPERAND (right, i)))
 	return false;
     }
-    
+
     return true;
 
 }

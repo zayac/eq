@@ -4,7 +4,7 @@
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -20,12 +20,13 @@
 #include "tree.h"
 #include "uthash.h"
 #include "global.h"
+#include "types.h"
 
-/* Variable that is going to be increased every 
+/* Variable that is going to be increased every
    time when an error is happening.  */
 int error_count = 0;
 
-/* Variable that is going to be increased every 
+/* Variable that is going to be increased every
    time when an error is happening.  */
 int warning_count = 0;
 
@@ -39,7 +40,7 @@ tree type_size_list = NULL;
 tree type_basic[4];
 /* Allocate all the global structures that are going to be used
    during the compilation.  */
-void 
+void
 init_global ()
 {
   assert (function_list == NULL, "function list is already allocated");
@@ -65,24 +66,7 @@ init_global_tree ()
 {
   global_tree[TG_ERROR_MARK] = (tree) malloc (sizeof (struct tree_base));
   TREE_CODE_SET (global_tree[TG_ERROR_MARK], ERROR_MARK);
-
-#define MAKE_TYPE(tg_id, code, tok_kind) \
-  do { \
-    tree __t; \
-    global_tree[tg_id] = (tree) malloc (sizeof (struct tree_type_node)); \
-    TREE_CODE_SET (global_tree[tg_id], code); \
-    __t = make_string_cst_str (token_kind_as_string (tok_kind)); \
-    TREE_TYPE_NAME (global_tree[tg_id]) = __t; \
-    tree_list_append (type_list, global_tree[tg_id]); \
-  } while (0)
-  
-  /* Here we assume that we have only one kind of integers.  */
-  /* MAKE_TYPE (TG_INTEGER_TYPE, INTEGER_TYPE, tv_int);
-  MAKE_TYPE (TG_STRING_TYPE, STRING_TYPE, tv_str);
-  MAKE_TYPE (TG_LIST_TYPE, LIST_TYPE, tv_list); */
-  /* FIXME currently we don't know what to do with this keyword
-     when it appears.  */
-  /* MAKE_TYPE (TG_VOID_TYPE, VOID_TYPE, tv_void); */
+  types_init ();
 }
 
 void
@@ -112,11 +96,11 @@ is_valid_type (tree type)
 
 bool
 type_lists_eq (tree tal, tree tar)
-{     
+{
 /*  tree *  lptr = NULL;
   tree *  rptr = NULL;
 
-  assert (TREE_CODE (tal) == LIST 
+  assert (TREE_CODE (tal) == LIST
           && TREE_CODE (tar) == LIST, 0);
 
 	while ( (lptr = (tree*) utarray_next (TREE_LIST(tal), lptr)) &&
@@ -130,7 +114,7 @@ type_lists_eq (tree tal, tree tar)
       if (lptr->element != rptr->element)
         return false;
 
-      if ((TAILQ_NEXT (lptr, entries) == NULL) 
+      if ((TAILQ_NEXT (lptr, entries) == NULL)
           != (TAILQ_NEXT (rptr, entries) == NULL))
         return false;
 
@@ -144,14 +128,12 @@ tree
 function_exists (const char * str)
 {
   struct tree_list_element *  tl;
-  
+
   assert (function_list != NULL, "function-list is not initialized");
 
-	DL_FOREACH (TREE_LIST(function_list), tl)
-	{
-		if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->entry, 0)), str) == 0)
-			return tl->entry;
-	}
+  DL_FOREACH (TREE_LIST(function_list), tl)
+    if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->entry, 0)), str) == 0)
+      return tl->entry;
 
   return NULL;
 }
