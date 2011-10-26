@@ -147,6 +147,14 @@ struct lexer
     bool error_notifications;
 };
 
+struct eq_options
+{
+  unsigned print_program:1;
+  unsigned print_matches:1;
+};
+
+extern struct eq_options options;
+
 #define tval_tok_init(_tok, _cls, _val)             \
     do {                                            \
       (_tok)->tok_class = _cls;                     \

@@ -32,7 +32,7 @@ parser_parens_zero (struct parser *parser)
     && parser->square_count == 0 && parser->brace_count == 0;
 }
 
-char * 
+char *
 transform_hex_to_dec (char * hex)
 {
   char* ret;
@@ -57,7 +57,7 @@ static inline size_t
 buf_idx_inc (const size_t idx, const ssize_t inc, const size_t size)
 {
   ssize_t diff = ((ssize_t)idx + inc) % size;
-  return diff < 0 ? size - diff : diff; 
+  return diff < 0 ? size - diff : diff;
 }
 
 /* Get one token from the lexer or from the token buffer.
@@ -165,7 +165,7 @@ parser_get_until_one_of_val (struct parser *parser, int number, ...)
     {
       tok = parser_get_token (parser);
       if (!token_uses_buf (tok))
-	{ 
+	{
 	  va_list list;
 	  va_start (list, number);
 	  for (i = 0; i < number; i++)
@@ -240,16 +240,16 @@ parser_forward_tval (struct parser *parser, enum token_kind tkind)
 
 /* XXX For the time being make it macro in order to see
    the __LINE__ expansions of error_loc.  */
-#define parser_forward_tval(parser, tkind) \
-({ \
-  struct token * tok = parser_get_token (parser); \
-  if (token_uses_buf  (tok)  || token_value (tok) != tkind) \
-    { \
-      error_loc (token_location (tok), "unexpected token `%s` ", \
-		 token_as_string (tok)); \
-      tok = NULL; \
-    } \
-  tok; \
+#define parser_forward_tval(parser, tkind)  __extension__	  \
+({								  \
+  struct token * tok = parser_get_token (parser);		  \
+  if (token_uses_buf  (tok)  || token_value (tok) != tkind)	  \
+    {								  \
+      error_loc (token_location (tok), "unexpected token `%s` ",  \
+		 token_as_string (tok));			  \
+      tok = NULL;						  \
+    }								  \
+  tok;								  \
 })
 
 
@@ -261,10 +261,10 @@ struct token *
 parser_get_token (struct parser * parser)
 {
   struct token * tok = parser_get_lexer_token (parser);
-  
+
   /* Check and concatenate \left or \right with delimiters, if necessary  */
-  if (token_uses_buf (tok) && 
-	  (!(strcmp (token_as_string (tok), "\\left") && 
+  if (token_uses_buf (tok) &&
+	  (!(strcmp (token_as_string (tok), "\\left") &&
 	     strcmp (token_as_string (tok), "\\right"))))
     {
       struct token * del = parser_get_token (parser);
@@ -291,25 +291,25 @@ parser_get_token (struct parser * parser)
     {
       size_t s = parser->buf_size, e;
       struct token* ret;
-      
+
       parser->lex->hex_number = true;
       if(!(tok = parser_forward_tval (parser, tv_lbrace)))
 	return tok;
-      
+
       ret = parser_get_token (parser);
       if (!token_is_number (ret))
 	{
-	  error_loc (token_location (ret), "unexpected token `%s` ", 
+	  error_loc (token_location (ret), "unexpected token `%s` ",
 	    token_as_string (ret));
 	  return ret;
 	}
 
       if(!(tok = parser_forward_tval (parser, tv_rbrace)))
 	return tok;
-      ret->value.cval = transform_hex_to_dec (ret->value.cval); 
+      ret->value.cval = transform_hex_to_dec (ret->value.cval);
       tok = ret;
 
-      /* Substitute 4 tokens which were read 
+      /* Substitute 4 tokens which were read
 	 with just one in the token buffer  */
       e = parser->buf_end;
       token_free (parser->token_buffer[buf_idx_inc (e, -4, s)]);
@@ -317,11 +317,11 @@ parser_get_token (struct parser * parser)
       token_free (parser->token_buffer[buf_idx_inc (e, -1, s)]);
       parser->token_buffer[buf_idx_inc (e, -4, s)] =
 	parser->token_buffer[buf_idx_inc (e, -2, s)];
-      
+
       parser->token_buffer[buf_idx_inc (e, -3, s)] = NULL;
       parser->token_buffer[buf_idx_inc (e, -2, s)] = NULL;
       parser->token_buffer[buf_idx_inc (e, -1, s)] = NULL;
-      
+
       parser->buf_end = buf_idx_inc (e, -3, s);
     }
   return tok;
@@ -448,7 +448,7 @@ bool
 parser_finalize (struct parser * parser)
 {
   assert (parser, "attempt to free empty parser");
-  
+
   matcher_finalize ();
   if (parser->buf_size != 0)
     {
@@ -544,19 +544,19 @@ handle_match (struct parser * parser)
       parser_get_until_tval (parser, tv_rbrace);
       return false;
     }
-  
+
   /* Check if match with the same key exist  */
   tok = parser_get_token (parser);
   parser_unget (parser);
   if (find_match (token_as_string (tok)))
     {
-      error_loc (token_location (tok), 
+      error_loc (token_location (tok),
 	  "A match with key value `%s` is already defined", token_as_string (tok));
       return false;
     }
   while (true)
     {
-      
+
       struct token_list_el *el = NULL;
       tok = token_copy (parser_get_token (parser));
 
@@ -575,7 +575,7 @@ handle_match (struct parser * parser)
 	}
       else if (token_is_keyword (tok, tv_match))
 	{
-	  error_loc (token_location (tok), 
+	  error_loc (token_location (tok),
 	      "it's impossible to have nesting \\match");
 	  parser_get_until_tval (parser, tv_rbrace);
 	  return false;
@@ -584,8 +584,8 @@ handle_match (struct parser * parser)
 	braces++;
       else if (token_value (tok) == tv_rbrace)
 	braces--;
-      
-      el =  (struct token_list_el *) 
+
+      el =  (struct token_list_el *)
 		    malloc (sizeof (struct token_list_el));
       if (token_class (tok) == tok_unknown)
 	tok->tok_class = tok_keyword;
@@ -620,7 +620,7 @@ handle_match (struct parser * parser)
     }
   else
     parser_unget (parser);
- 
+
   if (!validate_match (match_head, replace))
     return false;
   add_match (token_as_string (match_head->value), match_head, replace);
@@ -708,7 +708,7 @@ upper_type_wrapper (struct parser * parser)
 /*
    ext_type:
       type [ ^ { sexpr } [ _ { sexpr [ , sexpr ]* } ] ]
-   |  type  _ { sexpr [ , sexpr ]* }  ^ { sexpr } 
+   |  type  _ { sexpr [ , sexpr ]* }  ^ { sexpr }
 */
 tree
 handle_ext_type (struct parser * parser)
@@ -735,7 +735,7 @@ handle_ext_type (struct parser * parser)
       dim = upper_type_wrapper (parser);
       if (dim == error_mark_node)
 	goto error_shift;
-      
+
     }
 
   tok = parser_get_token (parser);
@@ -745,7 +745,7 @@ handle_ext_type (struct parser * parser)
       parser_unget (parser);
       return types_assign_type (code, size, dim, shape);
     }
-  
+
   tok = parser_get_token (parser);
   if (token_is_operator (tok, tv_lbrace))
     {
@@ -767,7 +767,7 @@ handle_ext_type (struct parser * parser)
 
   if (shape == NULL || shape == error_mark_node)
     goto error;
-  
+
   if (!circumflex_first)
     {
       if (token_is_operator (tok = parser_get_token (parser), tv_circumflex))
@@ -778,13 +778,13 @@ handle_ext_type (struct parser * parser)
 	}
       else
       {
-	error_loc (token_location (tok), 
+	error_loc (token_location (tok),
 	  "upper index must be also part of type if lower index is included",
 	  token_as_string (tok));
 	parser_unget (parser);
       }
     }
-  
+
 
   return types_assign_type (code, size, dim, shape);
 error_shift:
@@ -878,7 +878,7 @@ handle_indexes (struct parser * parser, tree prefix)
     }
   else
     parser_unget (parser);
-  
+
   if (idx == NULL)
     idx = prefix;
 
@@ -925,7 +925,7 @@ handle_list (struct parser * parser, tree (*handler) (struct parser *),
       while (true)
 	{
 	  t = handler (parser);
-	  
+
 	  if (t != NULL && t != error_mark_node)
 	    tree_list_append (list, t);
 	  if (!token_is_operator (parser_get_token (parser), delim))
@@ -1058,14 +1058,14 @@ handle_instr_list (struct parser * parser)
   while (true)
     {
       struct tree_list_element * el, * tmp;
-      
+
       t = error_mark_node;
 
       tok = parser_get_token (parser);
-      if (!(is_id (tok, false) || 
+      if (!(is_id (tok, false) ||
 	    token_is_keyword (tok, tv_return) ||
 	    token_is_keyword (tok, tv_qif) ||
-	    token_is_keyword (tok, tv_match) || 
+	    token_is_keyword (tok, tv_match) ||
 	    token_is_keyword (tok, tv_comment)))
 	{
 	  parser_unget (parser);
@@ -1077,8 +1077,8 @@ handle_instr_list (struct parser * parser)
 	{
 	  error_loc(token_location (tok), "unexpected end of file");
 	  break;
-	}	
-      
+	}
+
       parser_unget (parser);
 
       t = handle_list (parser, handle_instr, tv_comma);
@@ -1088,7 +1088,7 @@ handle_instr_list (struct parser * parser)
       DL_FOREACH_SAFE (TREE_LIST(t), el, tmp)
 	{
 	  DL_DELETE (TREE_LIST (t), el);
-	  
+
 	  /* There is a convention that if instruction was a \match
 	     statement, we return NULL.
 	     In this case \lend in the end could be omited.  */
@@ -1106,7 +1106,7 @@ handle_instr_list (struct parser * parser)
 		  parser_get_token (parser);
 		}
 	    }
-	      
+
 	  if (el->entry != NULL)
 	    tree_list_append(instrs, el->entry);
 	  free (el);
@@ -1148,7 +1148,7 @@ handle_function (struct parser * parser)
     return NULL;
   if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     return NULL;
-  
+
   /* { <id> }.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
@@ -1332,7 +1332,7 @@ handle_upper (struct parser * parser)
   struct token *tok;
   circumflex = make_tree (CIRCUMFLEX);
   TREE_OPERAND_SET (circumflex, 0, NULL);
-  
+
   if (!parser_forward_tval (parser, tv_circumflex))
     {
       parser_get_until_tval (parser, tv_rbrace);
@@ -1393,7 +1393,7 @@ handle_upper (struct parser * parser)
 	       token_as_string (tok));
     goto error;
   }
-  
+
   return circumflex;
 
 error_shift:
@@ -1471,7 +1471,7 @@ handle_divide (struct parser * parser)
     goto error_shift_one;
 
   l = handle_expr (parser);
-  
+
   if (l == NULL || l == error_mark_node)
     goto error_shift_one;
 
@@ -1548,7 +1548,7 @@ handle_relations (struct parser * parser)
 	  rel1 = make_binary_op (EQ_EXPR, t1, NULL);
 	  break;
 	default:
-	  error_loc (token_location (tok), 
+	  error_loc (token_location (tok),
 	      "relation operator expected here, `%s` found",
 	      token_as_string (tok));
 	  parser_unget (parser);
@@ -1760,7 +1760,7 @@ handle_expr_match (struct parser *parser)
     }
 
   tok = parser_get_token (parser);
-  
+
   if (!token_is_number (tok))
     {
       error_loc (token_location (tok), "unexpected token `%s` ",
@@ -1786,11 +1786,11 @@ handle_expr_match (struct parser *parser)
 
 /* sexpr:
        { expr }
-     | ( expr ) 
+     | ( expr )
      | expr_match   <-- possible only when PARSER_MATCH_EXPR_ALLOWED is set
      |
-     sexpr_op [ ( \land | \lor | \oplus | + | - 
-		| \cdot | divide | \ll | \gg 
+     sexpr_op [ ( \land | \lor | \oplus | + | -
+		| \cdot | divide | \ll | \gg
 		| \mod ) expr_op ]*
 
   XXX The rule ( expr ) changed to { expr }. In LaTeX it is
@@ -1842,7 +1842,7 @@ handle_sexpr (struct parser * parser)
       if (PARSER_MATCH_EXPR_ALLOWED (parser))
 	{
 	  parser_unget (parser);
-	  return handle_expr_match (parser); 
+	  return handle_expr_match (parser);
 	}
       else
 	{
@@ -1984,7 +1984,7 @@ handle_sexpr_op (struct parser * parser)
   tree t1 = error_mark_node;
 
   struct token *tok = parser_get_token (parser);
-  
+
   bool prefix = false;
 
   if (token_is_operator (tok, tv_minus))
@@ -2001,7 +2001,7 @@ handle_sexpr_op (struct parser * parser)
   if (prefix)
     tok = parser_get_token (parser);
 
-  
+
   if (token_is_number (tok) || is_id (tok, false)
       || token_is_keyword (tok, tv_frac) || token_is_keyword (tok, tv_dfrac))
     {
@@ -2010,7 +2010,7 @@ handle_sexpr_op (struct parser * parser)
       if (t1 == NULL)
 	t1 = handle_idx_numx (parser);
     }
-  else if (token_is_operator (tok, tv_lbrace) || 
+  else if (token_is_operator (tok, tv_lbrace) ||
 	      token_is_operator (tok, tv_lparen))
     {
       parser_unget (parser);
@@ -2105,7 +2105,7 @@ handle_if_cond (struct parser *parser)
 	{
 	  if (!token_is_keyword (tok, tv_qif))
 	    {
-	      error_loc (loc, 
+	      error_loc (loc,
 		"token \\qif expected here, `%s` found",
 		token_as_string (tok));
 	      parser_get_until_tval (parser, tv_qendif);
@@ -2116,7 +2116,7 @@ handle_if_cond (struct parser *parser)
 	{
 	  if (!token_is_keyword (tok, tv_qelseif))
 	    {
-	      error_loc (loc, 
+	      error_loc (loc,
 		"token \\qelseif expected here, `%s` found",
 		token_as_string (tok));
 	      parser_get_until_tval (parser, tv_qendif);
@@ -2127,7 +2127,7 @@ handle_if_cond (struct parser *parser)
 	{
 	  if (!token_is_keyword (tok, tv_qelse))
 	    {
-	      error_loc (loc, 
+	      error_loc (loc,
 		"token \\qelse expected here, `%s` found",
 		token_as_string (tok));
 	      parser_get_until_tval (parser, tv_qendif);
@@ -2142,17 +2142,17 @@ handle_if_cond (struct parser *parser)
 	      parser_get_until_tval (parser, tv_qendif);
 	      goto error;
 	    }
-      
+
 	  cond = handle_cond_block (parser);
 
 	  if (cond == error_mark_node)
 	    parser_get_until_tval (parser, tv_rbrace);
-	  else 
+	  else
 	    {
 	      if (!parser_forward_tval (parser, tv_rbrace))
 		{
 		  struct token * tok;
-		  tok = parser_get_until_one_of_val 
+		  tok = parser_get_until_one_of_val
 		      (parser, 2, tv_rbrace, tv_qendif);
 		  if (token_value (tok) == tv_qendif)
 		    goto error;
@@ -2172,8 +2172,8 @@ handle_if_cond (struct parser *parser)
 	  TREE_OPERAND_SET (t, 2, NULL);
 	  TREE_LOCATION (t) = loc;
 	}
-      
-      
+
+
       if (status == IF)
 	  head = iftree = t;
       else if (status == ELSEIF)
@@ -2206,8 +2206,8 @@ handle_if_cond (struct parser *parser)
 	break;
       else
 	{
-	  error_loc (token_location (tok), 
-	    "unexpected token `%s` found in if statement", 
+	  error_loc (token_location (tok),
+	    "unexpected token `%s` found in if statement",
 	    token_as_string (tok));
 	  parser_unget (parser);
 	  goto error;
@@ -2224,7 +2224,7 @@ error:
 /*
    generator:
    \forall <id> |
-   <id> [ , <id> ]* : sexpr [ comp sexpr ]+ [set_op sexpr [ comp sexpr ]+ ]* 
+   <id> [ , <id> ]* : sexpr [ comp sexpr ]+ [set_op sexpr [ comp sexpr ]+ ]*
  */
 tree
 handle_generator (struct parser * parser)
@@ -2416,7 +2416,7 @@ handle_matrix (struct parser * parser)
 	}
       else
 	parser_unget (parser);
-      
+
       t = handle_list (parser, handle_expr, tv_delimiter);
       tree_list_append (list, t);
     }
@@ -2558,7 +2558,7 @@ handle_genarray (struct parser * parser)
     goto shift;
 
   exp = handle_expr (parser);
-  
+
   if (!parser_forward_tval (parser, tv_rparen))
     goto error;
 
@@ -2581,7 +2581,7 @@ handle_expr (struct parser * parser)
 {
   struct token *tok;
   tree t = error_mark_node;
-  
+
   if (token_is_keyword (tok = parser_get_token (parser), tv_filter))
     {
       parser_unget (parser);
@@ -2652,7 +2652,7 @@ handle_assign (struct parser * parser, tree prefix_id)
  if (token_is_operator (parser_get_token (parser), tv_vertical))
     {
 	gen = handle_generator (parser);
-	id = make_binary_op (VERTICAL_EXPR, id, gen); 
+	id = make_binary_op (VERTICAL_EXPR, id, gen);
     }
   else
     parser_unget (parser);
@@ -2736,7 +2736,7 @@ handle_instr (struct parser * parser)
     {
       parser_unget (parser);
       idx = handle_idx (parser);
-      
+
       if (token_is_operator (tok = parser_get_token (parser), tv_gets))
 	{
 	  parser_unget (parser);
@@ -2933,23 +2933,19 @@ parse (struct parser *parser)
   while (token_class (tok = parser_get_token (parser)) != tok_eof)
     {
       parser_unget (parser);
-      
+
+      /* FIXME the following line is useless. Please clarify.  */
+      parser->lex->error_notifications = true;
       if (token_is_keyword (tok, tv_match))
-	{
-	  parser->lex->error_notifications = true;
-	  handle_match (parser);
-	  parser->lex->error_notifications = false;
-	}
+	handle_match (parser);
       else
 	{
-	  parser->lex->error_notifications = true;
 	  tree t = handle_function (parser);
 	  if (t != NULL && t != error_mark_node)
-	    {
-	      tree_list_append (function_list, t);
-	    }
-	  parser->lex->error_notifications = false;
+	    tree_list_append (function_list, t);
 	}
+      /* FIXME the following line is useless. Please clarify.  */
+      parser->lex->error_notifications = false;
     }
 
   printf ("note: finished parsing.\n");
@@ -2959,22 +2955,28 @@ parse (struct parser *parser)
       return -3;
     }
 
-  printf ("\n######### Output ########\n");
-
-	DL_FOREACH(TREE_LIST(function_list), tle)
+  if (options.print_program)
     {
-      if (tle->entry != error_mark_node)
+      printf ("\n######### Output ########\n");
+
+      DL_FOREACH(TREE_LIST(function_list), tle)
 	{
-	  print_expression (stdout, tle->entry);
-		if (tle->next != NULL)
-	    printf ("\n");
+	  if (tle->entry != error_mark_node)
+	    {
+	      print_expression (stdout, tle->entry);
+		    if (tle->next != NULL)
+		printf ("\n");
+	    }
+	  else
+	    printf ("Errors in function\n\n");
 	}
-      else
-	printf ("Errors in function\n\n");
     }
 
-  printf ("\n####### Transforms ########\n");
-  print_matches ();
+  if (options.print_matches)
+    {
+      printf ("\n####### Transforms ########\n");
+      print_matches ();
+    }
   return 0;
 }
 

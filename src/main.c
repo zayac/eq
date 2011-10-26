@@ -19,25 +19,51 @@
 #include "config.h"
 #include "types.h"
 
+#include <stdlib.h>
+#include <getopt.h>
+enum {
+  OPT_PRINT_PROGRAM = 0,
+  OPT_PRINT_MATCHES
+};
+
+char *const p_opts[] = {
+  [OPT_PRINT_PROGRAM] = "program",
+  [OPT_PRINT_MATCHES] = "matches",
+  NULL
+};
+
 void usage ();
+void version ();
 
 static char *  progname;
+struct eq_options options;
 
 void
 usage ()
 {
   fprintf (stderr, "usage:\n"
-		   "\t%s <input-file>\n"
-		   "version: %s revision: %s\n",
+		   "\t[-P<program,matches>] prints pared proogram or match definitions\n"
+		   "\t[-V] prints versuion and exits\n"
+		   "\t<input-file>\n");
+}
+
+void
+version ()
+{
+  fprintf (stderr, "%s %s, revision: %s\n",
 	   progname, VERSION, COMMIT_DATE);
-  return;
 }
 
 #ifndef LEXER_BINARY
 int
 main (int argc, char *argv[])
 {
-  int ret = 0;
+  int c, ret = 0;
+  char *  subopts;
+  char *  value;
+  extern char *  optarg;
+  extern int optind;
+
   struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
   struct parser *parser = (struct parser *) malloc (sizeof (struct parser));
 
@@ -50,7 +76,40 @@ main (int argc, char *argv[])
   else
     progname++;
 
-  if (argc <= 1)
+  memset (&options, 0, sizeof (options));
+
+  while (-1 != (c = getopt (argc, argv, "P:V")))
+    switch (c)
+      {
+      case 'P':
+	subopts = optarg;
+	while (*subopts != '\0')
+	  switch (getsubopt (&subopts, p_opts, &value))
+	    {
+	    case OPT_PRINT_PROGRAM:
+	      options.print_program = true;
+	      break;
+	    case OPT_PRINT_MATCHES:
+	      options.print_matches = true;
+	      break;
+	    default:
+	      fprintf (stderr, "unknown -P suboption `%s'\n", value);
+	      goto cleanup;
+	      break;
+	    }
+	break;
+      case 'V':
+	version ();
+	goto cleanup;
+      default:
+	usage ();
+	goto cleanup;
+      }
+
+  argc -= optind;
+  argv += optind;
+
+  if (NULL == *argv)
     {
       fprintf (stderr, "%s:error: filename argument required\n", progname);
       usage ();
@@ -58,10 +117,10 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
-  if (!lexer_init (lex, argv[1]))
+  if (!lexer_init (lex, *argv))
     {
-      fprintf (stderr, "%s cannot create a lexer for file %s\n",
-	       argv[1], argv[0]);
+      fprintf (stderr, "%s cannot create a lexer for file `%s'\n",
+	       progname, *argv);
       ret = -2;
       goto cleanup;
     }

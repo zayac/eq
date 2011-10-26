@@ -73,7 +73,7 @@ struct tree_type_base
   tree type;
   unsigned int is_constant:1;
   /* These options are needed while parsing \match.  */
-  bool argset:1;
+  unsigned argset:1;
   unsigned arg:6;
 };
 
