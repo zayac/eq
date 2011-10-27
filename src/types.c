@@ -40,7 +40,7 @@ hash_key_length ()
        + offsetof (struct tree_base, code));
 }
 
-/* FIXME the format of the following macro is incorrect.  */
+/* FIXME the formatting of the following macro is incorrect.  */
 #undef HASH_FIND_IN_BKT
 #define HASH_FIND_IN_BKT(tbl,hh,head,keyptr,keylen_in,out)                       \
 do {										 \

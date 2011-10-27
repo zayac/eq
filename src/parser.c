@@ -786,8 +786,8 @@ handle_ext_type (struct parser * parser)
       else
 	{
 	  error_loc (token_location (tok),
-		     "upper index must be also part of type if lower index is included",
-		     token_as_string (tok));
+		     "upper index must be also part of type if lower "
+		     "index is included", token_as_string (tok));
 	  parser_unget (parser);
 	}
     }
@@ -857,7 +857,6 @@ handle_indexes (struct parser * parser, tree prefix)
 
   if (token_is_operator (parser_get_token (parser), tv_circumflex))
     {
-
       parser_unget (parser);
       idx = upper_wrapper (parser, prefix);
     }
@@ -1036,6 +1035,7 @@ error:
   return error_mark_node;
 }
 
+/* FIXME this function looks scary.  */
 bool
 is_end (struct parser * parser, enum token_kind tok)
 {
@@ -1530,6 +1530,7 @@ handle_relations (struct parser * parser)
 
   tok = parser_get_token (parser);
 
+  /* FIXME The code duplication is happening here.  */
   if (token_class (tok) == tok_operator)
     {
       switch (token_value (tok))
@@ -1576,6 +1577,7 @@ handle_relations (struct parser * parser)
 
   tok = parser_get_token (parser);
 
+  /* FIXME this code is duplicated.  */
   if (token_class (tok) == tok_operator)
     {
       switch (token_value (tok))
@@ -1982,11 +1984,10 @@ out:
   return stack[0].expr;
 }
 
-/*
- * sexpr_op:
- * [ (\lnot | - ) ] ( idx_numx | function_call | matrix | vector | { sexpr } | ( sexpr ) )
+/* sexpr_op:
+   [ (\lnot | - ) ] ( idx_numx | function_call
+		      | matrix | vector | { sexpr } | ( sexpr ) )
  */
-
 tree
 handle_sexpr_op (struct parser * parser)
 {
@@ -2338,7 +2339,6 @@ error:
 /*
    filter:
    \filter { <id> ^ { [ <id> ] } [ , <id> ^ { [ <id> ] } ]* | generator }
-
 */
 tree
 handle_filter (struct parser * parser)
