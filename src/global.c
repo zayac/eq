@@ -33,11 +33,6 @@ int warning_count = 0;
 /* A global list to store functions.  */
 tree function_list = NULL;
 
-/* Hash tables of pointers to store names and sizes of types.  */
-tree type_name_list = NULL;
-tree type_size_list = NULL;
-
-tree type_basic[4];
 /* Allocate all the global structures that are going to be used
    during the compilation.  */
 void
@@ -46,7 +41,7 @@ init_global ()
   assert (function_list == NULL, "function list is already allocated");
 
   function_list = make_tree_list ();
-  type_name_list = make_tree_list ();
+  //type_name_list = make_tree_list ();
 
   types_init ();
 
@@ -90,8 +85,7 @@ is_valid_type (tree type)
     return false;
 
   t = TREE_CODE (type);
-  return t == B_TYPE || t == N_TYPE
-         || t == Z_TYPE || t == R_TYPE;
+  return t == B_TYPE || t == N_TYPE || t == Z_TYPE || t == R_TYPE;
 }
 
 bool
@@ -125,15 +119,15 @@ type_lists_eq (tree tal, tree tar)
 }
 
 tree
-function_exists (const char * str)
+function_exists (const char *str)
 {
-  struct tree_list_element *  tl;
+  struct tree_list_element *tl;
 
   assert (function_list != NULL, "function-list is not initialized");
 
-  DL_FOREACH (TREE_LIST(function_list), tl)
+  DL_FOREACH (TREE_LIST (function_list), tl)
     if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->entry, 0)), str) == 0)
-      return tl->entry;
+    return tl->entry;
 
   return NULL;
 }

@@ -17,52 +17,51 @@
 #include "parser.h"
 #include "print.h"
 
-void 
+void
 matcher_init ()
 {
   matches = NULL;
 }
 
 /* Adds match rule to the hash table  */
-void 
-add_match (const char * key, struct token_list_el* match, 
-		    tree replace)
+void
+add_match (const char *key, struct token_list_el *match, tree replace)
 {
-  struct match_table * el;
+  struct match_table *el;
   el = (struct match_table *) malloc (sizeof (struct match_table));
-  MATCHER_KEY(el) = key;
-  MATCHER_MATCH(el) = match;
-  MATCHER_REPLACE(el) = replace;
-  HASH_ADD_KEYPTR (hh, matches, key, strlen(key), el);
+  MATCHER_KEY (el) = key;
+  MATCHER_MATCH (el) = match;
+  MATCHER_REPLACE (el) = replace;
+  HASH_ADD_KEYPTR (hh, matches, key, strlen (key), el);
   //HASH_ADD (hh, matches, key, sizeof (struct token), el);
 
 }
 
 /* Removes match rule from the hash table  */
-void 
-delete_match (struct match_table * del)
+void
+delete_match (struct match_table *del)
 {
-  struct token_list_el * el;
-  struct token_list_el * tmp;
+  struct token_list_el *el;
+  struct token_list_el *tmp;
   HASH_DEL (matches, del);
   /* Free match list  */
-  LL_FOREACH_SAFE(MATCHER_MATCH(del), el, tmp)
-    {
-      token_free (el->value);
-      free (el);
-    }
+  LL_FOREACH_SAFE (MATCHER_MATCH (del), el, tmp)
+  {
+    token_free (el->value);
+    free (el);
+  }
 
   /* Free replacement tree  */
   free_tree (MATCHER_REPLACE (del));
-  
+
   free (del);
 }
 
 /* Find a relevant record in hash table by key token  */
-struct 
-match_table* find_match (const char* str)
+struct match_table *
+find_match (const char *str)
 {
-  struct match_table * ret = NULL;
+  struct match_table *ret = NULL;
   HASH_FIND_STR (matches, str, ret);
   return ret;
 }
@@ -77,131 +76,136 @@ tree
 connect_nodes (tree t, const struct tree_list_el * list)
 {
   int i;
-  
+
   if (TREE_CODE (t) == LIST)
     {
-      struct tree_list_element * el;
+      struct tree_list_element *el;
       tree tmp;
-      DL_FOREACH (TREE_LIST(t), el)
-	{
-	  tmp = el->entry;
-	  el->entry = connect_nodes (el->entry, list);
-	  if (el->entry != tmp)
-	    free_tree (tmp);
-	}
+      DL_FOREACH (TREE_LIST (t), el)
+      {
+	tmp = el->entry;
+	el->entry = connect_nodes (el->entry, list);
+	if (el->entry != tmp)
+	  free_tree (tmp);
+      }
       return t;
     }
-  
-  if (TREE_CODE_TYPED(TREE_CODE(t)) && TREE_ARGSET(t))
+
+  if (TREE_CODE_TYPED (TREE_CODE (t)) && TREE_ARGSET (t))
     {
       int counter;
-      for (counter = 1; counter < TREE_ARG(t); counter++)
+      for (counter = 1; counter < TREE_ARG (t); counter++)
 	list = list->next;
-      return tree_copy(list->value);
+      return tree_copy (list->value);
     }
 
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE(t)); i++)
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
     {
       tree op = TREE_OPERAND (t, i);
-      TREE_OPERAND_SET (t, i, connect_nodes(op, list));
-      if (op != TREE_OPERAND(t, i)) 
+      TREE_OPERAND_SET (t, i, connect_nodes (op, list));
+      if (op != TREE_OPERAND (t, i))
 	free_tree (op);
     }
   return t;
 }
 
 
-void free_tree_list (struct tree_list_el * list)
+void
+free_tree_list (struct tree_list_el *list)
 {
-  struct tree_list_el * tmp = NULL;
-  struct tree_list_el * el = NULL;
-  LL_FOREACH_SAFE(list, el, tmp)
-    {
-      LL_DELETE (list, el);
-      free_tree (el->value);
-      free (el);
-    }
+  struct tree_list_el *tmp = NULL;
+  struct tree_list_el *el = NULL;
+  LL_FOREACH_SAFE (list, el, tmp)
+  {
+    LL_DELETE (list, el);
+    free_tree (el->value);
+    free (el);
+  }
 }
 
 tree
-perform_transform (struct parser * parser)
+perform_transform (struct parser *parser)
 {
   tree ret = NULL, tmp = NULL;
-  struct tree_list_el * tmp_expr = NULL;
-  struct tree_list_el * exprs = NULL;
-  struct match_table * record = NULL;
-  struct token * tok = parser_get_token (parser);
+  struct tree_list_el *tmp_expr = NULL;
+  struct tree_list_el *exprs = NULL;
+  struct match_table *record = NULL;
+  struct token *tok = parser_get_token (parser);
 
   parser_unget (parser);
   record = find_match (token_as_string (tok));
 
   if (record != NULL)
     {
-      struct token_list_el * el = NULL;
-      LL_FOREACH(MATCHER_MATCH(record), el)
-	{
-	  if (token_is_keyword (el->value, tv_expr))
-	    {
-	      tmp = handle_expr (parser);
-	      if (tmp != error_mark_node)
-		{
-		  tmp_expr = (struct tree_list_el *) 
+      struct token_list_el *el = NULL;
+      LL_FOREACH (MATCHER_MATCH (record), el)
+      {
+	if (token_is_keyword (el->value, tv_expr))
+	  {
+	    tmp = handle_expr (parser);
+	    if (tmp != error_mark_node)
+	      {
+		tmp_expr = (struct tree_list_el *)
 		  malloc (sizeof (struct tree_list_el));
-		  tmp_expr->value = tmp;
-		  tmp_expr->next = NULL;
-		  LL_APPEND (exprs, tmp_expr);
-		}
-	      else
-		{
-		  struct token * tmp = NULL;
-		  free_tree_list (exprs);
-		  /* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
-		      we are inside another \match, 
-		      and we are to skip until right brace.  */
-		  if (PARSER_MATCH_EXPR_ALLOWED (parser))
-		    {
-		      parser_unget (parser);
-		      if (!token_is_operator 
-			(parser_get_token (parser), tv_rbrace))
-			tmp = parser_get_until_tval (parser, tv_rbrace);
-		    }
-		  else
-		    {
-		      tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
-		      if (tmp != NULL && token_class (tmp) != tok_eof) 
-			parser_unget (parser);
-		    }
-		  return error_mark_node;
-		}
-	    }
-	  else
-	    {
-	      tok = parser_get_token (parser);
-	      if (tok->tok_class == tok_unknown)
-		tok->tok_class = tok_keyword;
-	      if (token_compare (tok, el->value))
-		{
-		  struct token * tmp = NULL;
-	          free_tree_list (exprs);
-		  error_loc (token_location (tok), 
-		    "invalid token for macros `%s` ",
-		    token_as_string (tok));
-		  /* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
-		      we are inside another \match, 
-		      and we are to skip until right brace.  */
-		  if (PARSER_MATCH_EXPR_ALLOWED (parser))
-		    tmp = parser_get_until_tval (parser, tv_rbrace);
-		  else
-		    tmp = parser_get_until_one_of_val (parser, 2, tv_lend, tv_qendif);
-		  if (token_class (tmp) != tok_eof)
+		tmp_expr->value = tmp;
+		tmp_expr->next = NULL;
+		LL_APPEND (exprs, tmp_expr);
+	      }
+	    else
+	      {
+		struct token *tmp = NULL;
+		free_tree_list (exprs);
+		/* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
+		   we are inside another \match, 
+		   and we are to skip until right brace.  */
+		if (PARSER_MATCH_EXPR_ALLOWED (parser))
+		  {
 		    parser_unget (parser);
-		  return error_mark_node;
-		}
-	    }
-	}
+		    if (!token_is_operator
+			(parser_get_token (parser), tv_rbrace))
+		      parser_get_until_tval (parser, tv_rbrace);
+		  }
+		else
+		  {
+		    tmp =
+		      parser_get_until_one_of_val (parser, 2, tv_lend,
+						   tv_qendif);
+		    if (tmp != NULL && token_class (tmp) != tok_eof)
+		      parser_unget (parser);
+		  }
+		return error_mark_node;
+	      }
+	  }
+	else
+	  {
+	    tok = parser_get_token (parser);
+	    if (tok->tok_class == tok_unknown)
+	      tok->tok_class = tok_keyword;
+	    if (token_compare (tok, el->value))
+	      {
+		struct token *tmp = NULL;
+		free_tree_list (exprs);
+		error_loc (token_location (tok),
+			   "invalid token for macros `%s` ",
+			   token_as_string (tok));
+		/* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
+		   we are inside another \match, 
+		   and we are to skip until right brace.  */
+		if (PARSER_MATCH_EXPR_ALLOWED (parser))
+		  tmp = parser_get_until_tval (parser, tv_rbrace);
+		else
+		  tmp =
+		    parser_get_until_one_of_val (parser, 2, tv_lend,
+						 tv_qendif);
+		if (token_class (tmp) != tok_eof)
+		  parser_unget (parser);
+		return error_mark_node;
+	      }
+	  }
+      }
       if (MATCHER_REPLACE (record) != error_mark_node)
 	{
-	  ret = tree_copy (MATCHER_REPLACE(record));
+	  ret = tree_copy (MATCHER_REPLACE (record));
 	  tmp = ret;
 	  ret = connect_nodes (ret, exprs);
 	  if (tmp != ret)
@@ -210,7 +214,7 @@ perform_transform (struct parser * parser)
       /* Free exprs in the end  */
       free_tree_list (exprs);
     }
-  
+
   return ret;
 
 }
@@ -225,8 +229,8 @@ validate_tree (unsigned expr_number, tree t)
   bool ret = true;
   assert (t != NULL, "tree can't be NULL");
 
-  if (TREE_CODE_TYPED (TREE_CODE (t)) && TREE_ARGSET (t) && 
-	  ( TREE_ARG (t) < 1 || TREE_ARG (t) > expr_number))
+  if (TREE_CODE_TYPED (TREE_CODE (t)) && TREE_ARGSET (t) &&
+      (TREE_ARG (t) < 1 || TREE_ARG (t) > expr_number))
     {
       error_loc (TREE_LOCATION (t), "expression number is invalid");
       ret = false;
@@ -234,68 +238,68 @@ validate_tree (unsigned expr_number, tree t)
   else
     {
       int i;
-      for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE(t)); i++)
+      for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
 	{
 	  bool is_valid = validate_tree (expr_number, TREE_OPERAND (t, i));
 	  if (!is_valid)
 	    ret = false;
 	}
     }
-  return ret; 
+  return ret;
 }
 
 /* Match expression validation should be performed  */
 bool
 validate_match (struct token_list_el * left, tree right)
 {
-  struct token_list_el * tmp = NULL;
+  struct token_list_el *tmp = NULL;
   unsigned number = 0;
-  bool ret = true; 
+  bool ret = true;
   assert (left != NULL && right != NULL, "arguments can't be NULL");
-  
+
   if ((!(token_class (left->value) == tok_keyword &&
-	  left->value->uses_buf)) && !(is_id(left->value, false)))
+	 left->value->uses_buf)) && !(is_id (left->value, false)))
     {
-      error_loc (token_location (left->value), 
-		"a new keyword or id token is allowed here only. `%s` found", 
-		token_as_string (left->value));
-      ret = false; 
+      error_loc (token_location (left->value),
+		 "a new keyword or id token is allowed here only. `%s` found",
+		 token_as_string (left->value));
+      ret = false;
     }
-  
+
   LL_FOREACH (left, tmp)
-    {
-      if (token_is_keyword (tmp->value, tv_expr))
-	number++;
-    }
+  {
+    if (token_is_keyword (tmp->value, tv_expr))
+      number++;
+  }
   return validate_tree (number, right) && ret;
 }
 
 
-void 
+void
 matcher_finalize ()
 {
-  struct match_table * current, * tmp;
-  HASH_ITER(hh, matches, current, tmp)
-    {
-      delete_match (current);
-    }
+  struct match_table *current, *tmp;
+  HASH_ITER (hh, matches, current, tmp)
+  {
+    delete_match (current);
+  }
 }
 
 /* Print rules. For debugging purposes  */
-void 
+void
 print_matches ()
 {
-  struct match_table * current, * tmp;
+  struct match_table *current, *tmp;
   struct token_list_el *el;
-  HASH_ITER(hh, matches, current, tmp)
+  HASH_ITER (hh, matches, current, tmp)
+  {
+    fprintf (stdout, "Transformation: \n");
+    LL_FOREACH (MATCHER_MATCH (current), el)
     {
-      fprintf(stdout, "Transformation: \n");
-      LL_FOREACH(MATCHER_MATCH(current), el)
-	{
-	  fprintf (stdout, "%s ", token_as_string (el->value));
-	}
-      fprintf (stdout, " ->     \n");
-      print_expression (stdout, MATCHER_REPLACE(current));
-      fprintf(stdout, "\n");
+      fprintf (stdout, "%s ", token_as_string (el->value));
     }
+    fprintf (stdout, " ->     \n");
+    print_expression (stdout, MATCHER_REPLACE (current));
+    fprintf (stdout, "\n");
+  }
 }

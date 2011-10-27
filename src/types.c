@@ -23,10 +23,10 @@
    hash-key.  This function gets the tree-node itself from the
    pointer to a hash-key.  */
 static inline tree
-get_tree_from_key (char *  keyptr)
+get_tree_from_key (char *keyptr)
 {
   struct tree_type_node x;
-  return (tree)(keyptr - (int)((size_t)&(x.base.code) - (size_t)&x));
+  return (tree) (keyptr - (int) ((size_t) & (x.base.code) - (size_t) & x));
 }
 
 /* The key used in the type hash-table have a fixed length which can
@@ -35,9 +35,9 @@ static inline size_t
 hash_key_length ()
 {
   struct tree_type_node x;
-  return offsetof (struct tree_type_node, size) + sizeof (x.size)
-	 - (offsetof (struct tree_type_node, base)
-	    + offsetof (struct tree_base, code));
+  return offsetof (struct tree_type_node, size) +sizeof (x.size)
+    - (offsetof (struct tree_type_node, base)
+       + offsetof (struct tree_base, code));
 }
 
 /* FIXME the format of the following macro is incorrect.  */
@@ -60,11 +60,12 @@ do {										 \
   }\
 } while(0)
 
-struct tree_type_node * type_table = NULL;
+struct tree_type_node *type_table = NULL;
 
-static struct tree_type_node * types_add_type (enum tree_code, size_t, tree, tree);
-static struct tree_type_node * types_find_in_table (enum tree_code,
-						    size_t, tree, tree);
+static struct tree_type_node *types_add_type (enum tree_code, size_t, tree,
+					      tree);
+static struct tree_type_node *types_find_in_table (enum tree_code, size_t,
+						   tree, tree);
 
 
 /* Data structures related to types initialization.  */
@@ -73,39 +74,19 @@ types_init ()
 {
   global_tree[TG_B_TYPE] = types_assign_type (B_TYPE, 1, NULL, NULL);
   global_tree[TG_N_TYPE]
-      = types_assign_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
+    = types_assign_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
   global_tree[TG_R_TYPE]
-      = types_assign_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
+    = types_assign_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
   global_tree[TG_Z_TYPE]
-      = types_assign_type (Z_TYPE, sizeof (int) * 8, NULL, NULL);
+    = types_assign_type (Z_TYPE, sizeof (int) * 8, NULL, NULL);
 
   /* FIXME Remove this assertion when not needed.  */
   assert (types_find_in_table (B_TYPE, 1, NULL, NULL)
-	  && types_find_in_table (N_TYPE, sizeof (unsigned)*8, NULL, NULL)
-	  && types_find_in_table (R_TYPE, sizeof (double)*8, NULL, NULL)
-	  && types_find_in_table (Z_TYPE, sizeof (int)*8, NULL, NULL),
+	  && types_find_in_table (N_TYPE, sizeof (unsigned) * 8, NULL, NULL)
+	  && types_find_in_table (R_TYPE, sizeof (double) * 8, NULL, NULL)
+	  && types_find_in_table (Z_TYPE, sizeof (int) * 8, NULL, NULL),
 	  "The basic types were not properly added to the hash-table");
 
-}
-
-/* FIXME is it still needed?  For debugging purposes only.  */
-char *
-get_array_ptr (UT_array * arr, int i)
-{
-  return utarray_eltptr (arr, i);
-}
-
-/* Generate data for hash.  */
-UT_array*
-gen_hash_data (enum tree_code code, size_t size, tree dim, tree shape)
-{
-  UT_array *hash_data;
-  utarray_new (hash_data, &ut_int_icd);
-  utarray_push_back (hash_data, &code);
-  utarray_push_back (hash_data, &size);
-  tree_get_hash_data (dim, hash_data);
-  tree_get_hash_data (shape, hash_data);
-  return hash_data;
 }
 
 /* Add a new type to hash table.  */
@@ -130,14 +111,15 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
 {
   tree el = NULL;
 
-  struct tree_type_node* ret = NULL;
+  struct tree_type_node *ret = NULL;
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
   el = make_type (code);
   TYPE_SIZE (el) = size;
   TYPE_DIM (el) = dim;
   TYPE_SHAPE (el) = shape;
 
-  HASH_FIND (hh, type_table, (char *)&(el->base.code), hash_key_length (), ret);
+  HASH_FIND (hh, type_table, (char *) &(el->base.code), hash_key_length (),
+	     ret);
   return ret;
 }
 
@@ -145,8 +127,8 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
 tree
 types_assign_type (enum tree_code code, size_t size, tree dim, tree shape)
 {
-  struct tree_type_node * found =  types_find_in_table (code, size, dim, shape);
-  return (tree)(found ? found : types_add_type (code, size, dim, shape));
+  struct tree_type_node *found = types_find_in_table (code, size, dim, shape);
+  return (tree) (found ? found : types_add_type (code, size, dim, shape));
 }
 
 /* We call free function for trees, as tree is a tree node too.  */
@@ -161,11 +143,9 @@ types_finalize ()
 {
   struct tree_type_node *current, *tmp;
   HASH_ITER (hh, type_table, current, tmp)
-    {
-      HASH_DEL (type_table, current);
-      free_tree_type ((tree) current);
-    }
+  {
+    HASH_DEL (type_table, current);
+    free_tree_type ((tree) current);
+  }
   type_table = NULL;
 }
-
-

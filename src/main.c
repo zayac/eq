@@ -21,7 +21,8 @@
 
 #include <stdlib.h>
 #include <getopt.h>
-enum {
+enum
+{
   OPT_PRINT_PROGRAM = 0,
   OPT_PRINT_MATCHES
 };
@@ -35,23 +36,21 @@ char *const p_opts[] = {
 void usage ();
 void version ();
 
-static char *  progname;
+static char *progname;
 struct eq_options options;
 
 void
 usage ()
 {
   fprintf (stderr, "usage:\n"
-		   "\t[-P<program,matches>] prints pared proogram or match definitions\n"
-		   "\t[-V] prints versuion and exits\n"
-		   "\t<input-file>\n");
+	   "\t[-P<program,matches>] prints pared program or match definitions\n"
+	   "\t[-V] prints version and exits\n" "\t<input-file>\n");
 }
 
 void
 version ()
 {
-  fprintf (stderr, "%s %s, revision: %s\n",
-	   progname, VERSION, COMMIT_DATE);
+  fprintf (stderr, "%s %s, revision: %s\n", progname, VERSION, COMMIT_DATE);
 }
 
 #ifndef LEXER_BINARY
@@ -59,9 +58,9 @@ int
 main (int argc, char *argv[])
 {
   int c, ret = 0;
-  char *  subopts;
-  char *  value;
-  extern char *  optarg;
+  char *subopts;
+  char *value;
+  extern char *optarg;
   extern int optind;
 
   struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));

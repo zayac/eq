@@ -58,9 +58,9 @@ tree global_tree[TG_MAX];
    That is why when freeing an atomic object we change the code
    of the tree to EMPTY_MARK and save this tree int the
    atomic_trees.  */
-static tree *  atomic_trees = NULL;
-static size_t  atomic_trees_size = 0;
-static size_t  atomic_trees_idx = 0;
+static tree *atomic_trees = NULL;
+static size_t atomic_trees_size = 0;
+static size_t atomic_trees_idx = 0;
 
 size_t
 get_tree_size (enum tree_code code)
@@ -68,10 +68,9 @@ get_tree_size (enum tree_code code)
   size_t size, ops;
   ops = TREE_CODE_OPERANDS (code) * sizeof (tree);
   size = TREE_CODE_TYPED (code)
-	 ? (ops ? sizeof (struct tree_type_base_op)
-		 : sizeof (struct tree_type_base))
-	 : (ops ? sizeof (struct tree_base_op)
-		 : sizeof (struct tree_base));
+    ? (ops ? sizeof (struct tree_type_base_op)
+       : sizeof (struct tree_type_base))
+    : (ops ? sizeof (struct tree_base_op) : sizeof (struct tree_base));
 
   switch (TREE_CODE_CLASS (code))
     {
@@ -81,7 +80,7 @@ get_tree_size (enum tree_code code)
       else if (code == LIST)
 	return ops + sizeof (struct tree_list_node);
       else if (code == ERROR_MARK)
-        return 0;
+	return 0;
       else
 	return size + ops;
 
@@ -112,7 +111,7 @@ get_tree_size (enum tree_code code)
       unreachable (0);
       break;
     }
-    return 0;
+  return 0;
 }
 
 tree
@@ -120,7 +119,7 @@ make_tree (enum tree_code code)
 {
   size_t size = get_tree_size (code);
   if (code == ERROR_MARK)
-      warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
+    warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
   tree ret = (tree) malloc (size);
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
@@ -152,7 +151,7 @@ atomic_trees_add (tree t)
 
   /* Most likely we don't need to search anything.  */
 
-  {/* For testing purposes only.  */
+  {				/* For testing purposes only.  */
     size_t i;
     for (i = 0; i < atomic_trees_idx; i++)
       if (atomic_trees[i] == t)
@@ -172,7 +171,7 @@ free_atomic_trees ()
   for (i = 0; i < atomic_trees_idx; i++)
     {
       assert (TREE_CODE (atomic_trees[i]) == EMPTY_MARK, 0);
-      free(atomic_trees[i]);
+      free (atomic_trees[i]);
     }
   if (atomic_trees)
     free (atomic_trees);
@@ -193,7 +192,7 @@ free_tree (tree node)
   if (node == NULL
       /* Types are removed separetely.  */
       || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type
-      || node == error_mark_node || TREE_CODE(node) == EMPTY_MARK)
+      || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK)
     return;
 
   code = TREE_CODE (node);
@@ -207,13 +206,13 @@ free_tree (tree node)
 	}
       else if (code == LIST)
 	{
-	  struct tree_list_element * el = NULL, *tmp = NULL;
-	  DL_FOREACH_SAFE(TREE_LIST(node), el, tmp)
-	    {
-	      DL_DELETE (TREE_LIST (node), el);
-	      free_tree (el->entry);
-	      free (el);
-	    }
+	  struct tree_list_element *el = NULL, *tmp = NULL;
+	  DL_FOREACH_SAFE (TREE_LIST (node), el, tmp)
+	  {
+	    DL_DELETE (TREE_LIST (node), el);
+	    free_tree (el->entry);
+	    free (el);
+	  }
 	}
       break;
 
@@ -223,8 +222,7 @@ free_tree (tree node)
 	  if (TREE_STRING_CST (node))
 	    free (TREE_STRING_CST (node));
 	}
-      else
-      if (code == INTEGER_CST)
+      else if (code == INTEGER_CST)
 	{
 
 	}
@@ -260,14 +258,15 @@ free_tree (tree node)
   atomic_trees_add (node);
 }
 
-void free_tree_type (tree node)
+void
+free_tree_type (tree node)
 {
   enum tree_code code;
   if (node == NULL)
     return;
-  code  = TREE_CODE (node);
+  code = TREE_CODE (node);
   assert (TREE_CODE_CLASS (code) == tcl_type,
-    "Only types are allowed to be deleted in free_tree_type function");
+	  "Only types are allowed to be deleted in free_tree_type function");
 
   if (TYPE_DIM (node) != NULL)
     {
@@ -319,7 +318,7 @@ make_string_cst_str (const char *value)
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
   TREE_TYPE (t) =
-      types_assign_type (STRING_TYPE, ((strlen (value) + 1) * 8), NULL, NULL);
+    types_assign_type (STRING_TYPE, ((strlen (value) + 1) * 8), NULL, NULL);
   /* FIXME Add is_char modifier to the tree.  */
 
   return t;
@@ -360,7 +359,7 @@ tree
 make_tree_list ()
 {
   tree t = make_tree (LIST);
-  TREE_LIST(t) = NULL;
+  TREE_LIST (t) = NULL;
   return t;
 }
 
@@ -408,17 +407,19 @@ make_real_tok (struct token * tok)
 bool
 tree_list_append (tree list, tree elem)
 {
-  struct tree_list_element * el;
+  struct tree_list_element *el;
   assert (TREE_CODE (list) == LIST,
-          "appending element of type `%s'", TREE_CODE_NAME (TREE_CODE (list)));
+	  "appending element of type `%s'",
+	  TREE_CODE_NAME (TREE_CODE (list)));
 
-  el = (struct tree_list_element *) malloc (sizeof(struct tree_list_element));
+  el =
+    (struct tree_list_element *) malloc (sizeof (struct tree_list_element));
 
   assert (el != NULL, "Can't allocate enough memory for new element `%s'",
-  TREE_CODE_NAME(TREE_CODE(list)));
+	  TREE_CODE_NAME (TREE_CODE (list)));
   el->entry = elem;
 
-  DL_APPEND (TREE_LIST(list), el);
+  DL_APPEND (TREE_LIST (list), el);
   return true;
 }
 
@@ -437,8 +438,8 @@ make_type (enum tree_code code)
     TYPE_SIZE (t) = 8 * sizeof (int);
   else if (TREE_CODE (t) == R_TYPE)
     TYPE_SIZE (t) = 8 * sizeof (double);
-  TYPE_SHAPE(t) = NULL;
-  TYPE_DIM(t) = NULL;
+  TYPE_SHAPE (t) = NULL;
+  TYPE_DIM (t) = NULL;
   return t;
 }
 
@@ -545,7 +546,7 @@ tree
 tree_list_copy (tree lst)
 {
   tree cpy;
-  struct tree_list_element * el;
+  struct tree_list_element *el;
   if (lst == NULL)
     return NULL;
 
@@ -554,8 +555,8 @@ tree_list_copy (tree lst)
 
   cpy = make_tree_list ();
 
-  DL_FOREACH (TREE_LIST(lst), el)
-    tree_list_append(cpy, tree_copy (el->entry));
+  DL_FOREACH (TREE_LIST (lst), el)
+    tree_list_append (cpy, tree_copy (el->entry));
   return cpy;
 }
 
@@ -571,23 +572,23 @@ tree_copy (tree t)
       return tmp;
     }
 
-  tmp = make_tree (TREE_CODE(t));
-  memcpy (tmp, t, get_tree_size (TREE_CODE(t)));
+  tmp = make_tree (TREE_CODE (t));
+  memcpy (tmp, t, get_tree_size (TREE_CODE (t)));
 
-  switch (TREE_CODE(t))
+  switch (TREE_CODE (t))
     {
-      case (STRING_CST):
-	tmp->string_cst_node.value = strdup (t->string_cst_node.value);
-	break;
-      case (IDENTIFIER):
-	tmp->identifier_node.name = tree_copy (t->identifier_node.name);
-	break;
-      default:
-	break;
+    case (STRING_CST):
+      tmp->string_cst_node.value = strdup (t->string_cst_node.value);
+      break;
+    case (IDENTIFIER):
+      tmp->identifier_node.name = tree_copy (t->identifier_node.name);
+      break;
+    default:
+      break;
     }
 
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE(t)); i++)
-      TREE_OPERAND_SET(tmp, i, tree_copy (TREE_OPERAND(t, i)));
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
+    TREE_OPERAND_SET (tmp, i, tree_copy (TREE_OPERAND (t, i)));
 
   return tmp;
 }
@@ -598,8 +599,8 @@ tree_copy (tree t)
 void
 free_list (tree lst)
 {
-  struct tree_list_element * ptr;
-  struct tree_list_element * tmpptr;
+  struct tree_list_element *ptr;
+  struct tree_list_element *tmpptr;
 
   if (lst == NULL)
     return;
@@ -614,62 +615,6 @@ free_list (tree lst)
     }
   free (lst);
 }
-
-/* Get some data from the tree to use it for hashing.  */
-#define FORMAT_DATA(data, value) \
-do { \
-  int step = 1;	\
-  while (step <= value) \
-    step *= 10; \
-  data = data * step + value; \
-} while (0)
-UT_array*
-tree_get_hash_data (tree t, UT_array* arr)
-{
-  int i = 0;
-  int data = 0;
-  if (t == NULL)
-    {
-      utarray_push_back (arr, &data);
-      return arr;
-    }
-
-  data = (int) TREE_CODE (t) + 1;
-
-  switch (TREE_CODE (t))
-    {
-      case IDENTIFIER:
-	FORMAT_DATA (data, strlen(TREE_STRING_CST (TREE_ID_NAME (t))));
-	break;
-      case LIST:
-	{
-	  struct tree_list_element *el = NULL;
-	  DL_FOREACH (TREE_LIST (t), el)
-	    {
-	      utarray_push_back (arr, &data);
-	      tree_get_hash_data (el->entry, arr);
-	    }
-	  return arr;
-	}
-      case INTEGER_CST:
-	FORMAT_DATA (data, TREE_INTEGER_CST (t));
-	break;
-      case REAL_CST:
-	FORMAT_DATA (data, (int) TREE_REAL_CST (t));
-	break;
-      case STRING_CST:
-	FORMAT_DATA (data, strlen (TREE_STRING_CST (t)));
-	break;
-      default:
-	break;
-    }
-  utarray_push_back (arr, &data);
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
-    tree_get_hash_data (TREE_OPERAND (t, i), arr);
-
-  return arr;
-}
-#undef FORMAT_DATA
 
 bool
 tree_compare (tree left, tree right)
@@ -696,8 +641,8 @@ tree_compare (tree left, tree right)
   if (TREE_CODE (left) == LIST)
     {
       /* compare lists.  */
-      for (lel = TREE_LIST(left), rel = TREE_LIST(right);
-	    lel && rel; lel=lel->next, rel=rel->next)
+      for (lel = TREE_LIST (left), rel = TREE_LIST (right);
+	   lel && rel; lel = lel->next, rel = rel->next)
 	{
 	  if (!tree_compare (lel->entry, rel->entry))
 	    return false;
@@ -706,14 +651,14 @@ tree_compare (tree left, tree right)
     }
 
   /* comparision of typed nodes.  */
-  if (TREE_CODE_TYPED(TREE_CODE (left)))
+  if (TREE_CODE_TYPED (TREE_CODE (left)))
     {
       if (!tree_compare (TREE_TYPE (left), TREE_TYPE (right)))
 	return false;
 
-      if  (left->typed.argset != right->typed.argset
-	|| left->typed.arg != right->typed.arg
-	|| left->typed.is_constant != right->typed.is_constant)
+      if (left->typed.argset != right->typed.argset
+	  || left->typed.arg != right->typed.arg
+	  || left->typed.is_constant != right->typed.is_constant)
 	return false;
     }
 
@@ -733,7 +678,7 @@ tree_compare (tree left, tree right)
   /* circumflex comparision.  */
   if (TREE_CODE (left) == CIRCUMFLEX)
     {
-      if (   TREE_CIRCUMFLEX_INDEX_STATUS (left)
+      if (TREE_CIRCUMFLEX_INDEX_STATUS (left)
 	  != TREE_CIRCUMFLEX_INDEX_STATUS (right))
 	return false;
     }
@@ -744,7 +689,7 @@ tree_compare (tree left, tree right)
       if (TREE_STRING_CST_LENGTH (left) != TREE_STRING_CST_LENGTH (right))
 	return false;
 
-      if (strcmp(TREE_STRING_CST (left), TREE_STRING_CST (right)))
+      if (strcmp (TREE_STRING_CST (left), TREE_STRING_CST (right)))
 	return false;
     }
 
@@ -773,6 +718,6 @@ tree_compare (tree left, tree right)
 	return false;
     }
 
-    return true;
+  return true;
 
 }
