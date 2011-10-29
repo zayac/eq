@@ -35,9 +35,11 @@ static inline size_t
 hash_key_length ()
 {
   struct tree_type_node x;
-  return offsetof (struct tree_type_node, size) +sizeof (x.size)
-    - (offsetof (struct tree_type_node, base)
-       + offsetof (struct tree_base, code));
+  return offsetof (struct tree_type_node,
+		   size) +sizeof (x.size) - (offsetof (struct tree_type_node,
+						       base) +
+					     offsetof (struct tree_base,
+						       code));
 }
 
 /* FIXME the formatting of the following macro is incorrect.  */
@@ -73,12 +75,12 @@ void
 types_init ()
 {
   global_tree[TG_B_TYPE] = types_assign_type (B_TYPE, 1, NULL, NULL);
-  global_tree[TG_N_TYPE]
-    = types_assign_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
-  global_tree[TG_R_TYPE]
-    = types_assign_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
-  global_tree[TG_Z_TYPE]
-    = types_assign_type (Z_TYPE, sizeof (int) * 8, NULL, NULL);
+  global_tree[TG_N_TYPE] =
+    types_assign_type (N_TYPE, sizeof (unsigned) * 8, NULL, NULL);
+  global_tree[TG_R_TYPE] =
+    types_assign_type (R_TYPE, sizeof (double) * 8, NULL, NULL);
+  global_tree[TG_Z_TYPE] =
+    types_assign_type (Z_TYPE, sizeof (int) * 8, NULL, NULL);
 
   /* FIXME Remove this assertion when not needed.  */
   assert (types_find_in_table (B_TYPE, 1, NULL, NULL)
@@ -101,11 +103,13 @@ types_add_type (enum tree_code code, size_t size, tree dim, tree shape)
   TYPE_DIM (el) = dim;
   TYPE_SHAPE (el) = shape;
 
-  HASH_ADD_KEYPTR (hh, type_table, &(el->base.code),
-		   hash_key_length (), (struct tree_type_node *) el);
+  HASH_ADD_KEYPTR (hh, type_table, &(el->base.code), hash_key_length (),
+		   (struct tree_type_node *) el);
   return ((struct tree_type_node *) el);
 }
 
+/* Try to find an element in table. We construct a tree for this. We destroy in
+   finally.  */
 static struct tree_type_node *
 types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
 {
@@ -120,6 +124,10 @@ types_find_in_table (enum tree_code code, size_t size, tree dim, tree shape)
 
   HASH_FIND (hh, type_table, (char *) &(el->base.code), hash_key_length (),
 	     ret);
+  if (ret == NULL)
+    free_tree_type (el, false);
+  else
+    free_tree_type (el, true);
   return ret;
 }
 
@@ -131,13 +139,6 @@ types_assign_type (enum tree_code code, size_t size, tree dim, tree shape)
   return (tree) (found ? found : types_add_type (code, size, dim, shape));
 }
 
-/* We call free function for trees, as tree is a tree node too.  */
-/*static void
-types_free_type (struct tree_type_node * type)
-{
-  free_tree ((tree) type);
-}*/
-
 void
 types_finalize ()
 {
@@ -145,7 +146,7 @@ types_finalize ()
   HASH_ITER (hh, type_table, current, tmp)
   {
     HASH_DEL (type_table, current);
-    free_tree_type ((tree) current);
+    free_tree_type ((tree) current, true);
   }
   type_table = NULL;
 }

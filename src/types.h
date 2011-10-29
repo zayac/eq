@@ -14,12 +14,12 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __TYPES_H__
-#define __TYPES_H__
+#   define __TYPES_H__
 
-#include "tree.h"
+#   include "tree.h"
 
 /* A global table to store types.  */
-extern struct tree_type_node * type_table;
+extern struct tree_type_node *type_table;
 
 void types_init ();
 tree types_assign_type (enum tree_code, size_t, tree, tree);

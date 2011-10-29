@@ -14,9 +14,9 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __PARSER_H__
-#define __PARSER_H__
+#   define __PARSER_H__
 
-#include "expand.h"
+#   include "expand.h"
 
 struct parser
 {
@@ -45,22 +45,21 @@ struct parser
 
 
 __BEGIN_DECLS
-
-#define TOKEN_CLASS(a, b) \
+#   define TOKEN_CLASS(a, b) \
 static inline bool \
 token_is_ ## a (struct token *  tok, enum token_kind tkind) \
 { \
   return token_class (tok) == tok_ ## a && token_value (tok) == tkind; \
 }
-#include "token_class.def"
-#undef TOKEN_CLASS
-
+#   include "token_class.def"
+#   undef TOKEN_CLASS
 static inline bool
-token_is_number (struct token * tok)
+token_is_number (struct token *tok)
 {
-  return (token_class (tok) == tok_realnum ||
-	  token_class (tok) == tok_intnum);
+  return (token_class (tok) == tok_realnum
+	  || token_class (tok) == tok_intnum);
 }
+
 int parse (struct parser *);
 bool parser_init (struct parser *, struct lexer *);
 bool parser_finalize (struct parser *);
@@ -74,10 +73,10 @@ struct token *parser_get_until_tclass (struct parser *, enum token_class);
 struct token *parser_forward_tval (struct parser *, enum token_kind);
 struct token *parser_forward_tclass (struct parser *, enum token_class);
 struct token *parser_token_alternative_tval (struct parser *, enum token_kind,
-					    enum token_kind);
+					     enum token_kind);
 struct token *parser_token_alternative_tclass (struct parser *,
-					      enum token_class,
-					      enum token_class);
+					       enum token_class,
+					       enum token_class);
 bool parser_expect_tval (struct parser *, enum token_kind);
 bool parser_expect_tclass (struct parser *, enum token_class);
 tree handle_type (struct parser *);
@@ -115,7 +114,6 @@ tree handle_idx_numx (struct parser *);
 bool handle_match (struct parser *);
 
 
-#define PARSER_MATCH_EXPR_ALLOWED(parser) ((parser)->match_expr_allowed)
+#   define PARSER_MATCH_EXPR_ALLOWED(parser) ((parser)->match_expr_allowed)
 __END_DECLS
-
 #endif /* __PARSER_H__  */

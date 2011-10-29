@@ -27,7 +27,6 @@ option (DEBUG_ENABLE "set debugging flag")
 
 # Set BUILD_LEXER variable value to ON if you want to compile the lexer only
 set (BUILD_LEXER OFF)
-set (DEBUG_ENABLE ON)
 
 set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
 	    " -D_GNU_SOURCE -pedantic")
@@ -44,9 +43,6 @@ include_directories ("${PROJECT_BINARY_DIR}")
 add_subdirectory (src)
 
 add_definitions (${CFLAGS})
-if (DEBUG_ENABLE)
-  add_definitions(-DDEBUG_ENABLE)
-endif()
 if (BUILD_LEXER)
   add_definitions(-DLEXER_BINARY)
   add_executable (eq src/lex.c)

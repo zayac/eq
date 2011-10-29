@@ -41,9 +41,6 @@ init_global ()
   assert (function_list == NULL, "function list is already allocated");
 
   function_list = make_tree_list ();
-  //type_name_list = make_tree_list ();
-
-  types_init ();
 
   error_count = 0;
   warning_count = 0;
@@ -53,7 +50,6 @@ void
 finalize_global ()
 {
   free_tree (function_list);
-  types_finalize ();
 }
 
 void
@@ -68,6 +64,7 @@ void
 finalize_global_tree ()
 {
   int i;
+  types_finalize ();
   for (i = 0; i < TG_MAX; i++)
     if (global_tree[i] == error_mark_node)
       free (global_tree[i]);
@@ -125,8 +122,9 @@ function_exists (const char *str)
 
   assert (function_list != NULL, "function-list is not initialized");
 
-  DL_FOREACH (TREE_LIST (function_list), tl)
-    if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->entry, 0)), str) == 0)
+  DL_FOREACH (TREE_LIST (function_list),
+	      tl) if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->entry, 0)),
+			      str) == 0)
     return tl->entry;
 
   return NULL;

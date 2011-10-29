@@ -24,12 +24,14 @@
 enum
 {
   OPT_PRINT_PROGRAM = 0,
-  OPT_PRINT_MATCHES
+  OPT_PRINT_MATCHES,
+  OPT_PRINT_TYPES
 };
 
 char *const p_opts[] = {
   [OPT_PRINT_PROGRAM] = "program",
   [OPT_PRINT_MATCHES] = "matches",
+  [OPT_PRINT_TYPES] = "types",
   NULL
 };
 
@@ -42,8 +44,9 @@ struct eq_options options;
 void
 usage ()
 {
-  fprintf (stderr, "usage:\n"
-	   "\t[-P<program,matches>] prints pared program or match definitions\n"
+  fprintf (stderr,
+	   "usage:\n"
+	   "\t[-P<program,types,matches>] prints pared program, types or match definitions\n"
 	   "\t[-V] prints version and exits\n" "\t<input-file>\n");
 }
 
@@ -91,6 +94,9 @@ main (int argc, char *argv[])
 	    case OPT_PRINT_MATCHES:
 	      options.print_matches = true;
 	      break;
+	    case OPT_PRINT_TYPES:
+	      options.print_types = true;
+	      break;
 	    default:
 	      fprintf (stderr, "unknown -P suboption `%s'\n", value);
 	      goto cleanup;
@@ -105,6 +111,13 @@ main (int argc, char *argv[])
 	goto cleanup;
       }
 
+  if (options.print_types
+      && !(options.print_program || options.print_matches))
+    fprintf (stdout,
+	     "warning: 'types' flag is useless without either"
+	     " 'program' flag or 'matches' flag\n");
+
+
   argc -= optind;
   argv += optind;
 
@@ -118,8 +131,8 @@ main (int argc, char *argv[])
 
   if (!lexer_init (lex, *argv))
     {
-      fprintf (stderr, "%s cannot create a lexer for file `%s'\n",
-	       progname, *argv);
+      fprintf (stderr, "%s cannot create a lexer for file `%s'\n", progname,
+	       *argv);
       ret = -2;
       goto cleanup;
     }

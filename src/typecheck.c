@@ -26,8 +26,8 @@ typecheck ()
   struct tree_list_element *tl;
   int function_check = 0;
 
-  DL_FOREACH (TREE_LIST (function_list), tl)
-    function_check += typecheck_function (tl->element);
+  DL_FOREACH (TREE_LIST (function_list), tl) function_check +=
+    typecheck_function (tl->element);
 
   return const_check + function_check;
 }
@@ -42,8 +42,8 @@ typecheck_constant (tree cst)
 
   if (TREE_CODE (cst) == IDENTIFIER)
     {
-      if (TREE_TYPE (cst) == NULL ||
-	  type_defined (TREE_STRING_CST (TREE_TYPE_NAME (TREE_TYPE (cst))))
+      if (TREE_TYPE (cst) == NULL
+	  || type_defined (TREE_STRING_CST (TREE_TYPE_NAME (TREE_TYPE (cst))))
 	  == NULL)
 	{
 	  error_loc (TREE_LOCATION (cst), "Constant of unknown type found");
@@ -94,8 +94,9 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars)
   TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (TREE_STMT_LIST_STMTS (stmt_list)),
 		 entries)
   {
-    ret += typecheck_stmt (tel->element,
-			   ext_vars, TREE_STMT_LIST_VARS (stmt_list));
+    ret +=
+      typecheck_stmt (tel->element, ext_vars,
+		      TREE_STMT_LIST_VARS (stmt_list));
   }
   return ret;
 }
@@ -117,8 +118,9 @@ is_var_in_list (tree var, tree lst)
   TAILQ_FOREACH_REVERSE (tel, &TREE_LIST_QUEUE (lst), tree_list, entries)
   {
     //fprintf (stderr, "-- var %s\n", TREE_STRING_CST (TREE_ID_NAME (var)));
-    if (strcmp (TREE_STRING_CST (TREE_ID_NAME (var)),
-		TREE_STRING_CST (TREE_ID_NAME (tel->element))) == 0)
+    if (strcmp
+	(TREE_STRING_CST (TREE_ID_NAME (var)),
+	 TREE_STRING_CST (TREE_ID_NAME (tel->element))) == 0)
       return tel->element;
   }
 
@@ -137,11 +139,14 @@ is_var_in_consts (tree var)
 
   TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (constant_list), entries)
   {
-    tree cst_var = TREE_CODE (tel->element) == ASSIGN_EXPR
-      ? TREE_OPERAND (tel->element, 0) : tel->element;
+    tree cst_var =
+      TREE_CODE (tel->element) == ASSIGN_EXPR ? TREE_OPERAND (tel->element,
+							      0) : tel->
+      element;
 
-    if (strcmp (TREE_STRING_CST (TREE_ID_NAME (var)),
-		TREE_STRING_CST (TREE_ID_NAME (cst_var))) == 0)
+    if (strcmp
+	(TREE_STRING_CST (TREE_ID_NAME (var)),
+	 TREE_STRING_CST (TREE_ID_NAME (cst_var))) == 0)
       return cst_var;
   }
 
@@ -377,8 +382,9 @@ match_proto_name_args (tree name, tree args)
 
   TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (function_proto_list), entries)
   {
-    if (strcmp (TREE_STRING_CST (name),
-		TREE_STRING_CST (TREE_OPERAND (tel->element, 0))) == 0
+    if (strcmp
+	(TREE_STRING_CST (name),
+	 TREE_STRING_CST (TREE_OPERAND (tel->element, 0))) == 0
 	&& type_lists_eq (TREE_OPERAND (tel->element, 2), args))
       return tel->element;
   }
@@ -394,8 +400,9 @@ match_proto_name_ret_args (tree name, tree ret, tree args)
   assert (TREE_CODE (name) == STRING_CST && TREE_CODE (args) == LIST, 0);
   TAILQ_FOREACH (tel, &TREE_LIST_QUEUE (function_proto_list), entries)
   {
-    if (strcmp (TREE_STRING_CST (name),
-		TREE_STRING_CST (TREE_OPERAND (tel->element, 0))) == 0
+    if (strcmp
+	(TREE_STRING_CST (name),
+	 TREE_STRING_CST (TREE_OPERAND (tel->element, 0))) == 0
 	&& ret == TREE_OPERAND (tel->element, 1)
 	&& type_lists_eq (TREE_OPERAND (tel->element, 2), args))
       return tel->element;
@@ -601,8 +608,8 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    ret = 1;
 	  }
 
-	if (TREE_TYPE (TREE_OPERAND (expr, 1))
-	    != TREE_TYPE (TREE_OPERAND (expr, 2)))
+	if (TREE_TYPE (TREE_OPERAND (expr, 1)) !=
+	    TREE_TYPE (TREE_OPERAND (expr, 2)))
 	  {
 	    error_loc (TREE_LOCATION (expr),
 		       "Branches of the conditional expression "
@@ -635,8 +642,10 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
 	  return 1;
 
-	if ((t = try_implicit_conversion (integer_type_node, lhs, &lhs)
-	     + try_implicit_conversion (integer_type_node, rhs, &rhs)) == 0)
+	if ((t =
+	     try_implicit_conversion (integer_type_node, lhs,
+				      &lhs) +
+	     try_implicit_conversion (integer_type_node, rhs, &rhs)) == 0)
 	  {
 	    TREE_OPERAND_SET (expr, 0, lhs);
 	    TREE_OPERAND_SET (expr, 1, rhs);
@@ -713,8 +722,9 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	   expression becomes string.  */
 	if ((TREE_TYPE (lhs) == string_type_node
 	     || TREE_TYPE (rhs) == string_type_node)
-	    && try_implicit_conversion (string_type_node, lhs, &lhs)
-	    + try_implicit_conversion (string_type_node, rhs, &rhs) == 0)
+	    && try_implicit_conversion (string_type_node, lhs,
+					&lhs) +
+	    try_implicit_conversion (string_type_node, rhs, &rhs) == 0)
 	  {
 	    TREE_OPERAND_SET (expr, 0, lhs);
 	    TREE_OPERAND_SET (expr, 1, rhs);
@@ -723,20 +733,25 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	/* In case of lhs of + is list, we currently check only lhs
 	   of the expression, rhs could be anything, but not with the
 	   type NULL.  */
-	else if ((TREE_TYPE (lhs) == list_type_node
-		  || TREE_TYPE (rhs) == list_type_node)
-		 && try_implicit_conversion (list_type_node, lhs, &lhs)
-		 + typecheck_expression (rhs, ext_vars, vars) == 0)
+	else
+	  if ((TREE_TYPE (lhs) == list_type_node
+	       || TREE_TYPE (rhs) == list_type_node)
+	      && try_implicit_conversion (list_type_node, lhs,
+					  &lhs) + typecheck_expression (rhs,
+									ext_vars,
+									vars)
+	      == 0)
 	  {
 	    TREE_OPERAND_SET (expr, 0, lhs);
 	    TREE_OPERAND_SET (expr, 1, rhs);
 	    TREE_TYPE (expr) = list_type_node;
 	  }
-	else if ((TREE_TYPE (lhs) == integer_type_node
-		  || TREE_TYPE (rhs) == integer_type_node)
-		 && try_implicit_conversion (integer_type_node, lhs, &lhs)
-		 + try_implicit_conversion (integer_type_node, rhs, &rhs)
-		 == 0)
+	else
+	  if ((TREE_TYPE (lhs) == integer_type_node
+	       || TREE_TYPE (rhs) == integer_type_node)
+	      && try_implicit_conversion (integer_type_node, lhs,
+					  &lhs) +
+	      try_implicit_conversion (integer_type_node, rhs, &rhs) == 0)
 	  {
 	    TREE_OPERAND_SET (expr, 0, lhs);
 	    TREE_OPERAND_SET (expr, 1, rhs);
@@ -767,8 +782,9 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	   is a sting, then we check for formatting operation.  */
 	if ((TREE_TYPE (lhs) == string_type_node
 	     || TREE_TYPE (rhs) == list_type_node)
-	    && try_implicit_conversion (string_type_node, lhs, &lhs)
-	    + try_implicit_conversion (list_type_node, rhs, &rhs) == 0)
+	    && try_implicit_conversion (string_type_node, lhs,
+					&lhs) +
+	    try_implicit_conversion (list_type_node, rhs, &rhs) == 0)
 	  {
 	    struct tree_list_element *tel;
 
@@ -798,11 +814,12 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    TREE_CONSTANT (expr) = TREE_CONSTANT (lhs);
 	  }
 	/* two integers means modulo.  */
-	else if ((TREE_TYPE (lhs) == integer_type_node
-		  || TREE_TYPE (rhs) == integer_type_node)
-		 && try_implicit_conversion (integer_type_node, lhs, &lhs)
-		 + try_implicit_conversion (integer_type_node, rhs, &rhs)
-		 == 0)
+	else
+	  if ((TREE_TYPE (lhs) == integer_type_node
+	       || TREE_TYPE (rhs) == integer_type_node)
+	      && try_implicit_conversion (integer_type_node, lhs,
+					  &lhs) +
+	      try_implicit_conversion (integer_type_node, rhs, &rhs) == 0)
 	  {
 	    TREE_OPERAND_SET (expr, 0, lhs);
 	    TREE_OPERAND_SET (expr, 1, rhs);

@@ -145,7 +145,8 @@ perform_transform (struct parser *parser)
 	    tmp = handle_expr (parser);
 	    if (tmp != error_mark_node)
 	      {
-		tmp_expr = (struct tree_list_el *)
+		tmp_expr =
+		  (struct tree_list_el *)
 		  malloc (sizeof (struct tree_list_el));
 		tmp_expr->value = tmp;
 		tmp_expr->next = NULL;
@@ -229,8 +230,8 @@ validate_tree (unsigned expr_number, tree t)
   bool ret = true;
   assert (t != NULL, "tree can't be NULL");
 
-  if (TREE_CODE_TYPED (TREE_CODE (t)) && TREE_ARGSET (t) &&
-      (TREE_ARG (t) < 1 || TREE_ARG (t) > expr_number))
+  if (TREE_CODE_TYPED (TREE_CODE (t)) && TREE_ARGSET (t)
+      && (TREE_ARG (t) < 1 || TREE_ARG (t) > expr_number))
     {
       error_loc (TREE_LOCATION (t), "expression number is invalid");
       ret = false;
@@ -257,8 +258,8 @@ validate_match (struct token_list_el * left, tree right)
   bool ret = true;
   assert (left != NULL && right != NULL, "arguments can't be NULL");
 
-  if ((!(token_class (left->value) == tok_keyword &&
-	 left->value->uses_buf)) && !(is_id (left->value, false)))
+  if ((!(token_class (left->value) == tok_keyword && left->value->uses_buf))
+      && !(is_id (left->value, false)))
     {
       error_loc (token_location (left->value),
 		 "a new keyword or id token is allowed here only. `%s` found",

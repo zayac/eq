@@ -67,10 +67,16 @@ get_tree_size (enum tree_code code)
 {
   size_t size, ops;
   ops = TREE_CODE_OPERANDS (code) * sizeof (tree);
-  size = TREE_CODE_TYPED (code)
-    ? (ops ? sizeof (struct tree_type_base_op)
-       : sizeof (struct tree_type_base))
-    : (ops ? sizeof (struct tree_base_op) : sizeof (struct tree_base));
+  size =
+    TREE_CODE_TYPED (code) ? (ops ? sizeof (struct tree_type_base_op) :
+			      sizeof (struct tree_type_base)) : (ops ?
+								 sizeof
+								 (struct
+								  tree_base_op)
+								 :
+								 sizeof
+								 (struct
+								  tree_base));
 
   switch (TREE_CODE_CLASS (code))
     {
@@ -123,6 +129,8 @@ make_tree (enum tree_code code)
   tree ret = (tree) malloc (size);
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
+  if (TREE_CODE_TYPED (code))
+    TREE_TYPE (ret) = NULL;
   return ret;
 }
 
@@ -143,9 +151,9 @@ atomic_trees_add (tree t)
 
   if (atomic_trees_idx == atomic_trees_size)
     {
-      atomic_trees
-	= (tree *) realloc (atomic_trees,
-			    2 * atomic_trees_size * sizeof (tree));
+      atomic_trees =
+	(tree *) realloc (atomic_trees,
+			  2 * atomic_trees_size * sizeof (tree));
       atomic_trees_size *= 2;
     }
 
@@ -259,7 +267,7 @@ free_tree (tree node)
 }
 
 void
-free_tree_type (tree node)
+free_tree_type (tree node, bool hard)
 {
   enum tree_code code;
   if (node == NULL)
@@ -268,33 +276,35 @@ free_tree_type (tree node)
   assert (TREE_CODE_CLASS (code) == tcl_type,
 	  "Only types are allowed to be deleted in free_tree_type function");
 
-  if (TYPE_DIM (node) != NULL)
+  /* if hard is not set we don't free dim and shape.  */
+  if (hard)
     {
-      if (TREE_CODE_CLASS (TREE_CODE (TYPE_DIM (node))) != tcl_type)
-	free_tree (TYPE_DIM (node));
-      else
-	free_tree_type (TYPE_DIM (node));
+      if (TYPE_DIM (node) != NULL)
+	{
+	  if (TREE_CODE_CLASS (TREE_CODE (TYPE_DIM (node))) != tcl_type)
+	    free_tree (TYPE_DIM (node));
+	  else
+	    free_tree_type (TYPE_DIM (node), true);
+	}
 
-      TYPE_DIM (node) = NULL;
+      if (TYPE_SHAPE (node) != NULL)
+	{
+	  if (TREE_CODE_CLASS (TREE_CODE (TYPE_SHAPE (node))) != tcl_type)
+	    free_tree (TYPE_SHAPE (node));
+	  else
+	    free_tree_type (TYPE_SHAPE (node), true);
+	}
     }
 
-  if (TYPE_SHAPE (node) != NULL)
-    {
-      if (TREE_CODE_CLASS (TREE_CODE (TYPE_SHAPE (node))) != tcl_type)
-	free_tree (TYPE_SHAPE (node));
-      else
-	free_tree_type (TYPE_SHAPE (node));
-
-      TYPE_SHAPE (node) = NULL;
-    }
-
+  TYPE_DIM (node) = NULL;
+  TYPE_SHAPE (node) = NULL;
   TREE_CODE_SET (node, EMPTY_MARK);
   atomic_trees_add (node);
 }
 
 tree
-make_function (tree name, tree args, tree args_types,
-	       tree ret, tree instrs, struct location loc)
+make_function (tree name, tree args, tree args_types, tree ret, tree instrs,
+	       struct location loc)
 {
   tree t = make_tree (FUNCTION);
   TREE_OPERAND_SET (t, 0, name);
@@ -345,8 +355,7 @@ tree
 make_identifier_tok (struct token * tok)
 {
   tree t;
-  assert (is_id (tok, false),
-	  "attempt to build identifier from %s",
+  assert (is_id (tok, false), "attempt to build identifier from %s",
 	  token_class_as_string (token_class (tok)));
 
   t = make_tree (IDENTIFIER);
@@ -408,8 +417,7 @@ bool
 tree_list_append (tree list, tree elem)
 {
   struct tree_list_element *el;
-  assert (TREE_CODE (list) == LIST,
-	  "appending element of type `%s'",
+  assert (TREE_CODE (list) == LIST, "appending element of type `%s'",
 	  TREE_CODE_NAME (TREE_CODE (list)));
 
   el =
@@ -427,8 +435,8 @@ tree
 make_type (enum tree_code code)
 {
   tree t = NULL;
-  assert (TREE_CODE_CLASS (code) == tcl_type,
-	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
+  assert (TREE_CODE_CLASS (code) == tcl_type, "%s called with %s tree code",
+	  __func__, TREE_CODE_NAME (code));
   t = make_tree (code);
   if (TREE_CODE (t) == B_TYPE)
     TYPE_SIZE (t) = 8;
@@ -448,9 +456,9 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
 {
   tree t;
 
-  assert (TREE_CODE_CLASS (code) == tcl_expression
-	  && code != UMINUS_EXPR && code != NOT_EXPR,
-	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
+  assert (TREE_CODE_CLASS (code) == tcl_expression && code != UMINUS_EXPR
+	  && code != NOT_EXPR, "%s called with %s tree code", __func__,
+	  TREE_CODE_NAME (code));
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, lhs);
   TREE_OPERAND_SET (t, 1, rhs);
@@ -516,8 +524,9 @@ make_unary_op (enum tree_code code, tree val, struct location loc)
 {
   tree t;
   assert (TREE_CODE_CLASS (code) == tcl_expression
-	  && (code == UMINUS_EXPR || code == NOT_EXPR),
-	  "%s called with %s tree code", __func__, TREE_CODE_NAME (code));
+	  && (code == UMINUS_EXPR
+	      || code == NOT_EXPR), "%s called with %s tree code", __func__,
+	  TREE_CODE_NAME (code));
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, val);
   TREE_LOCATION (t) = loc;
@@ -528,8 +537,8 @@ make_unary_op (enum tree_code code, tree val, struct location loc)
 tree
 make_assign (enum token_kind tk, tree lhs, tree rhs)
 {
-  assert (is_assignment_operator (tk),
-	  "attempt to make assignment from %s", token_kind_as_string (tk));
+  assert (is_assignment_operator (tk), "attempt to make assignment from %s",
+	  token_kind_as_string (tk));
 
   switch (tk)
     {
@@ -550,13 +559,13 @@ tree_list_copy (tree lst)
   if (lst == NULL)
     return NULL;
 
-  assert (TREE_CODE (lst) == LIST,
-	  "cannot copy list from %s", TREE_CODE_NAME (TREE_CODE (lst)));
+  assert (TREE_CODE (lst) == LIST, "cannot copy list from %s",
+	  TREE_CODE_NAME (TREE_CODE (lst)));
 
   cpy = make_tree_list ();
 
-  DL_FOREACH (TREE_LIST (lst), el)
-    tree_list_append (cpy, tree_copy (el->entry));
+  DL_FOREACH (TREE_LIST (lst), el) tree_list_append (cpy,
+						     tree_copy (el->entry));
   return cpy;
 }
 
@@ -621,6 +630,10 @@ tree_compare (tree left, tree right)
 {
   struct tree_list_element *lel = NULL, *rel = NULL;
   int i;
+
+  if (left == right)
+    return true;
+
   if (left == NULL)
     {
       if (right == NULL)
@@ -641,8 +654,8 @@ tree_compare (tree left, tree right)
   if (TREE_CODE (left) == LIST)
     {
       /* compare lists.  */
-      for (lel = TREE_LIST (left), rel = TREE_LIST (right);
-	   lel && rel; lel = lel->next, rel = rel->next)
+      for (lel = TREE_LIST (left), rel = TREE_LIST (right); lel && rel;
+	   lel = lel->next, rel = rel->next)
 	{
 	  if (!tree_compare (lel->entry, rel->entry))
 	    return false;
@@ -678,8 +691,8 @@ tree_compare (tree left, tree right)
   /* circumflex comparision.  */
   if (TREE_CODE (left) == CIRCUMFLEX)
     {
-      if (TREE_CIRCUMFLEX_INDEX_STATUS (left)
-	  != TREE_CIRCUMFLEX_INDEX_STATUS (right))
+      if (TREE_CIRCUMFLEX_INDEX_STATUS (left) !=
+	  TREE_CIRCUMFLEX_INDEX_STATUS (right))
 	return false;
     }
 

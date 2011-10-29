@@ -14,12 +14,12 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __TREE_H__
-#define __TREE_H__
+#   define __TREE_H__
 
-#include <stdlib.h>
-#include "expand.h"
-#include "utlist.h"
-#include "uthash.h"
+#   include <stdlib.h>
+#   include "expand.h"
+#   include "utlist.h"
+#   include "uthash.h"
 
 enum tree_code_class
 {
@@ -30,23 +30,23 @@ enum tree_code_class
   tcl_statement
 };
 
-#define DEF_TREE_CODE(code, desc, class, operands, typed) code,
+#   define DEF_TREE_CODE(code, desc, class, operands, typed) code,
 enum tree_code
 {
-#include "tree.def"
+#   include "tree.def"
 };
-#undef DEF_TREE_CODE
+#   undef DEF_TREE_CODE
 
 extern enum tree_code_class tree_code_type[];
-#define TREE_CODE_CLASS(code) tree_code_type[(int) (code)]
+#   define TREE_CODE_CLASS(code) tree_code_type[(int) (code)]
 
 extern unsigned char tree_code_operand[];
-#define TREE_CODE_OPERANDS(code) tree_code_operand[(int) (code)]
+#   define TREE_CODE_OPERANDS(code) tree_code_operand[(int) (code)]
 
 extern bool tree_code_typed[];
-#define TREE_CODE_TYPED(code) tree_code_typed[(int) (code)]
+#   define TREE_CODE_TYPED(code) tree_code_typed[(int) (code)]
 extern const char *tree_code_name[];
-#define TREE_CODE_NAME(code) tree_code_name[(int) (code)]
+#   define TREE_CODE_NAME(code) tree_code_name[(int) (code)]
 
 union tree_node;
 typedef union tree_node *tree;
@@ -92,7 +92,8 @@ struct tree_type_node
   UT_hash_handle hh;
 };
 
-struct tree_list_element {
+struct tree_list_element
+{
   tree entry;
   struct tree_list_element *next, *prev;
 };
@@ -105,7 +106,7 @@ struct tree_list_node
 
 struct tree_circumflex_op_node
 {
-  struct tree_base base;
+  struct tree_type_base typed;
   bool is_index;
   tree operands[];
 };
@@ -160,25 +161,25 @@ enum tree_global_code
   TG_MAX
 };
 
-#define error_mark_node     global_tree[TG_ERROR_MARK]
-#define b_type_node         global_tree[TG_B_TYPE]
-#define n_type_node         global_tree[TG_N_TYPE]
-#define z_type_node         global_tree[TG_Z_TYPE]
-#define r_type_node         global_tree[TG_R_TYPE]
+#   define error_mark_node     global_tree[TG_ERROR_MARK]
+#   define b_type_node         global_tree[TG_B_TYPE]
+#   define n_type_node         global_tree[TG_N_TYPE]
+#   define z_type_node         global_tree[TG_Z_TYPE]
+#   define r_type_node         global_tree[TG_R_TYPE]
 
-#define TREE_LIST(node) ((node)->list_node.list)
-#define TREE_CODE(node) ((enum tree_code) (node)->base.code)
-#define TREE_LOCATION(node) ((node)->base.loc)
-#define TREE_CODE_SET(node, value) ((node)->base.code = (value))
+#   define TREE_LIST(node) ((node)->list_node.list)
+#   define TREE_CODE(node) ((enum tree_code) (node)->base.code)
+#   define TREE_LOCATION(node) ((node)->base.loc)
+#   define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
-#define TREE_TYPE(node) ((node)->typed.type)
-#define TYPE_HASH(node) ((node)->type_node)
-#define TYPE_SIZE(node) ((node)->type_node.size)
-#define TYPE_DIM(node) ((node)->type_node.dim)
-#define TYPE_SHAPE(node) ((node)->type_node.shape)
+#   define TREE_TYPE(node) ((node)->typed.type)
+#   define TYPE_HASH(node) ((node)->type_node)
+#   define TYPE_SIZE(node) ((node)->type_node.size)
+#   define TYPE_DIM(node) ((node)->type_node.dim)
+#   define TYPE_SHAPE(node) ((node)->type_node.shape)
 
-#define TREE_ARGSET(node) ((node)->typed.argset)
-#define TREE_ARG(node) ((node)->typed.arg)
+#   define TREE_ARGSET(node) ((node)->typed.argset)
+#   define TREE_ARG(node) ((node)->typed.arg)
 
 /* Checks if it is possible to access the operand number IDX
    in the node with the code CODE.  */
@@ -201,7 +202,7 @@ get_tree_operand (tree node, int idx)
   if (TREE_CODE_OPERANDS (code) > 0)
     {
       if (code == CIRCUMFLEX)
-      	return node->circumflex_op_node.operands[idx];
+	return node->circumflex_op_node.operands[idx];
       if (TREE_CODE_TYPED (code))
 	return node->typed_op.operands[idx];
       else
@@ -221,7 +222,7 @@ set_tree_operand (tree node, int idx, tree value)
   if (TREE_CODE_OPERANDS (code) > 0)
     {
       if (code == CIRCUMFLEX)
-      	node->circumflex_op_node.operands[idx] = value;
+	node->circumflex_op_node.operands[idx] = value;
       else if (TREE_CODE_TYPED (code))
 	node->typed_op.operands[idx] = value;
       else
@@ -231,23 +232,23 @@ set_tree_operand (tree node, int idx, tree value)
     unreachable ("nod `%s` does not have operands", TREE_CODE_NAME (code));
 }
 
-#define TREE_OPERAND(node, i) get_tree_operand ((node), (i))
-#define TREE_OPERAND_SET(node, i, value) set_tree_operand ((node), (i), (value))
+#   define TREE_OPERAND(node, i) get_tree_operand ((node), (i))
+#   define TREE_OPERAND_SET(node, i, value) set_tree_operand ((node), (i), (value))
 
-#define TREE_INTEGER_CST(node) ((node)->int_cst_node.value)
-#define TREE_REAL_CST(node)  ((node)->real_cst_node.value)
-#define TREE_STRING_CST(node) ((node)->string_cst_node.value)
-#define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
+#   define TREE_INTEGER_CST(node) ((node)->int_cst_node.value)
+#   define TREE_REAL_CST(node)  ((node)->real_cst_node.value)
+#   define TREE_STRING_CST(node) ((node)->string_cst_node.value)
+#   define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
 
-#define TREE_ID_NAME(node) ((node)->identifier_node.name)
+#   define TREE_ID_NAME(node) ((node)->identifier_node.name)
 
-#define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
-#define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
-#define TREE_FUNC_ARGS_TYPES(node) ((node)->base_op.operands[2])
-#define TREE_FUNC_RET_TYPE(node) ((node)->base_op.operands[3])
-#define TREE_FUNC_INSTRS(node) ((node)->base_op.operands[4])
+#   define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
+#   define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
+#   define TREE_FUNC_ARGS_TYPES(node) ((node)->base_op.operands[2])
+#   define TREE_FUNC_RET_TYPE(node) ((node)->base_op.operands[3])
+#   define TREE_FUNC_INSTRS(node) ((node)->base_op.operands[4])
 
-#define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
+#   define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
 static inline bool
 is_assignment_operator (enum token_kind tk)
 {
@@ -263,7 +264,7 @@ is_assignment_operator (enum token_kind tk)
 size_t get_tree_size (enum tree_code);
 tree make_tree (enum tree_code);
 void free_tree (tree);
-void free_tree_type (tree);
+void free_tree_type (tree, bool);
 void free_atomic_trees ();
 tree make_string_cst_tok (struct token *);
 tree make_string_cst_str (const char *);

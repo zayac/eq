@@ -13,7 +13,7 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 #ifndef __TYPECHECK_H__
-#define __TYPECHECK_H__
+#   define __TYPECHECK_H__
 
 int typecheck ();
 int typecheck_constant (tree);
@@ -23,4 +23,3 @@ int typecheck_stmt (tree, tree, tree);
 int typecheck_expression (tree, tree, tree);
 
 #endif /* __TYPECHECK_H__ */
-

@@ -23,14 +23,14 @@
 
 struct token_list_el
 {
-  struct token * value;
-  struct token_list_el * next;
+  struct token *value;
+  struct token_list_el *next;
 };
 
 struct tree_list_el
 {
   tree value;
-  struct tree_list_el * next;
+  struct tree_list_el *next;
 };
 
 /* A hash table for token matches.
@@ -48,14 +48,14 @@ struct tree_list_el
       are to include token class to the key as well.  */
 struct match_table
 {
-  const char* key;
-  struct token_list_el* match;
+  const char *key;
+  struct token_list_el *match;
   tree replace;
   UT_hash_handle hh;
 };
 
 /* We store all substitution rules in this table  */
-struct match_table * matches;
+struct match_table *matches;
 
 #define MATCHER_MATCH(id) ((id)->match)
 #define MATCHER_REPLACE(id) ((id)->replace)
@@ -64,7 +64,7 @@ struct match_table * matches;
 void matcher_init ();
 void add_match (const char *, struct token_list_el *, tree);
 void delete_match (struct match_table *);
-struct match_table* find_match (const char *);
+struct match_table *find_match (const char *);
 tree perform_transform (struct parser *);
 bool validate_match (struct token_list_el *, tree);
 void matcher_finalize ();

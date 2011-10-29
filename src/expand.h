@@ -14,28 +14,28 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __EXPAND_H__
-#define __EXPAND_H__
+#   define __EXPAND_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#include <unistd.h>
+#   include <stdio.h>
+#   include <stdlib.h>
+#   include <string.h>
+#   include <stdarg.h>
+#   include <unistd.h>
 
-#ifndef __cplusplus
+#   ifndef __cplusplus
 typedef unsigned char bool;
-#define true 1
-#define false 0
-#endif
+#      define true 1
+#      define false 0
+#   endif
 
-#ifdef __cplusplus
-#include <cstdio>
-#endif
+#   ifdef __cplusplus
+#      include <cstdio>
+#   endif
 
-#define LEXER_BUFFER  8192
+#   define LEXER_BUFFER  8192
 
 static inline int
-xfprintf (FILE *f, const char *fmt, ...)
+xfprintf (FILE * f, const char *fmt, ...)
 {
   va_list args;
 
@@ -54,7 +54,7 @@ xfprintf (FILE *f, const char *fmt, ...)
 extern int error_count;
 extern int warning_count;
 
-#define assert(expr, ...) \
+#   define assert(expr, ...) \
   ((expr) ? (void)0 \
                 : (void)(fprintf (stderr, "%s:%i %s: Assertion (" \
                                      # expr ") failed.\n", \
@@ -62,13 +62,13 @@ extern int warning_count;
                     xfprintf (stderr, __VA_ARGS__), \
                     abort ()))
 
-#define unreachable(...)  \
+#   define unreachable(...)  \
   ((void) (fprintf (stderr, "Code in %s:%d reached impossible state.\n", \
                     __FILE__, __LINE__), \
            xfprintf (stderr, __VA_ARGS__), \
            abort ()))
 
-#define error_loc(loc, ...) \
+#   define error_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "error:%d:%d: ", (int)loc.line, (int)loc.col); \
     (void) fprintf (stderr, "[line=%i]  ", __LINE__); \
@@ -76,122 +76,120 @@ extern int warning_count;
     ++error_count; \
   } while (0)
 
-#define error( ...) \
+#   define error( ...) \
   do {  \
     (void) fprintf (stderr, "error: "); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++error_count; \
   } while (0)
 
-#define warning_loc(loc, ...) \
+#   define warning_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "warning:%d:%d: ", (int)loc.line, (int)loc.col); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++ warning_count; \
   } while (0)
 
-#define warning(...) \
+#   define warning(...) \
   do {  \
     (void) fprintf (stderr, "warning: "); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++ warning_count; \
   } while (0)
 
-#define TOKEN_KIND(a, b) a,
-#define KEYWORD(a, b, c, d) tv_ ## a,
+#   define TOKEN_KIND(a, b) a,
+#   define KEYWORD(a, b, c, d) tv_ ## a,
 enum token_kind
 {
-#include "token_kind.def"
-#include "keywords.def"
-tok_kind_length
+#   include "token_kind.def"
+#   include "keywords.def"
+  tok_kind_length
 };
-#undef TOKEN_KIND
-#undef KEYWORD
+#   undef TOKEN_KIND
+#   undef KEYWORD
 
-#define TOKEN_CLASS(a, b) tok_ ## a,
+#   define TOKEN_CLASS(a, b) tok_ ## a,
 enum token_class
 {
-#include "token_class.def"
-tok_class_length
+#   include "token_class.def"
+  tok_class_length
 };
-#undef TOKEN_CLASS
+#   undef TOKEN_CLASS
 
 struct location
 {
-    size_t line, col;
+  size_t line, col;
 };
 
 struct token
 {
-    struct location loc;
-    enum token_class tok_class;
-    bool uses_buf;
-    union {
-        char *cval;
-        enum token_kind tval;
-    } value;
+  struct location loc;
+  enum token_class tok_class;
+  bool uses_buf;
+  union
+  {
+    char *cval;
+    enum token_kind tval;
+  } value;
 };
 
 struct lexer
 {
-    const char *fname;
-    FILE *file;
-    struct location loc;
-    struct token curtoken;
-    bool is_eof;
-    /* if set true, a token consisting of digits and a-f
-       letters will be considering as number.  */
-    bool hex_number;
-    /* Mark and print possible errors in case of true.
-       NOTE When lexer is beyond function, we can skip all errors.  */
-    bool error_notifications;
+  const char *fname;
+  FILE *file;
+  struct location loc;
+  struct token curtoken;
+  bool is_eof;
+  /* if set true, a token consisting of digits and a-f
+     letters will be considering as number.  */
+  bool hex_number;
+  /* Mark and print possible errors in case of true.
+     NOTE When lexer is beyond function, we can skip all errors.  */
+  bool error_notifications;
 };
 
 struct eq_options
 {
   unsigned print_program:1;
   unsigned print_matches:1;
+  unsigned print_types:1;
 };
 
 extern struct eq_options options;
 
-#define tval_tok_init(_tok, _cls, _val)             \
+#   define tval_tok_init(_tok, _cls, _val)             \
     do {                                            \
       (_tok)->tok_class = _cls;                     \
       (_tok)->value.tval = _val;                    \
     } while (0)
 
-#define cval_tok_init(_tok, _cls, _val)             \
+#   define cval_tok_init(_tok, _cls, _val)             \
     do {                                            \
       (_tok)->tok_class = _cls;                     \
       (_tok)->value.cval = _val;                    \
     } while (0)
 
-extern const char *  token_class_name[];
-extern const char *  token_kind_name[];
-extern const bool    is_token_id[];
+extern const char *token_class_name[];
+extern const char *token_kind_name[];
+extern const bool is_token_id[];
 
-#define token_kind_as_string(tkind) token_kind_name[(int) tkind]
-#define token_value(tok)            (tok)->value.tval
-#define token_class(tok)            (tok)->tok_class
-#define token_class_as_string(tcls) token_class_name[(int) tcls]
-#define token_location(tok)         (tok)->loc
+#   define token_kind_as_string(tkind) token_kind_name[(int) tkind]
+#   define token_value(tok)            (tok)->value.tval
+#   define token_class(tok)            (tok)->tok_class
+#   define token_class_as_string(tcls) token_class_name[(int) tcls]
+#   define token_location(tok)         (tok)->loc
 
 
-__BEGIN_DECLS
-
-bool lexer_init (struct lexer *, const char *);
+__BEGIN_DECLS bool lexer_init (struct lexer *, const char *);
 bool lexer_finalize (struct lexer *);
 bool is_id (struct token *, bool);
 bool token_is_delimiter (struct token *);
-struct token *  lexer_get_token (struct lexer *);
-struct token * token_copy (struct token *);
+struct token *lexer_get_token (struct lexer *);
+struct token *token_copy (struct token *);
 int token_compare (struct token *, struct token *);
 void token_free (struct token *);
 void token_print (struct token *);
-const char *  token_as_string (struct token *);
+const char *token_as_string (struct token *);
 bool token_uses_buf (struct token *);
 __END_DECLS
-
 #endif /* __EXPAND_H__  */
-

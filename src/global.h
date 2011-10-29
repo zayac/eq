@@ -14,10 +14,10 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __GLOBAL_H__
-#define __GLOBAL_H__
+#   define __GLOBAL_H__
 
-#include <stdarg.h>
-#include "tree.h"
+#   include <stdarg.h>
+#   include "tree.h"
 
 /* Structure to store a list of user-defined types
    FIXME it should be a hash-table!  */
@@ -32,7 +32,7 @@ void finalize_global ();
 void init_global_tree ();
 void finalize_global_tree ();
 
-tree type_defined (const char *  name);
+tree type_defined (const char *name);
 tree add_user_type (tree type);
 tree function_exists (const char *);
 tree constant_exists (const char *);

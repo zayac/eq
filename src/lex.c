@@ -265,8 +265,8 @@ lexer_read_string (struct lexer *lex, char **buf, size_t * size, char c)
 
 /* Function to read a hex number */
 static inline void
-lexer_read_hex_number (struct lexer *lex, struct token *tok,
-		       char **buf, size_t * size, char c)
+lexer_read_hex_number (struct lexer *lex, struct token *tok, char **buf,
+		       size_t * size, char c)
 {
   char *index = *buf;
   do
@@ -286,8 +286,8 @@ lexer_read_hex_number (struct lexer *lex, struct token *tok,
 /* Internal function to read a string,
    checking if it is a keyword, an operator or id */
 static inline void
-lexer_read_keyword (struct lexer *lex, struct token *tok,
-		    char **buf, size_t * size, char c)
+lexer_read_keyword (struct lexer *lex, struct token *tok, char **buf,
+		    size_t * size, char c)
 {
   char *index = *buf;
   size_t search;
@@ -630,8 +630,8 @@ lexer_get_token (struct lexer *lex)
   tok->tok_class = tok_unknown;
 
 return_token:
-  assert (tok->tok_class >= tok_keyword && tok->tok_class <= tok_unknown,
-	  "token type was not provided");
+  assert (tok->tok_class >= tok_keyword
+	  && tok->tok_class <= tok_unknown, "token type was not provided");
 
   if (buf != NULL)
     {
