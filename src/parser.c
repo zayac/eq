@@ -1099,15 +1099,19 @@ handle_instr_list (struct parser * parser)
       assert (TREE_CODE (t) == LIST, "there should be an instruction list");
 
       DL_FOREACH_SAFE (TREE_LIST (t), el, tmp)
-      {
-	DL_DELETE (TREE_LIST (t), el);
+	{
+	  DL_DELETE (TREE_LIST (t), el);
 
-	/* There is a convention that if instruction was a \match
-	   statement, we return NULL.
-	   In this case \lend in the end could be omited.  */
-	if ((el->next == NULL) && (el->entry == NULL))
-	  {
-	    if (!token_is_keyword (parser_get_token (parser), tv_lend))
+	  /* There is a convention that if instruction was a \match
+	     statement, we return NULL.
+	     In this case \lend in the end could be omited.  */
+	  if ((el->next == NULL) && (el->entry == NULL))
+	    {
+	      if (!token_is_keyword (parser_get_token (parser), tv_lend))
+		parser_unget (parser);
+	    }
+	  else if (el->next == NULL)
+	    {
 	      parser_unget (parser);
 	      if ( !token_is_keyword (parser_get_token (parser), tv_qendif))
 		{
@@ -1117,6 +1121,7 @@ handle_instr_list (struct parser * parser)
 		    parser_get_token (parser);
 		}
 	    }
+
 	  if (el->entry != NULL && !parse_error)
 	    tree_list_append(instrs, el->entry);
 	  free (el);
