@@ -14,25 +14,25 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __EXPAND_H__
-#   define __EXPAND_H__
+#define __EXPAND_H__
 
-#   include <stdio.h>
-#   include <stdlib.h>
-#   include <string.h>
-#   include <stdarg.h>
-#   include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <unistd.h>
 
-#   ifndef __cplusplus
+#ifndef __cplusplus
 typedef unsigned char bool;
-#      define true 1
-#      define false 0
-#   endif
+#define true 1
+#define false 0
+#endif
 
-#   ifdef __cplusplus
-#      include <cstdio>
-#   endif
+#ifdef __cplusplus
+#include <cstdio>
+#endif
 
-#   define LEXER_BUFFER  8192
+#define LEXER_BUFFER  8192
 
 static inline int
 xfprintf (FILE * f, const char *fmt, ...)
@@ -54,7 +54,7 @@ xfprintf (FILE * f, const char *fmt, ...)
 extern int error_count;
 extern int warning_count;
 
-#   define assert(expr, ...) \
+#define assert(expr, ...) \
   ((expr) ? (void)0 \
                 : (void)(fprintf (stderr, "%s:%i %s: Assertion (" \
                                      # expr ") failed.\n", \
@@ -62,13 +62,13 @@ extern int warning_count;
                     xfprintf (stderr, __VA_ARGS__), \
                     abort ()))
 
-#   define unreachable(...)  \
+#define unreachable(...)  \
   ((void) (fprintf (stderr, "Code in %s:%d reached impossible state.\n", \
                     __FILE__, __LINE__), \
            xfprintf (stderr, __VA_ARGS__), \
            abort ()))
 
-#   define error_loc(loc, ...) \
+#define error_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "error:%d:%d: ", (int)loc.line, (int)loc.col); \
     (void) fprintf (stderr, "[line=%i]  ", __LINE__); \
@@ -76,45 +76,45 @@ extern int warning_count;
     ++error_count; \
   } while (0)
 
-#   define error( ...) \
+#define error( ...) \
   do {  \
     (void) fprintf (stderr, "error: "); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++error_count; \
   } while (0)
 
-#   define warning_loc(loc, ...) \
+#define warning_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "warning:%d:%d: ", (int)loc.line, (int)loc.col); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++ warning_count; \
   } while (0)
 
-#   define warning(...) \
+#define warning(...) \
   do {  \
     (void) fprintf (stderr, "warning: "); \
     (void) xfprintf (stderr, __VA_ARGS__); \
     ++ warning_count; \
   } while (0)
 
-#   define TOKEN_KIND(a, b) a,
-#   define KEYWORD(a, b, c, d) tv_ ## a,
+#define TOKEN_KIND(a, b) a,
+#define KEYWORD(a, b, c, d) tv_ ## a,
 enum token_kind
 {
-#   include "token_kind.def"
-#   include "keywords.def"
+#include "token_kind.def"
+#include "keywords.def"
   tok_kind_length
 };
-#   undef TOKEN_KIND
-#   undef KEYWORD
+#undef TOKEN_KIND
+#undef KEYWORD
 
-#   define TOKEN_CLASS(a, b) tok_ ## a,
+#define TOKEN_CLASS(a, b) tok_ ## a,
 enum token_class
 {
-#   include "token_class.def"
+#include "token_class.def"
   tok_class_length
 };
-#   undef TOKEN_CLASS
+#undef TOKEN_CLASS
 
 struct location
 {
@@ -157,13 +157,13 @@ struct eq_options
 
 extern struct eq_options options;
 
-#   define tval_tok_init(_tok, _cls, _val)             \
+#define tval_tok_init(_tok, _cls, _val)             \
     do {                                            \
       (_tok)->tok_class = _cls;                     \
       (_tok)->value.tval = _val;                    \
     } while (0)
 
-#   define cval_tok_init(_tok, _cls, _val)             \
+#define cval_tok_init(_tok, _cls, _val)             \
     do {                                            \
       (_tok)->tok_class = _cls;                     \
       (_tok)->value.cval = _val;                    \
@@ -173,14 +173,15 @@ extern const char *token_class_name[];
 extern const char *token_kind_name[];
 extern const bool is_token_id[];
 
-#   define token_kind_as_string(tkind) token_kind_name[(int) tkind]
-#   define token_value(tok)            (tok)->value.tval
-#   define token_class(tok)            (tok)->tok_class
-#   define token_class_as_string(tcls) token_class_name[(int) tcls]
-#   define token_location(tok)         (tok)->loc
+#define token_kind_as_string(tkind) token_kind_name[(int) tkind]
+#define token_value(tok)            (tok)->value.tval
+#define token_class(tok)            (tok)->tok_class
+#define token_class_as_string(tcls) token_class_name[(int) tcls]
+#define token_location(tok)         (tok)->loc
 
 
-__BEGIN_DECLS bool lexer_init (struct lexer *, const char *);
+__BEGIN_DECLS 
+bool lexer_init (struct lexer *, const char *);
 bool lexer_finalize (struct lexer *);
 bool is_id (struct token *, bool);
 bool token_is_delimiter (struct token *);

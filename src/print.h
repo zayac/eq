@@ -14,7 +14,7 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __PRINT_H__
-#   define __PRINT_H__
+#define __PRINT_H__
 
 int print_expression (FILE *, tree);
 

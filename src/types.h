@@ -14,9 +14,9 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __TYPES_H__
-#   define __TYPES_H__
+#define __TYPES_H__
 
-#   include "tree.h"
+#include "tree.h"
 
 /* A global table to store types.  */
 extern struct tree_type_node *type_table;

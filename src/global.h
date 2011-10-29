@@ -14,10 +14,10 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #ifndef __GLOBAL_H__
-#   define __GLOBAL_H__
+#define __GLOBAL_H__
 
-#   include <stdarg.h>
-#   include "tree.h"
+#include <stdarg.h>
+#include "tree.h"
 
 /* Structure to store a list of user-defined types
    FIXME it should be a hash-table!  */
