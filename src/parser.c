@@ -2075,7 +2075,11 @@ handle_sexpr_op (struct parser * parser)
       parser_unget (parser);
       t1 = perform_transform (parser);
       if (t1 == NULL)
-	return error_mark_node;
+	{
+	  error_loc (token_location(tok), "unexpected token `%s` found",
+		     token_as_string (tok));
+	  return error_mark_node;
+	}
     }
 
   if (prefix)
@@ -2166,7 +2170,10 @@ handle_if_cond (struct parser * parser)
 	  cond = handle_cond_block (parser);
 
 	  if (cond == error_mark_node)
-	    parser_get_until_tval (parser, tv_rbrace);
+	    {  
+	      parser_get_until_tval (parser, tv_qendif);
+	      goto error;
+	    }
 	  else
 	    {
 	      if (!parser_forward_tval (parser, tv_rbrace))
