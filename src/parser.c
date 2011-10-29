@@ -1045,11 +1045,12 @@ handle_instr_list (struct parser * parser)
   struct token * tok = NULL;
   tree instrs = make_tree_list ();
   tree t;
+  bool parse_error = false;
 
   while (true)
     {
       struct tree_list_element * el, * tmp;
-      
+
       t = error_mark_node;
 
       tok = parser_get_token (parser);
@@ -1093,18 +1094,25 @@ handle_instr_list (struct parser * parser)
 	      parser_unget (parser);
 	      if ( !token_is_keyword (parser_get_token (parser), tv_qendif))
 		{
-		  parser_expect_tval (parser, tv_lend);
-		  parser_get_token (parser);
+		  if ( !parser_expect_tval (parser, tv_lend))
+		    parse_error = true;
+		  else
+		    parser_get_token (parser);
 		}
 	    }
-	      
-	  if (el->entry != NULL)
+	  if (el->entry != NULL && !parse_error)
 	    tree_list_append(instrs, el->entry);
 	  free (el);
 	}
       free_tree (t);
     }
-  return instrs;
+  if (parse_error)
+    {
+      free_tree (instrs);
+      return error_mark_node;
+    }
+  else
+    return instrs;
 }
 
 /*
@@ -2557,7 +2565,7 @@ handle_expr (struct parser * parser)
 {
   struct token *tok;
   tree t = error_mark_node;
-  
+
   if (token_is_keyword (tok = parser_get_token (parser), tv_filter))
     {
       parser_unget (parser);
@@ -2573,7 +2581,6 @@ handle_expr (struct parser * parser)
     parser_unget (parser);
     t =  handle_sexpr (parser);
   }
-
   return handle_indexes (parser, t);
 }
 
@@ -2638,6 +2645,8 @@ handle_assign (struct parser * parser, tree prefix_id)
     goto error;
 
   expr = handle_expr (parser);
+  if (expr == error_mark_node)
+    goto error;
 
   return make_binary_op (ASSIGN_EXPR, id, expr);
 
