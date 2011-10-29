@@ -22,46 +22,47 @@
 
 #define TOKEN_KIND(a, b) b,
 #define KEYWORD(a, b, c, d) d,
-const char *token_kind_name[] = 
-{
+const char *token_kind_name[] = {
 #include "token_kind.def"
 #include "keywords.def"
 };
+
 #undef TOKEN_KIND
 #undef KEYWORD
 
 #define KEYWORD(a, b, c, d) tok_ ## b,
-const enum token_class keyword_type[] = 
+const enum token_class keyword_type[] =
 {
 #include "keywords.def"
 };
+
 #undef KEYWORD
 
 #define KEYWORD(a, b, c, d) c,
-const bool is_token_id[] = 
-{
+const bool is_token_id[] = {
 #include "keywords.def"
 };
+
 #undef KEYWORD
 
 #define TOKEN_CLASS(a, b) b,
-const char *token_class_name[] =
-{
+const char *token_class_name[] = {
 #include "token_class.def"
 };
+
 #undef TOKEN_CLASS
 
 #define DELIMITER(a) a,
-const char *token_delimiters[] = 
-{
+const char *token_delimiters[] = {
 #include "delimiters.def"
 };
+
 #undef DELIMITER
 
 
 /* This is a pointer to the first token from keywords.def  */
-const char **  keywords = &token_kind_name[(int) tv_boolean];
-size_t keywords_length = tok_kind_length  - tv_boolean;
+const char **keywords = &token_kind_name[(int) tv_boolean];
+size_t keywords_length = tok_kind_length - tv_boolean;
 
 
 /* Binary search function to search string in a char** table.  */
@@ -89,30 +90,32 @@ kw_bsearch (const char *key, const char *table[], size_t len)
 /* Initialize lexer LEX with a file name FNAME and
    set initial parameters of the lexer.  */
 bool
-lexer_init (struct lexer *lex, const char *fname)
+lexer_init (struct lexer * lex, const char *fname)
 {
   assert (fname != NULL, "lexer initialized with empty filename");
   assert (lex != NULL, "lexer memory is not allocated");
-  
+
   lex->hex_number = false;
   lex->is_eof = false;
-  lex->loc = (struct location) {1, 0};
+  lex->loc = (struct location)
+  {
+  1, 0};
   lex->fname = fname;
   lex->file = fopen (fname, "r");
-
+  lex->error_notifications = false;
   if (!lex->file)
     {
       warn ("error opening file `%s'", fname);
       return false;
     }
-  
+
   /* tval_intit (&(lex->cur_token), tok_eof, tv_eof); */
   return true;
 }
 
 /* Actions before deallocating lexer.  */
 bool
-lexer_finalize (struct lexer *lex)
+lexer_finalize (struct lexer * lex)
 {
   fclose (lex->file);
   return true;
@@ -125,7 +128,7 @@ static inline char
 lexer_getch (struct lexer *lex)
 {
   int ch;
-  
+
   if (lex->is_eof)
     return EOF;
 
@@ -143,7 +146,7 @@ lexer_getch (struct lexer *lex)
     }
   else
     lex->loc.col++;
-  return (char)ch;
+  return (char) ch;
 }
 
 /* Put character back on the stream of the lexer.
@@ -154,7 +157,7 @@ lexer_ungetch (struct lexer *lex, char ch)
   if (ch == '\n')
     lex->loc.line--;
   /* FIXME position should show the last symbol
-           of previous line, not -1.  */
+     of previous line, not -1.  */
   lex->loc.col--;
   ungetc (ch, lex->file);
 }
@@ -164,35 +167,35 @@ lexer_ungetch (struct lexer *lex, char ch)
    If the *BUFFER is NULL then it is being allocated, if the *INDEX
    points at the end of the *BUFFER the *BUFFER will be reallocated. */
 static inline void
-buffer_add_char (char **buffer, char **index, size_t *size, char c)
+buffer_add_char (char **buffer, char **index, size_t * size, char c)
 {
   const size_t initial_size = 16;
 
   if (*buffer == NULL)
     {
-      *buffer = (char *) malloc (initial_size *sizeof(char));
+      *buffer = (char *) malloc (initial_size * sizeof (char));
       *index = *buffer;
       *(*index)++ = c;
       *size = initial_size;
       return;
     }
 
-  assert (*index <= *buffer + *size, 
-          "index is greater than allocated buffer");
-  
+  assert (*index <= *buffer + *size,
+	  "index is greater than allocated buffer");
+
   if (*index == *buffer + *size)
     {
       *buffer = (char *) realloc (*buffer, *size * 2 * sizeof (char));
-      *index = *buffer +*size;
+      *index = *buffer + *size;
       *size *= 2;
     }
-    
+
   *(*index)++ = c;
 }
 
 /* Internal function to read until the end of comment.  */
 static inline enum token_class
-lexer_read_comments (struct lexer *lex, char **buf, size_t *size)
+lexer_read_comments (struct lexer *lex, char **buf, size_t * size)
 {
   char *index = *buf;
 
@@ -201,29 +204,28 @@ lexer_read_comments (struct lexer *lex, char **buf, size_t *size)
   while (true)
     {
       char c = lexer_getch (lex);
-      
+
       if (c == EOF)
-        break;
-	
+	break;
+
       buffer_add_char (buf, &index, size, c);
       if (c == '\n')
-        break;
+	break;
     }
 
-   buffer_add_char (buf, &index, size, '\0');
-   return tok_comments;
+  buffer_add_char (buf, &index, size, '\0');
+  return tok_comments;
 }
 
 /* Internal function to read until the end of string/char ignoring
 escape sequences. */
 static inline enum token_class
-lexer_read_string (struct lexer *lex, char **buf, size_t *size, char c)
+lexer_read_string (struct lexer *lex, char **buf, size_t * size, char c)
 {
   char *index = *buf;
   const char stop = c;
 
-  assert (stop == '"',
-          "inapproriate starting symbol for string or char");
+  assert (stop == '"', "inapproriate starting symbol for string or char");
 
   buffer_add_char (buf, &index, size, stop);
 
@@ -231,38 +233,40 @@ lexer_read_string (struct lexer *lex, char **buf, size_t *size, char c)
     {
       c = lexer_getch (lex);
       if (c == EOF)
-        {
-          error_loc (lex->loc,
-                     "unexpected end of file in the middle of string");
-          buffer_add_char (buf, &index, size, 0);
-          return tok_unknown;
-        }
-      
+	{
+	  if (lex->error_notifications)
+	    error_loc (lex->loc,
+		       "unexpected end of file in the middle of string");
+	  buffer_add_char (buf, &index, size, 0);
+	  return tok_unknown;
+	}
+
       buffer_add_char (buf, &index, size, c);
       if (c == '\\')
-        {
-          char cc = lexer_getch (lex);
-          if (cc == EOF)
-            {
-              error_loc (lex->loc,
-                         "unexpected end of file in the middle of string");
-              buffer_add_char (buf, &index, size, 0);
-              return tok_unknown;
-            }
-          buffer_add_char (buf, &index, size, cc);
-        }
+	{
+	  char cc = lexer_getch (lex);
+	  if (cc == EOF)
+	    {
+	      if (lex->error_notifications)
+		error_loc (lex->loc,
+			   "unexpected end of file in the middle of string");
+	      buffer_add_char (buf, &index, size, 0);
+	      return tok_unknown;
+	    }
+	  buffer_add_char (buf, &index, size, cc);
+	}
       else if (c == stop)
-        break;
+	break;
     }
 
-   buffer_add_char (buf, &index, size, 0);
-   return tok_string;
+  buffer_add_char (buf, &index, size, 0);
+  return tok_string;
 }
 
 /* Function to read a hex number */
 static inline void
-lexer_read_hex_number (struct lexer *lex, struct token* tok,
-			  char **buf, size_t *size, char c)
+lexer_read_hex_number (struct lexer *lex, struct token *tok, char **buf,
+		       size_t * size, char c)
 {
   char *index = *buf;
   do
@@ -273,8 +277,8 @@ lexer_read_hex_number (struct lexer *lex, struct token* tok,
   while (isxdigit (c));
 
   lexer_ungetch (lex, c);
-  buffer_add_char(buf, &index, size, 0);
-  tok->tok_class = tok_number;
+  buffer_add_char (buf, &index, size, 0);
+  tok->tok_class = tok_intnum;
   tok->uses_buf = true;
   lex->hex_number = false;
 }
@@ -282,8 +286,8 @@ lexer_read_hex_number (struct lexer *lex, struct token* tok,
 /* Internal function to read a string,
    checking if it is a keyword, an operator or id */
 static inline void
-lexer_read_keyword (struct lexer *lex, struct token *tok,
-                        char **buf, size_t *size, char c)
+lexer_read_keyword (struct lexer *lex, struct token *tok, char **buf,
+		    size_t * size, char c)
 {
   char *index = *buf;
   size_t search;
@@ -306,20 +310,21 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
     }
   while (isalnum (c) || (c == '\\'));
   lexer_ungetch (lex, c);
-  buffer_add_char(buf, &index, size, 0);
+  buffer_add_char (buf, &index, size, 0);
 
   search = kw_bsearch (*buf, keywords, keywords_length);
 
   if (search != keywords_length)
     {
       if (*buf)
-        free (*buf);
+	free (*buf);
       *size = 0;
       *buf = NULL;
-      tval_tok_init (tok, keyword_type[search], (enum token_kind)(search + tv_boolean));
+      tval_tok_init (tok, keyword_type[search],
+		     (enum token_kind) (search + tv_boolean));
       return;
     }
- 
+
   if (**buf != '\\')
     {
       tok->tok_class = tok_id;
@@ -334,90 +339,102 @@ lexer_read_keyword (struct lexer *lex, struct token *tok,
 
 /* Internal function to read until the end of number.  */
 static inline enum token_class
-lexer_read_number (struct lexer *lex, char **buf, size_t *size, char c)
+lexer_read_number (struct lexer *lex, char **buf, size_t * size, char c)
 {
-  //bool ishex = false;
+  bool isreal = false;
+  bool saw_dot = false;
+  bool saw_exp = false;
   char *index = *buf;
 
   buffer_add_char (buf, &index, size, c);
-  /*if (c == '0')
+
+  if (c == '.')
     {
+      isreal = true;
+      saw_dot = true;
+
       c = lexer_getch (lex);
 
-      if (c == 'x' || c == 'X')
-        {
-          ishex = true;
-          buffer_add_char (buf, &index, size, c);
-        }
-        else
-          lexer_ungetch(lex, c);
+      if (!isdigit (c))
+	{
+	  if (lex->error_notifications)
+	    error_loc (lex->loc, "digit expected, '%c' found instead", c);
+	  lexer_ungetch (lex, c);
+	  goto return_unknown;
+	}
+      else
+	buffer_add_char (buf, &index, size, c);
     }
-  */
-
-  /* middle of the number */
 
   while (true)
     {
       c = lexer_getch (lex);
-      if (isdigit (c)
-              /* ||  (ishex && ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))*/)
-        buffer_add_char (buf, &index, size, c);
-      else
-        {
-          lexer_ungetch(lex, c);
-          break;
-        }
-    }
-
-  c = lexer_getch(lex);
-
-  if (c == '.')
-    {
-      buffer_add_char(buf, &index, size, c);
-      
-      c = lexer_getch (lex);
-      buffer_add_char(buf, &index, size, c);
-      if (!isdigit(c))
-        {
-          lexer_ungetch (lex, c);
-	  lexer_ungetch (lex, c);
-	  //error_loc(lex->loc, "there should be at least one digit after dot. \'%c\' found", c);
-          return tok_number;
-        }
-
-      while((c = lexer_getch (lex)) && isdigit(c))
-        buffer_add_char(buf, &index, size, c);
-
-    }
-
-  if (c == 'e' || c == 'E')
-    {
-      buffer_add_char(buf, &index, size, c);
-
-      c = lexer_getch (lex);
-
-      if (c == '-' || c == '+')
+      if (c == EOF)
 	{
+	  if (lex->error_notifications)
+	    error_loc (lex->loc, "unexpected end of file");
+	  goto return_unknown;
+	}
+      else if (c == 'e' || c == 'E')
+	{
+	  if (saw_exp)
+	    {
+	      if (lex->error_notifications)
+		error_loc (lex->loc, "exponent is specified more than once");
+	      goto return_unknown;
+	    }
+	  isreal = true;
+
 	  buffer_add_char (buf, &index, size, c);
 	  c = lexer_getch (lex);
-	}
-      if (isdigit (c))
-        buffer_add_char (buf, &index, size, c);
-      else
-        {
-	  lexer_ungetch (lex, c);
-	  lexer_ungetch (lex, c);
-          //error_loc(lex->loc, "there should be at least one digit after \'E\'. \'%c\' found", c);
-          return tok_number;
-        }
 
-      while((c = lexer_getch (lex)) && isdigit(c))
-        buffer_add_char(buf, &index, size, c);
+	  if (c == '+' || c == '-')
+	    {
+	      buffer_add_char (buf, &index, size, c);
+	      c = lexer_getch (lex);
+	    }
+
+	  if (!isdigit (c))
+	    {
+	      if (lex->error_notifications)
+		error_loc (lex->loc, "digit expected after exponent sign");
+	      goto return_unknown;
+	    }
+	  else
+	    buffer_add_char (buf, &index, size, c);
+
+	  while (isdigit (c = lexer_getch (lex)))
+	    buffer_add_char (buf, &index, size, c);
+
+	  break;
+	}
+      else if (c == '.')
+	{
+	  if (saw_dot)
+	    {
+	      if (lex->error_notifications)
+		error_loc (lex->loc, "more than one dot in the number ");
+	      goto return_unknown;
+	    }
+	  saw_dot = true;
+	  isreal = true;
+	}
+      else if (!isdigit (c))
+	break;
+
+      buffer_add_char (buf, &index, size, c);
     }
   lexer_ungetch (lex, c);
   buffer_add_char (buf, &index, size, 0);
 
-  return tok_number;
+  if (isreal)
+    return tok_realnum;
+  else
+    return tok_intnum;
+
+return_unknown:
+  buffer_add_char (buf, &index, size, 0);
+  return tok_unknown;
 }
 
 /* Reads the stream from lexer and returns dynamically allocated token
@@ -429,7 +446,7 @@ lexer_get_token (struct lexer *lex)
   struct location loc;
   struct token *tok = (struct token *) malloc (sizeof (struct token));
   tok->uses_buf = false;
-  size_t buf_size=16;
+  size_t buf_size = 16;
   char *buf = NULL;
 
   c = lexer_getch (lex);
@@ -437,7 +454,7 @@ lexer_get_token (struct lexer *lex)
   if (isspace (c))
     {
       while (EOF != (c = lexer_getch (lex)) && isspace (c))
-        ;
+	;
       loc = lex->loc;
     }
 
@@ -449,57 +466,65 @@ lexer_get_token (struct lexer *lex)
 
   if (c == '%')
     {
-      tok->tok_class = lexer_read_comments(lex, &buf, &buf_size);
-      tok->uses_buf = true;
+      tok->tok_class = lexer_read_comments (lex, &buf, &buf_size);
       goto return_token;
 
     }
 
-  if(c == '/')
+  if (c == '/')
     {
-      char c1 = lexer_getch(lex);
+      char c1 = lexer_getch (lex);
       if (c1 == '/')
-        {
-          tval_tok_init( tok, tok_keyword, tv_lend);
-          goto return_token;
-        }
+	{
+	  tval_tok_init (tok, tok_keyword, tv_lend);
+	  goto return_token;
+	}
       else
-        lexer_ungetch(lex, c1);
+	lexer_ungetch (lex, c1);
     }
 
-  if(c =='"')
+  if (c == '"')
     {
       tok->tok_class = lexer_read_string (lex, &buf, &buf_size, c);
-      tok->uses_buf = true;
       goto return_token;
     }
 
-  if(c == '\\')
+  if (c == '\\')
     {
-      char c1 = lexer_getch(lex);
-      switch(c1)
-      {
-        case ',':
-          tval_tok_init (tok, tok_whitespace, tv_small_space); goto return_token;       
-        case ':':
-          tval_tok_init (tok, tok_whitespace, tv_medium_space); goto return_token;     
-        case ';':
-          tval_tok_init (tok, tok_whitespace, tv_large_space); goto return_token;     
-        case ' ':
-          tval_tok_init (tok, tok_whitespace, tv_space); goto return_token;     
-        default:
-	  lexer_ungetch(lex, c1);
-          lexer_read_keyword(lex, tok, &buf, &buf_size, c);
-          goto return_token;
-      }
+      char c1 = lexer_getch (lex);
+      switch (c1)
+	{
+	case ',':
+	  tval_tok_init (tok, tok_whitespace, tv_small_space);
+	  goto return_token;
+	case ':':
+	  tval_tok_init (tok, tok_whitespace, tv_medium_space);
+	  goto return_token;
+	case ';':
+	  tval_tok_init (tok, tok_whitespace, tv_large_space);
+	  goto return_token;
+	case ' ':
+	  tval_tok_init (tok, tok_whitespace, tv_space);
+	  goto return_token;
+	default:
+	  lexer_ungetch (lex, c1);
+	  lexer_read_keyword (lex, tok, &buf, &buf_size, c);
+	  goto return_token;
+	}
     }
 
   if (isalpha (c))
     {
-      if (isxdigit(c) && lex->hex_number)
+      if (isxdigit (c) && lex->hex_number)
 	lexer_read_hex_number (lex, tok, &buf, &buf_size, c);
       else
-	lexer_read_keyword(lex, tok, &buf, &buf_size, c);
+	lexer_read_keyword (lex, tok, &buf, &buf_size, c);
+      goto return_token;
+    }
+
+  if (c == '.')
+    {
+      tok->tok_class = lexer_read_number (lex, &buf, &buf_size, c);
       goto return_token;
     }
 
@@ -509,7 +534,6 @@ lexer_get_token (struct lexer *lex)
 	lexer_read_hex_number (lex, tok, &buf, &buf_size, c);
       else
 	tok->tok_class = lexer_read_number (lex, &buf, &buf_size, c);
-      tok->uses_buf = true;
       goto return_token;
     }
 
@@ -518,13 +542,13 @@ lexer_get_token (struct lexer *lex)
       tval_tok_init (tok, tok_operator, tv_delimiter);
       goto return_token;
     }
-  
+
   if (c == '+')
     {
       tval_tok_init (tok, tok_operator, tv_plus);
       goto return_token;
     }
-   
+
   if (c == '|')
     {
       tval_tok_init (tok, tok_operator, tv_vertical);
@@ -534,14 +558,14 @@ lexer_get_token (struct lexer *lex)
     {
       tval_tok_init (tok, tok_operator, tv_minus);
       goto return_token;
-    } 
-  
+    }
+
   if (c == '=')
     {
       tval_tok_init (tok, tok_operator, tv_eq);
       goto return_token;
     }
-  
+
   if (c == '^')
     {
       tval_tok_init (tok, tok_operator, tv_circumflex);
@@ -560,7 +584,7 @@ lexer_get_token (struct lexer *lex)
       tval_tok_init (tok, tok_operator, tv_gt);
       goto return_token;
     }
-  
+
   if (c == '<')
     {
       tval_tok_init (tok, tok_operator, tv_lt);
@@ -569,22 +593,30 @@ lexer_get_token (struct lexer *lex)
 
   switch (c)
     {
-    case ',': 
-      tval_tok_init (tok, tok_operator, tv_comma); goto return_token;
-    case '(': 
-      tval_tok_init (tok, tok_operator, tv_lparen); goto return_token;
-    case ')': 
-      tval_tok_init (tok, tok_operator, tv_rparen); goto return_token;
-    case '[': 
-      tval_tok_init (tok, tok_operator, tv_lsquare); goto return_token;
-    case ']': 
-      tval_tok_init (tok, tok_operator, tv_rsquare); goto return_token;
-    case '{': 
-      tval_tok_init (tok, tok_operator, tv_lbrace); goto return_token;
-    case '}': 
-      tval_tok_init (tok, tok_operator, tv_rbrace); goto return_token;
-    case ':': 
-      tval_tok_init (tok, tok_operator, tv_colon); goto return_token;
+    case ',':
+      tval_tok_init (tok, tok_operator, tv_comma);
+      goto return_token;
+    case '(':
+      tval_tok_init (tok, tok_operator, tv_lparen);
+      goto return_token;
+    case ')':
+      tval_tok_init (tok, tok_operator, tv_rparen);
+      goto return_token;
+    case '[':
+      tval_tok_init (tok, tok_operator, tv_lsquare);
+      goto return_token;
+    case ']':
+      tval_tok_init (tok, tok_operator, tv_rsquare);
+      goto return_token;
+    case '{':
+      tval_tok_init (tok, tok_operator, tv_lbrace);
+      goto return_token;
+    case '}':
+      tval_tok_init (tok, tok_operator, tv_rbrace);
+      goto return_token;
+    case ':':
+      tval_tok_init (tok, tok_operator, tv_colon);
+      goto return_token;
     default:
       ;
     }
@@ -593,17 +625,20 @@ lexer_get_token (struct lexer *lex)
   /* if nothing was found, we construct an unknown token  */
   assert (buf == NULL, "buf was used, but token_class is missing");
   buf = (char *) malloc (2 * sizeof (char));
-  buf[0] = c; buf[1] = 0;
+  buf[0] = c;
+  buf[1] = 0;
   tok->tok_class = tok_unknown;
-  tok->uses_buf = true;
 
 return_token:
-  assert (tok->tok_class >= tok_keyword && tok->tok_class <= tok_unknown,
-          "token type was not provided");
-  
+  assert (tok->tok_class >= tok_keyword
+	  && tok->tok_class <= tok_unknown, "token type was not provided");
+
   if (buf != NULL)
-    tok->value.cval = buf;
-  
+    {
+      tok->uses_buf = true;
+      tok->value.cval = buf;
+    }
+
   tok->loc = loc;
   return tok;
 }
@@ -619,13 +654,13 @@ token_uses_buf (struct token * tok)
 
 /* String representation of the token TOK.  */
 const char *
-token_as_string (struct token * tok)
+token_as_string (struct token *tok)
 {
-  
+
   if (token_uses_buf (tok))
     return tok->value.cval;
   else
-    return token_kind_name [(int) tok->value.tval];
+    return token_kind_name[(int) tok->value.tval];
 }
 
 
@@ -635,24 +670,24 @@ token_print (struct token *tok)
 {
   const char *tokval = token_as_string (tok);
 
-  (void) fprintf (stdout, "%d:%d %s ", (int)tok->loc.line, 
-                  (int)tok->loc.col, token_class_name[(int) tok->tok_class]);
+  (void) fprintf (stdout, "%d:%d %s ", (int) tok->loc.line,
+		  (int) tok->loc.col, token_class_name[(int) tok->tok_class]);
 
   if (tok->tok_class != tok_unknown)
     (void) fprintf (stdout, "['%s']\n", tokval);
   else
     (void) fprintf (stdout, "['%s'] !unknown\n", tokval);
-    
+
   fflush (stdout);
 }
 
 /* Copy token. Also copies string if necessary.
    Memory allocation is done too.
  */
-struct token* 
+struct token *
 token_copy (struct token *tok)
 {
-  struct token * ret;
+  struct token *ret;
   if (tok == NULL)
     return NULL;
 
@@ -671,11 +706,11 @@ token_copy (struct token *tok)
    It doesn't take into consideration token locations
  */
 int
-token_compare (struct token * first, struct token * second)
+token_compare (struct token *first, struct token *second)
 {
   if (first == second)
     return 0;
-  
+
   /* Compare token classes  */
   if (first->tok_class < second->tok_class)
     return -1;
@@ -685,21 +720,22 @@ token_compare (struct token * first, struct token * second)
   /* Compare by buffer usage  */
   if (token_uses_buf (first) != token_uses_buf (second))
     {
-      if (! token_uses_buf (first))
+      if (!token_uses_buf (first))
 	return -1;
       else
 	return 1;
     }
 
-  if(token_uses_buf(first))
-      return strcmp (first->value.cval, second->value.cval);
+  if (token_uses_buf (first))
+    return strcmp (first->value.cval, second->value.cval);
   else
     {
       if (first->value.tval < second->value.tval)
 	return -1;
       else if (first->value.tval > second->value.tval)
 	return 1;
-      else return 0;
+      else
+	return 0;
     }
   return 0;
 }
@@ -709,8 +745,8 @@ bool
 token_is_delimiter (struct token * tok)
 {
   size_t delimiters_length = sizeof (token_delimiters) / sizeof (char *);
-  size_t ret =  kw_bsearch (token_as_string (tok), token_delimiters,
-		  delimiters_length);
+  size_t ret = kw_bsearch (token_as_string (tok), token_delimiters,
+			   delimiters_length);
   return ret != delimiters_length;
 
 }
@@ -738,20 +774,20 @@ main (int argc, char *argv[])
 {
   struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
   struct token *tok = NULL;
-  
+
   if (argc <= 1)
     {
       fprintf (stderr, "No input file\n");
       goto cleanup;
     }
-  
+
   if (!lexer_init (lex, argv[1]))
     goto cleanup;
 
   while ((tok = lexer_get_token (lex))->tok_class != tok_eof)
     {
       token_print (tok);
-      token_free (tok);     
+      token_free (tok);
     }
 
   token_free (tok);

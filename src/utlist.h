@@ -27,7 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define UTLIST_VERSION 1.9.4
 
 #include "expand.h"
-
 #define xassert(a) assert(a, 0)
 /* 
  * This file contains macros to manipulate singly and doubly-linked lists.
@@ -64,14 +63,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    As decltype is only available in newer compilers (VS2010 or gcc 4.3+
    when compiling c++ code), this code uses whatever method is needed
    or, for VS2008 where neither is available, uses casting workarounds. */
-#ifdef _MSC_VER            /* MS compiler */
-#if _MSC_VER >= 1600 && defined(__cplusplus)  /* VS2010 or newer in C++ mode */
+#ifdef _MSC_VER			/* MS compiler */
+#if _MSC_VER >= 1600 && defined(__cplusplus)	/* VS2010 or newer in C++ mode */
 #define LDECLTYPE(x) decltype(x)
-#else                     /* VS2008 or older (or VS2010 in C mode) */
+#else /* VS2008 or older (or VS2010 in C mode) */
 #define NO_DECLTYPE
 #define LDECLTYPE(x) char*
 #endif
-#else                      /* GNU, Sun and other compilers */
+#else /* GNU, Sun and other compilers */
 #define LDECLTYPE(x) __typeof(x)
 #endif
 
@@ -86,7 +85,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _PREVASGN(elt,list,to) { char **_alias = (char**)&((list)->prev); *_alias=(char*)(to); }
 #define _RS(list) { char **_alias = (char**)&(list); *_alias=_tmp; }
 #define _CASTASGN(a,b) { char **_alias = (char**)&(a); *_alias=(char*)(b); }
-#else 
+#else
 #define _SV(elt,list)
 #define _NEXT(elt,list) ((elt)->next)
 #define _NEXTASGN(elt,list,to) ((elt)->next)=(to)
@@ -370,8 +369,8 @@ do {                                                                            
 #define LL_APPEND LL_APPEND_VS2008
 #undef LL_DELETE
 #define LL_DELETE LL_DELETE_VS2008
-#undef LL_CONCAT /* no LL_CONCAT_VS2008 */
-#undef DL_CONCAT /* no DL_CONCAT_VS2008 */
+#undef LL_CONCAT		/* no LL_CONCAT_VS2008 */
+#undef DL_CONCAT		/* no DL_CONCAT_VS2008 */
 #endif
 /* end VS2008 replacements */
 
@@ -386,14 +385,14 @@ do {                                                                            
     LL_FOREACH(head,out) {                                                                     \
       if ((out)->field == (val)) break;                                                        \
     }                                                                                          \
-} while(0) 
+} while(0)
 
 #define LL_SEARCH(head,out,elt,cmp)                                                            \
 do {                                                                                           \
     LL_FOREACH(head,out) {                                                                     \
       if ((cmp(out,elt))==0) break;                                                            \
     }                                                                                          \
-} while(0) 
+} while(0)
 
 /******************************************************************************
  * doubly linked list macros (non-circular)                                   *
@@ -498,7 +497,7 @@ do {                                                                            
 } while (0);
 
 #define CDL_FOREACH(head,el)                                                                   \
-    for(el=head;el;el=(el->next==head ? 0L : el->next)) 
+    for(el=head;el;el=(el->next==head ? 0L : el->next))
 
 #define CDL_FOREACH_SAFE(head,el,tmp1,tmp2)                                                    \
   for((el)=(head), ((tmp1)=(head)?((head)->prev):NULL);                                        \
@@ -510,14 +509,13 @@ do {                                                                            
     CDL_FOREACH(head,out) {                                                                    \
       if ((out)->field == (val)) break;                                                        \
     }                                                                                          \
-} while(0) 
+} while(0)
 
 #define CDL_SEARCH(head,out,elt,cmp)                                                           \
 do {                                                                                           \
     CDL_FOREACH(head,out) {                                                                    \
       if ((cmp(out,elt))==0) break;                                                            \
     }                                                                                          \
-} while(0) 
+} while(0)
 
 #endif /* UTLIST_H */
-

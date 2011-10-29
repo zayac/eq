@@ -5,7 +5,7 @@
    purpose with or without fee is hereby granted, provkeyworded that the above
    copyright notice and this permission notice appear in all copies.
   
-   THE SOFTWARE IS PROVkeywordED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
@@ -80,6 +80,7 @@ KEYWORD (neq,	    operator,	false,		"\\neq")
 KEYWORD (not,       operator,   false,		"\\not")
 KEYWORD (omega,     keyword,    true,		"\\omega")
 KEYWORD (oplus,     operator,   false,		"\\oplus")
+KEYWORD (opt,	    keyword,	false,		"\\opt")
 KEYWORD (otherwise, keyword,    false,		"\\otherwise")
 KEYWORD (phi,       keyword,    true,		"\\phi")
 KEYWORD (pi,        keyword,    true,		"\\pi")

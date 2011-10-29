@@ -1,40 +1,138 @@
+/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+                      Pavel Zaichenkov <zaichenkov@gmail.com>
+
+   Permission to use, copy, modify, and distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
+
 #include "expand.h"
 #include "global.h"
 #include "parser.h"
 #include "config.h"
+#include "types.h"
 
-void usage (const char *);
+#include <stdlib.h>
+#include <getopt.h>
+enum
+{
+  OPT_PRINT_PROGRAM = 0,
+  OPT_PRINT_MATCHES,
+  OPT_PRINT_TYPES
+};
+
+char *const p_opts[] = {
+  [OPT_PRINT_PROGRAM] = "program",
+  [OPT_PRINT_MATCHES] = "matches",
+  [OPT_PRINT_TYPES] = "types",
+  NULL
+};
+
+void usage ();
+void version ();
+
+static char *progname;
+struct eq_options options;
 
 void
-usage (const char *  prog)
+usage ()
 {
-  fprintf (stderr, "%s:%s (revision: %s) <input-file>\n",
-	   prog, VERSION, COMMIT_DATE);
-  return;
+  fprintf (stderr,
+	   "usage:\n"
+	   "\t[-P<program,types,matches>] prints pared program, types or match definitions\n"
+	   "\t[-V] prints version and exits\n" "\t<input-file>\n");
 }
 
+void
+version ()
+{
+  fprintf (stderr, "%s %s, revision: %s\n", progname, VERSION, COMMIT_DATE);
+}
+
+#ifndef LEXER_BINARY
 int
 main (int argc, char *argv[])
 {
-  int ret = 0;
+  int c, ret = 0;
+  char *subopts;
+  char *value;
+  extern char *optarg;
+  extern int optind;
+
   struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
   struct parser *parser = (struct parser *) malloc (sizeof (struct parser));
 
   init_global ();
   init_global_tree ();
-  
-  if (argc <= 1)
+
+  progname = strrchr (argv[0], '/');
+  if (NULL == progname)
+    progname = argv[0];
+  else
+    progname++;
+
+  memset (&options, 0, sizeof (options));
+
+  while (-1 != (c = getopt (argc, argv, "P:V")))
+    switch (c)
+      {
+      case 'P':
+	subopts = optarg;
+	while (*subopts != '\0')
+	  switch (getsubopt (&subopts, p_opts, &value))
+	    {
+	    case OPT_PRINT_PROGRAM:
+	      options.print_program = true;
+	      break;
+	    case OPT_PRINT_MATCHES:
+	      options.print_matches = true;
+	      break;
+	    case OPT_PRINT_TYPES:
+	      options.print_types = true;
+	      break;
+	    default:
+	      fprintf (stderr, "unknown -P suboption `%s'\n", value);
+	      goto cleanup;
+	      break;
+	    }
+	break;
+      case 'V':
+	version ();
+	goto cleanup;
+      default:
+	usage ();
+	goto cleanup;
+      }
+
+  if (options.print_types
+      && !(options.print_program || options.print_matches))
+    fprintf (stdout,
+	     "warning: 'types' flag is useless without either"
+	     " 'program' flag or 'matches' flag\n");
+
+
+  argc -= optind;
+  argv += optind;
+
+  if (NULL == *argv)
     {
-      fprintf (stderr, "%s:%s filename argument required\n", argv[0], VERSION);
-      usage (argv[0]);
+      fprintf (stderr, "%s:error: filename argument required\n", progname);
+      usage ();
       ret = -1;
       goto cleanup;
     }
 
-  if (!lexer_init (lex, argv[1]))
+  if (!lexer_init (lex, *argv))
     {
-      fprintf (stderr, "%s:%s cannot create a lexer for file %s\n", 
-	       argv[1], argv[0], VERSION);
+      fprintf (stderr, "%s cannot create a lexer for file `%s'\n", progname,
+	       *argv);
       ret = -2;
       goto cleanup;
     }
@@ -56,3 +154,4 @@ cleanup:
 
   return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+#endif

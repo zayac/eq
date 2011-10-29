@@ -1,10 +1,10 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
                       Pavel Zaichenkov <zaichenkov@gmail.com>
-  
+
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -16,7 +16,6 @@
 #ifndef __EXPAND_H__
 #define __EXPAND_H__
 
-#define __USE_BSD
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,13 +35,13 @@ typedef unsigned char bool;
 #define LEXER_BUFFER  8192
 
 static inline int
-xfprintf (FILE *f, const char *fmt, ...)
+xfprintf (FILE * f, const char *fmt, ...)
 {
   va_list args;
 
   if (fmt == 0 || strlen (fmt) == 0)
     return 0;
-  else 
+  else
     {
       va_start (args, fmt);
       vfprintf (f, fmt, args);
@@ -68,7 +67,7 @@ extern int warning_count;
                     __FILE__, __LINE__), \
            xfprintf (stderr, __VA_ARGS__), \
            abort ()))
-          
+
 #define error_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "error:%d:%d: ", (int)loc.line, (int)loc.col); \
@@ -104,7 +103,7 @@ enum token_kind
 {
 #include "token_kind.def"
 #include "keywords.def"
-tok_kind_length
+  tok_kind_length
 };
 #undef TOKEN_KIND
 #undef KEYWORD
@@ -113,36 +112,50 @@ tok_kind_length
 enum token_class
 {
 #include "token_class.def"
-tok_class_length
+  tok_class_length
 };
 #undef TOKEN_CLASS
 
 struct location
 {
-    size_t line, col;
+  size_t line, col;
 };
 
 struct token
 {
-    struct location loc;
-    enum token_class tok_class;
-    bool uses_buf;
-    union {
-        char *cval;
-        enum token_kind tval;
-    } value;
+  struct location loc;
+  enum token_class tok_class;
+  bool uses_buf;
+  union
+  {
+    char *cval;
+    enum token_kind tval;
+  } value;
 };
 
 struct lexer
 {
-    const char *fname;
-    FILE *file;
-    struct location loc;
-    struct token curtoken;
-    bool is_eof;
-    bool hex_number; /* if set true, a token consisting of digits and a-f
-			letters will be considering as number  */
+  const char *fname;
+  FILE *file;
+  struct location loc;
+  struct token curtoken;
+  bool is_eof;
+  /* if set true, a token consisting of digits and a-f
+     letters will be considering as number.  */
+  bool hex_number;
+  /* Mark and print possible errors in case of true.
+     NOTE When lexer is beyond function, we can skip all errors.  */
+  bool error_notifications;
 };
+
+struct eq_options
+{
+  unsigned print_program:1;
+  unsigned print_matches:1;
+  unsigned print_types:1;
+};
+
+extern struct eq_options options;
 
 #define tval_tok_init(_tok, _cls, _val)             \
     do {                                            \
@@ -156,9 +169,9 @@ struct lexer
       (_tok)->value.cval = _val;                    \
     } while (0)
 
-extern const char *  token_class_name[];
-extern const char *  token_kind_name[];
-extern const bool    is_token_id[];
+extern const char *token_class_name[];
+extern const char *token_kind_name[];
+extern const bool is_token_id[];
 
 #define token_kind_as_string(tkind) token_kind_name[(int) tkind]
 #define token_value(tok)            (tok)->value.tval
@@ -167,20 +180,17 @@ extern const bool    is_token_id[];
 #define token_location(tok)         (tok)->loc
 
 
-__BEGIN_DECLS
-
+__BEGIN_DECLS 
 bool lexer_init (struct lexer *, const char *);
 bool lexer_finalize (struct lexer *);
 bool is_id (struct token *, bool);
 bool token_is_delimiter (struct token *);
-struct token *  lexer_get_token (struct lexer *);
-struct token * token_copy (struct token *);
+struct token *lexer_get_token (struct lexer *);
+struct token *token_copy (struct token *);
 int token_compare (struct token *, struct token *);
 void token_free (struct token *);
 void token_print (struct token *);
-const char *  token_as_string (struct token *);
-bool token_uses_buf (struct token *); 
+const char *token_as_string (struct token *);
+bool token_uses_buf (struct token *);
 __END_DECLS
-
 #endif /* __EXPAND_H__  */
-

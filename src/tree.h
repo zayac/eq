@@ -4,7 +4,7 @@
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -17,9 +17,9 @@
 #define __TREE_H__
 
 #include <stdlib.h>
-#include "utlist.h"
-
 #include "expand.h"
+#include "utlist.h"
+#include "uthash.h"
 
 enum tree_code_class
 {
@@ -54,8 +54,8 @@ typedef union tree_node *tree;
 /* Basic information each node should have.  */
 struct tree_base
 {
-  enum tree_code code;
   struct location loc;
+  enum tree_code code;
 };
 
 /* Base tree with operands pointer */
@@ -71,16 +71,9 @@ struct tree_type_base
   struct tree_base base;
   tree type;
   unsigned int is_constant:1;
-  /* These options are needed when \match parsing  */
-  bool argset:1;
+  /* These options are needed while parsing \match.  */
+  unsigned argset:1;
   unsigned arg:6;
-};
-
-struct tree_type_node
-{
-  struct tree_base base;
-  tree name;
-  tree size;
 };
 
 struct tree_type_base_op
@@ -89,9 +82,20 @@ struct tree_type_base_op
   tree operands[];
 };
 
-struct tree_list_element {
-	tree entry;
-	struct tree_list_element *next, *prev;
+/* A hash table for storing types.  */
+struct tree_type_node
+{
+  struct tree_base base;
+  size_t size;
+  tree dim;
+  tree shape;
+  UT_hash_handle hh;
+};
+
+struct tree_list_element
+{
+  tree entry;
+  struct tree_list_element *next, *prev;
 };
 
 struct tree_list_node
@@ -102,7 +106,7 @@ struct tree_list_node
 
 struct tree_circumflex_op_node
 {
-  struct tree_base base;
+  struct tree_type_base typed;
   bool is_index;
   tree operands[];
 };
@@ -118,6 +122,12 @@ struct tree_int_cst_node
 {
   struct tree_type_base typed;
   int value;
+};
+
+struct tree_real_cst_node
+{
+  struct tree_type_base typed;
+  double value;
 };
 
 struct tree_identifier_node
@@ -136,6 +146,7 @@ union tree_node
   struct tree_identifier_node identifier_node;
   struct tree_list_node list_node;
   struct tree_int_cst_node int_cst_node;
+  struct tree_real_cst_node real_cst_node;
   struct tree_string_cst_node string_cst_node;
   struct tree_circumflex_op_node circumflex_op_node;
 };
@@ -146,7 +157,7 @@ enum tree_global_code
   TG_B_TYPE,
   TG_N_TYPE,
   TG_Z_TYPE,
-  TH_R_TYPE,
+  TG_R_TYPE,
   TG_MAX
 };
 
@@ -161,8 +172,11 @@ enum tree_global_code
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
-#define TREE_TYPE_NAME(node) ((node)->type_node.name)
-#define TREE_TYPE_SIZE(node) ((node)->type_node.size)
+#define TREE_TYPE(node) ((node)->typed.type)
+#define TYPE_HASH(node) ((node)->type_node)
+#define TYPE_SIZE(node) ((node)->type_node.size)
+#define TYPE_DIM(node) ((node)->type_node.dim)
+#define TYPE_SHAPE(node) ((node)->type_node.shape)
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)
@@ -181,14 +195,14 @@ static inline tree
 get_tree_operand (tree node, int idx)
 {
   enum tree_code code = TREE_CODE (node);
-  
+
   assert (tree_operand_in_range (code, idx),
 	  "operand index out of range or no operands in the node");
 
   if (TREE_CODE_OPERANDS (code) > 0)
     {
       if (code == CIRCUMFLEX)
-      	return node->circumflex_op_node.operands[idx];
+	return node->circumflex_op_node.operands[idx];
       if (TREE_CODE_TYPED (code))
 	return node->typed_op.operands[idx];
       else
@@ -208,7 +222,7 @@ set_tree_operand (tree node, int idx, tree value)
   if (TREE_CODE_OPERANDS (code) > 0)
     {
       if (code == CIRCUMFLEX)
-      	node->circumflex_op_node.operands[idx] = value;
+	node->circumflex_op_node.operands[idx] = value;
       else if (TREE_CODE_TYPED (code))
 	node->typed_op.operands[idx] = value;
       else
@@ -222,13 +236,11 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_OPERAND_SET(node, i, value) set_tree_operand ((node), (i), (value))
 
 #define TREE_INTEGER_CST(node) ((node)->int_cst_node.value)
+#define TREE_REAL_CST(node)  ((node)->real_cst_node.value)
 #define TREE_STRING_CST(node) ((node)->string_cst_node.value)
 #define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
 
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
-
-#define TREE_TYPE_DIM(node) ((node)->base_op.operands[0])
-#define TREE_TYPE_SHAPE(node) ((node)->base_op.operands[1])
 
 #define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
@@ -252,11 +264,14 @@ is_assignment_operator (enum token_kind tk)
 size_t get_tree_size (enum tree_code);
 tree make_tree (enum tree_code);
 void free_tree (tree);
+void free_tree_type (tree, bool);
 void free_atomic_trees ();
 tree make_string_cst_tok (struct token *);
 tree make_string_cst_str (const char *);
 tree make_identifier_tok (struct token *);
+tree make_integer_cst (int);
 tree make_integer_tok (struct token *);
+tree make_real_tok (struct token *);
 tree make_tree_list ();
 bool tree_list_append (tree, tree);
 tree make_function (tree, tree, tree, tree, tree, struct location);
@@ -271,6 +286,8 @@ tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
 tree tree_copy (tree);
+bool tree_compare (tree, tree);
 void free_list (tree);
+
 
 #endif /* __TREE_H__  */

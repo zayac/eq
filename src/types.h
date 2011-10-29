@@ -4,7 +4,7 @@
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -13,14 +13,16 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
-TOKEN_CLASS (keyword,       "keyword")
-TOKEN_CLASS (id,            "id")
-TOKEN_CLASS (realnum,	    "real number")
-TOKEN_CLASS (intnum,	    "integer number")
-TOKEN_CLASS (operator,      "operator")
-TOKEN_CLASS (string,	    "string")
-TOKEN_CLASS (whitespace,    "whitespace")
-TOKEN_CLASS (comments,      "comment")
-TOKEN_CLASS (eof,           "eof")
-TOKEN_CLASS (unknown,       "unknown")
+#ifndef __TYPES_H__
+#define __TYPES_H__
 
+#include "tree.h"
+
+/* A global table to store types.  */
+extern struct tree_type_node *type_table;
+
+void types_init ();
+tree types_assign_type (enum tree_code, size_t, tree, tree);
+void types_finalize ();
+
+#endif /* __TYPES_H__  */
