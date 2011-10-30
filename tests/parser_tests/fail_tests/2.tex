@@ -1,0 +1,14 @@
+% The testcase tests if the parser correctly prints error-messages
+% about the missing lines, without braking somewhere else.
+%
+% FIXME currently the lexer jumps to the next line when it
+% tries to find \lend, so the error-annotations must occur ther
+% as well, otherwise the line number would not match.  I don't have
+% a good fix right now.
+
+\begin{eqcode}{testif}{f}{\type{Z}}{\type{Z}}
+	a \gets 5 \lend
+	x \gets 6				
+	y \gets b \lend			% eq-error: token `\lend' expected
+	a \gets 3				
+\end{eqcode}				% eq-error: token `\lend' expected

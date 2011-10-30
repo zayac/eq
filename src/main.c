@@ -46,7 +46,8 @@ usage ()
 {
   fprintf (stderr,
 	   "usage:\n"
-	   "\t[-P<program,types,matches>] prints pared program, types or match definitions\n"
+	   "\t[-P<program,types,matches>] prints parsed program, types "
+	   "or match definitions\n"
 	   "\t[-V] prints version and exits\n" "\t<input-file>\n");
 }
 
@@ -113,9 +114,8 @@ main (int argc, char *argv[])
 
   if (options.print_types
       && !(options.print_program || options.print_matches))
-    fprintf (stdout,
-	     "warning: 'types' flag is useless without either"
-	     " 'program' flag or 'matches' flag\n");
+    fprintf (stderr, "warning: 'types' flag is useless without either "
+	     "'program' flag or 'matches' flag\n");
 
 
   argc -= optind;
@@ -139,6 +139,7 @@ main (int argc, char *argv[])
 
   parser_init (parser, lex);
   parse (parser);
+
 cleanup:
   parser_finalize (parser);
   finalize_global_tree ();

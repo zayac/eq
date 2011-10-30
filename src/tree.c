@@ -67,16 +67,11 @@ get_tree_size (enum tree_code code)
 {
   size_t size, ops;
   ops = TREE_CODE_OPERANDS (code) * sizeof (tree);
-  size =
-    TREE_CODE_TYPED (code) ? (ops ? sizeof (struct tree_type_base_op) :
-			      sizeof (struct tree_type_base)) : (ops ?
-								 sizeof
-								 (struct
-								  tree_base_op)
-								 :
-								 sizeof
-								 (struct
-								  tree_base));
+  size = TREE_CODE_TYPED (code)
+	 ? (ops ? sizeof (struct tree_type_base_op)
+		: sizeof (struct tree_type_base))
+	 : (ops ? sizeof (struct tree_base_op)
+		: sizeof (struct tree_base));
 
   switch (TREE_CODE_CLASS (code))
     {
@@ -117,6 +112,7 @@ get_tree_size (enum tree_code code)
       unreachable (0);
       break;
     }
+
   return 0;
 }
 
@@ -124,13 +120,17 @@ tree
 make_tree (enum tree_code code)
 {
   size_t size = get_tree_size (code);
+
   if (code == ERROR_MARK)
     warning ("attempt to allocate ERRO_MARK_NODE; pointer returned");
+
   tree ret = (tree) malloc (size);
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
+
   if (TREE_CODE_TYPED (code))
     TREE_TYPE (ret) = NULL;
+
   return ret;
 }
 
@@ -159,7 +159,7 @@ atomic_trees_add (tree t)
 
   /* Most likely we don't need to search anything.  */
 
-  {				/* For testing purposes only.  */
+  {/* For testing purposes only.  */
     size_t i;
     for (i = 0; i < atomic_trees_idx; i++)
       if (atomic_trees[i] == t)
@@ -437,6 +437,7 @@ make_type (enum tree_code code)
   tree t = NULL;
   assert (TREE_CODE_CLASS (code) == tcl_type, "%s called with %s tree code",
 	  __func__, TREE_CODE_NAME (code));
+
   t = make_tree (code);
   if (TREE_CODE (t) == B_TYPE)
     TYPE_SIZE (t) = 8;
@@ -448,6 +449,7 @@ make_type (enum tree_code code)
     TYPE_SIZE (t) = 8 * sizeof (double);
   TYPE_SHAPE (t) = NULL;
   TYPE_DIM (t) = NULL;
+
   return t;
 }
 
@@ -455,15 +457,18 @@ tree
 make_binary_op (enum tree_code code, tree lhs, tree rhs)
 {
   tree t;
-
   assert (TREE_CODE_CLASS (code) == tcl_expression && code != UMINUS_EXPR
 	  && code != NOT_EXPR, "%s called with %s tree code", __func__,
 	  TREE_CODE_NAME (code));
+
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, lhs);
   TREE_OPERAND_SET (t, 1, rhs);
+
   if (lhs != NULL)
     TREE_LOCATION (t) = TREE_LOCATION (lhs);
+  /* FIXME else what? no location??  */
+
   return t;
 }
 
@@ -524,8 +529,8 @@ make_unary_op (enum tree_code code, tree val, struct location loc)
 {
   tree t;
   assert (TREE_CODE_CLASS (code) == tcl_expression
-	  && (code == UMINUS_EXPR
-	      || code == NOT_EXPR), "%s called with %s tree code", __func__,
+	  && (code == UMINUS_EXPR || code == NOT_EXPR),
+	  "%s called with %s tree code", __func__,
 	  TREE_CODE_NAME (code));
   t = make_tree (code);
   TREE_OPERAND_SET (t, 0, val);
@@ -677,59 +682,32 @@ tree_compare (tree left, tree right)
 
   /* types comparision.  */
   if (TREE_CODE_CLASS (TREE_CODE (left)) == tcl_type)
-    {
-      if (TYPE_SIZE (left) != TYPE_SIZE (right))
-	return false;
-
-      if (!tree_compare (TYPE_DIM (left), TYPE_DIM (right)))
-	return false;
-
-      if (!tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right)))
-	return false;
-    }
+    return TYPE_SIZE (left) == TYPE_SIZE (right)
+	   && tree_compare (TYPE_DIM (left), TYPE_DIM (right))
+	   && tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right));
 
   /* circumflex comparision.  */
   if (TREE_CODE (left) == CIRCUMFLEX)
-    {
-      if (TREE_CIRCUMFLEX_INDEX_STATUS (left) !=
-	  TREE_CIRCUMFLEX_INDEX_STATUS (right))
-	return false;
-    }
-
+    return TREE_CIRCUMFLEX_INDEX_STATUS (left)
+	   == TREE_CIRCUMFLEX_INDEX_STATUS (right);
 
   if (TREE_CODE (left) == STRING_TYPE)
-    {
-      if (TREE_STRING_CST_LENGTH (left) != TREE_STRING_CST_LENGTH (right))
-	return false;
-
-      if (strcmp (TREE_STRING_CST (left), TREE_STRING_CST (right)))
-	return false;
-    }
+    return TREE_STRING_CST_LENGTH (left) == TREE_STRING_CST_LENGTH (right)
+	   && !strcmp (TREE_STRING_CST (left), TREE_STRING_CST (right));
 
   if (TREE_CODE (left) == INTEGER_CST)
-    {
-      if (TREE_INTEGER_CST (left) != TREE_INTEGER_CST (right))
-	return false;
-    }
+    return TREE_INTEGER_CST (left) != TREE_INTEGER_CST (right);
 
   if (TREE_CODE (left) == REAL_CST)
-    {
-      if (TREE_REAL_CST (left) != TREE_REAL_CST (right))
-	return false;
-    }
+    return TREE_REAL_CST (left) == TREE_REAL_CST (right);
 
   if (TREE_CODE (left) == IDENTIFIER)
-    {
-      if (!tree_compare (TREE_ID_NAME (left), TREE_ID_NAME (right)))
-	return false;
-    }
+    return tree_compare (TREE_ID_NAME (left), TREE_ID_NAME (right));
 
   /* Operand comparision.  */
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (left)); i++)
-    {
-      if (!tree_compare (TREE_OPERAND (left, i), TREE_OPERAND (right, i)))
-	return false;
-    }
+    if (!tree_compare (TREE_OPERAND (left, i), TREE_OPERAND (right, i)))
+      return false;
 
   return true;
 

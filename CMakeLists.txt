@@ -55,15 +55,52 @@ endif()
 # Testing routines
 enable_testing ()
 
-macro (xtest arg)
-  add_test (test_${arg} eq ${arg})
-  set_tests_properties (test_${arg}
+# Add tests that must run and should not produce any errors
+macro (run_test arg)
+  add_test (run_test_${arg} eq ${arg})
+  set_tests_properties (run_test_${arg}
   PROPERTIES 
     PASS_REGULAR_EXPRESSION "finished parsing"
     FAIL_REGULAR_EXPRESSION "^error:")
-endmacro (xtest)
+endmacro (run_test)
 
-file (GLOB_RECURSE testfiles "tests/parser_tests/*.tex")
-foreach (test ${testfiles})
-  xtest (${test})
+# Add tests that produce errors and have appropriate error-annotations
+macro (fail_test arg)
+  execute_process (COMMAND ${PROJECT_SOURCE_DIR}/tests/eq-error.sh ${arg}
+  		   OUTPUT_VARIABLE out
+  		   ERROR_VARIABLE err
+  		   RESULT_VARIABLE res)
+  
+  if (NOT "${res}" STREQUAL "0")
+    message (FATAL_ERROR "cannot execute `cat -n ${arg}'")
+  endif ()
+
+  if (NOT "${err}" STREQUAL "")
+    message (FATAL_ERROR "cat -n ${arg} returned the following errors\n${err}")
+  endif()
+  
+  if ("${out}" STREQUAL "")
+    message ("warning: no eq-error directive found in '${arg}'")
+    set (out "error:")
+  endif()
+
+  add_test (fail_test_${arg} eq ${arg})
+  set_tests_properties (fail_test_${arg}
+  PROPERTIES
+    PASS_REGULAR_EXPRESSION ${out})
+endmacro(fail_test)
+
+
+# include files for standard testing
+file (GLOB run_tests "tests/parser_tests/*.tex")
+foreach (test ${run_tests})
+  run_test (${test})
 endforeach ()
+
+# include files for erro-testin
+file (GLOB_RECURSE fail_tests "tests/parser_tests/fail_tests/*.tex")
+foreach (test ${fail_tests})
+  fail_test (${test})
+endforeach ()
+
+

@@ -26,7 +26,7 @@ static inline tree
 get_tree_from_key (char *keyptr)
 {
   struct tree_type_node x;
-  return (tree) (keyptr - (int) ((size_t) & (x.base.code) - (size_t) & x));
+  return (tree) (keyptr - (int) ((size_t) &(x.base.code) - (size_t) &x));
 }
 
 /* The key used in the type hash-table have a fixed length which can
@@ -35,34 +35,40 @@ static inline size_t
 hash_key_length ()
 {
   struct tree_type_node x;
-  return offsetof (struct tree_type_node,
-		   size) +sizeof (x.size) - (offsetof (struct tree_type_node,
-						       base) +
-					     offsetof (struct tree_base,
-						       code));
+  return offsetof (struct tree_type_node, size) + sizeof (x.size)
+	 - (offsetof (struct tree_type_node, base)
+	    + offsetof (struct tree_base, code));
 }
 
-/* FIXME the formatting of the following macro is incorrect.  */
 #undef HASH_FIND_IN_BKT
-#define HASH_FIND_IN_BKT(tbl,hh,head,keyptr,keylen_in,out)                       \
-do {										 \
-  if (head.hh_head) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,head.hh_head));         \
-  else out=NULL;                                                                 \
-  while (out) {									 \
-    if (out->hh.keylen == keylen_in) {						 \
-      tree p = get_tree_from_key (out->hh.key);					 \
-      tree q = get_tree_from_key (keyptr);					 \
-      if (((HASH_KEYCMP(out->hh.key,keyptr,keylen_in))  == 0)			 \
-	   && tree_compare (TYPE_DIM (p), TYPE_DIM (q))				 \
-	   && tree_compare (TYPE_SHAPE (p), TYPE_SHAPE (q)))			 \
-	break;									 \
-    }                                                                            \
-    if (out->hh.hh_next) DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,out->hh.hh_next)); \
-    else out = NULL;                                                             \
-  }\
-} while(0)
+#define HASH_FIND_IN_BKT(tbl,hh,head,keyptr,keylen_in,out)			  \
+do {										  \
+  if (head.hh_head)								  \
+    DECLTYPE_ASSIGN(out,ELMT_FROM_HH(tbl,head.hh_head));			  \
+  else										  \
+    out=NULL;									  \
+										  \
+  while (out)									  \
+    {										  \
+      if (out->hh.keylen == keylen_in)						  \
+	{									  \
+	  tree p = get_tree_from_key (out->hh.key);				  \
+	  tree q = get_tree_from_key (keyptr);					  \
+	  if (((HASH_KEYCMP (out->hh.key, keyptr, keylen_in)) == 0)		  \
+	      && tree_compare (TYPE_DIM (p), TYPE_DIM (q))			  \
+	      && tree_compare (TYPE_SHAPE (p), TYPE_SHAPE (q)))			  \
+	    break;								  \
+	}									  \
+      if (out->hh.hh_next)							  \
+	DECLTYPE_ASSIGN (out, ELMT_FROM_HH (tbl, out->hh.hh_next));		  \
+      else									  \
+	out = NULL;								  \
+    }										  \
+} while (0)
 
+/* Global hash-table for types defined in the program.  */
 struct tree_type_node *type_table = NULL;
+
 
 static struct tree_type_node *types_add_type (enum tree_code, size_t, tree,
 					      tree);
