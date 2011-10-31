@@ -18,6 +18,9 @@
 #include "parser.h"
 #include "config.h"
 #include "types.h"
+#include "typecheck.h"
+#include "print.h"
+#include "matcher.h"
 
 #include <stdlib.h>
 #include <getopt.h>
@@ -66,6 +69,7 @@ main (int argc, char *argv[])
   char *value;
   extern char *optarg;
   extern int optind;
+  struct tree_list_element *tle;
 
   struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
   struct parser *parser = (struct parser *) malloc (sizeof (struct parser));
@@ -138,7 +142,33 @@ main (int argc, char *argv[])
     }
 
   parser_init (parser, lex);
-  parse (parser);
+  if (parse (parser) == 0)
+   typecheck ();
+
+  /* printing debug routine.  */
+  if (options.print_program)
+    {
+      printf ("\n######### Output ########\n");
+
+      DL_FOREACH (TREE_LIST (function_list), tle)
+	{
+	  if (tle->entry != error_mark_node)
+	    {
+	      print_expression (stdout, tle->entry);
+	      if (tle->next != NULL)
+		printf ("\n");
+	    }
+	  else
+	    printf ("Errors in function\n\n");
+	}
+    }
+
+  if (options.print_matches)
+    {
+      printf ("\n####### Transforms ########\n");
+      print_matches ();
+    }
+
 
 cleanup:
   parser_finalize (parser);

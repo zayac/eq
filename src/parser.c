@@ -19,7 +19,6 @@
 #include "expand.h"
 #include "tree.h"
 #include "global.h"
-#include "print.h"
 #include "parser.h"
 #include "matcher.h"
 #include "types.h"
@@ -725,12 +724,18 @@ handle_ext_type (struct parser * parser)
   size_t size = 0;
 
   tree t = handle_type (parser);
+  if (t == error_mark_node)
+    return error_mark_node;
+
   code = TREE_CODE (t);
   size = TYPE_SIZE (t);
 
   /* There is no difference in the second argument value.
      Dim and shape are set to NULL anyway.  */
-  free_tree_type (t, true);
+  if (TREE_CODE_CLASS (code) == tcl_type)
+    free_tree_type (t, true);
+  else
+    free_tree (t);
   tree dim = NULL;
   tree shape = NULL;
 
@@ -2953,7 +2958,6 @@ int
 parse (struct parser *parser)
 {
   struct token *tok;
-  struct tree_list_element *tle;
 
   error_count = warning_count = 0;
   while (token_class (tok = parser_get_token (parser)) != tok_eof)
@@ -2985,28 +2989,6 @@ parse (struct parser *parser)
       return -3;
     }
 
-  if (options.print_program)
-    {
-      printf ("\n######### Output ########\n");
-
-      DL_FOREACH (TREE_LIST (function_list), tle)
-	{
-	  if (tle->entry != error_mark_node)
-	    {
-	      print_expression (stdout, tle->entry);
-	      if (tle->next != NULL)
-		printf ("\n");
-	    }
-	  else
-	    printf ("Errors in function\n\n");
-	}
-    }
-
-  if (options.print_matches)
-    {
-      printf ("\n####### Transforms ########\n");
-      print_matches ();
-    }
   return 0;
 }
 

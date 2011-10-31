@@ -169,6 +169,7 @@ enum tree_global_code
 
 #define TREE_LIST(node) ((node)->list_node.list)
 #define TREE_CODE(node) ((enum tree_code) (node)->base.code)
+#define TREE_CONSTANT(node) ((node)->typed.is_constant)
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
