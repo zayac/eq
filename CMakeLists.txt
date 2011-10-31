@@ -103,4 +103,15 @@ foreach (test ${fail_tests})
   fail_test (${test})
 endforeach ()
 
+file (GLOB run_tests "tests/type_tests/*.tex")
+foreach (test ${run_tests})
+  run_test (${test})
+endforeach ()
+
+# include files for erro-testin
+file (GLOB_RECURSE fail_tests "tests/type_tests/fail_tests/*.tex")
+foreach (test ${fail_tests})
+  fail_test (${test})
+endforeach ()
+
 
