@@ -79,12 +79,15 @@ int typecheck_type (tree type, tree ext_vars, tree vars)
   assert (TREE_CODE_CLASS ( TREE_CODE (type)) == tcl_type,
 	  "type node must belong to class type");
 
+  /* validate dimension.  */
   if (TYPE_DIM (type) != NULL)
     {
       int ret_val;
       if ((ret_val = typecheck_expression (TYPE_DIM (type), ext_vars, vars)))
 	return ret_val;
 
+      /* dimension must be some kind of integer type.
+	 We check here just static values.  */
       if ((TREE_TYPE (TYPE_DIM (type)) != z_type_node &&
 	  (TREE_TYPE (TYPE_DIM (type)) != n_type_node ||
 		      TYPE_DIM (type)  != NULL ||
@@ -96,16 +99,18 @@ int typecheck_type (tree type, tree ext_vars, tree vars)
 	}
     }
    
+  /* validate shape.  */
   if (TYPE_SHAPE (type) != NULL)
     {
       struct tree_list_element *el;
+      /* in general case, a shape is a list of integers.  */
       DL_FOREACH (TREE_LIST (TYPE_SHAPE(type)), el)
 	{
 	  int ret_val;
 	  tree t = el->entry;
 	  if ((ret_val = typecheck_expression (t, ext_vars, vars)))
 	    return ret_val;
-
+  
 	  if (TREE_TYPE (t) != z_type_node ||
 	       TYPE_DIM (t) != NULL ||
 
@@ -343,6 +348,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	struct tree_list_element *func_el, *expr_el;
 	int func_counter = 0, expr_counter = 0;
 
+	/* check if function is declared.  */
 	if ((t = function_exists (TREE_STRING_CST 
 	      (TREE_ID_NAME ((TREE_OPERAND (expr, 0)))))) == NULL)
 	  {
@@ -357,7 +363,8 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  func_el = TREE_LIST (TREE_OPERAND (t, 2));
 	else
 	  func_el = NULL;
-
+	
+	/* check argument number and corresponding types.  */
 	if (TREE_OPERAND (expr, 1) != NULL)
 	  {
 	    DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 1)), expr_el)
