@@ -1196,7 +1196,7 @@ handle_function (struct parser * parser)
   else
     {
       parser_unget (parser);
-      args = NULL;
+      args = make_tree_list ();
     }
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;

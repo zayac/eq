@@ -1,0 +1,9 @@
+\begin{eqcode}{e}{a, b, c}{\type{Z}, \type{R}, \type{N}^2}{\type{Z}}
+  d \in \type{Z} \lend
+  d \gets \call{a}{\ } \lend % eq-error: invalid number of arguments in function 'a' call: 1 expected, 0 found
+
+\end{eqcode}
+
+\begin{eqcode}{a}{g, a }{\type{Z}}{\type{Z}} % eq-error: number of argument types is wrong: 2 expected, 1 found
+  
+\end{eqcode}

@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "types.h"
 #include "expand.h"
 #include "tree.h"
@@ -122,10 +123,12 @@ function_exists (const char *str)
 
   assert (function_list != NULL, "function-list is not initialized");
 
-  DL_FOREACH (TREE_LIST (function_list),
-	      tl) if (strcmp (TREE_STRING_CST (TREE_OPERAND (tl->entry, 0)),
-			      str) == 0)
-    return tl->entry;
+  DL_FOREACH (TREE_LIST (function_list), tl) 
+    {
+      if (strcmp (TREE_STRING_CST (TREE_ID_NAME ((TREE_OPERAND (tl->entry, 0)))), 
+		str) == 0)
+	return tl->entry;
+    }
 
   return NULL;
 }
