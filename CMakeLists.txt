@@ -57,7 +57,8 @@ enable_testing ()
 
 # Add tests that must run and should not produce any errors
 macro (run_test arg opt)
-  add_test (run_test_${arg} eq ${opt} ${arg})
+  add_test (NAME run_test_${arg}
+	    COMMAND eq ${opt} ${arg})
   set_tests_properties (run_test_${arg}
   PROPERTIES 
     PASS_REGULAR_EXPRESSION "finished parsing"
@@ -72,7 +73,9 @@ macro (fail_test arg)
   		   RESULT_VARIABLE res)
   
   if (NOT "${res}" STREQUAL "0")
-    message (FATAL_ERROR "cannot execute `cat -n ${arg}'")
+    message (FATAL_ERROR 
+	     "cannot execute "
+	     "`${PROJECT_SOURCE_DIR}/tests/eq-error.sh ${arg}'")
   endif ()
 
   if (NOT "${err}" STREQUAL "")
@@ -93,7 +96,7 @@ endmacro(fail_test)
 
 # include files for standard testing
 file (GLOB run_tests "tests/parser_tests/*.tex")
-set (opt "-B typecheck")
+set (opt "-Bparser")
 foreach (test ${run_tests})
   run_test (${test} ${opt})
 endforeach ()
@@ -105,7 +108,6 @@ foreach (test ${fail_tests})
 endforeach ()
 
 file (GLOB run_tests "tests/type_tests/*.tex")
-set (opt " ")
 foreach (test ${run_tests})
   run_test (${test} ${opt})
 endforeach ()

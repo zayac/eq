@@ -33,7 +33,7 @@ enum
 
 enum
 {
-  OPT_BREAK_TYPECHECK = 0
+  OPT_BREAK_PARSER = 0
 };
 
 char *const p_opts[] = {
@@ -44,7 +44,7 @@ char *const p_opts[] = {
 };
 
 char *const b_opts[] = {
-  [OPT_BREAK_TYPECHECK] = "typecheck",
+  [OPT_BREAK_PARSER] = "parser",
   NULL
 };
 
@@ -61,7 +61,8 @@ usage ()
 	   "usage:\n"
 	   "\t[-P<program,types,matches>] prints parsed program, types "
 	   "or match definitions\n"
-	   "\t[-B<typecheck>] stops compiling on typecheck stage\n"
+	   "\t[-B<phase>] stops compilation after <phase>\n"
+	   "\t\tparser -- parses the input and exits."
 	   "\t[-V] prints version and exits\n" "\t<input-file>\n");
 }
 
@@ -124,7 +125,7 @@ main (int argc, char *argv[])
 	while (*subopts != '\0')
 	  switch (getsubopt (&subopts, b_opts, &value))
 	    {
-	    case OPT_BREAK_TYPECHECK:
+	    case OPT_BREAK_PARSER:
 	      options.break_typecheck = true;
 	      break;
 	    default:
