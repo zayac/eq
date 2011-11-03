@@ -56,8 +56,8 @@ endif()
 enable_testing ()
 
 # Add tests that must run and should not produce any errors
-macro (run_test arg)
-  add_test (run_test_${arg} eq ${arg})
+macro (run_test arg opt)
+  add_test (run_test_${arg} eq ${opt} ${arg})
   set_tests_properties (run_test_${arg}
   PROPERTIES 
     PASS_REGULAR_EXPRESSION "finished parsing"
@@ -67,7 +67,7 @@ endmacro (run_test)
 # Add tests that produce errors and have appropriate error-annotations
 macro (fail_test arg)
   execute_process (COMMAND ${PROJECT_SOURCE_DIR}/tests/eq-error.sh ${arg}
-  		   OUTPUT_VARIABLE out
+		   OUTPUT_VARIABLE out
   		   ERROR_VARIABLE err
   		   RESULT_VARIABLE res)
   
@@ -93,8 +93,9 @@ endmacro(fail_test)
 
 # include files for standard testing
 file (GLOB run_tests "tests/parser_tests/*.tex")
+set (opt "-B typecheck")
 foreach (test ${run_tests})
-  run_test (${test})
+  run_test (${test} ${opt})
 endforeach ()
 
 # include files for erro-testin
@@ -104,8 +105,9 @@ foreach (test ${fail_tests})
 endforeach ()
 
 file (GLOB run_tests "tests/type_tests/*.tex")
+set (opt " ")
 foreach (test ${run_tests})
-  run_test (${test})
+  run_test (${test} ${opt})
 endforeach ()
 
 # include files for erro-testin

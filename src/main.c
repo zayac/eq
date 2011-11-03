@@ -31,10 +31,20 @@ enum
   OPT_PRINT_TYPES
 };
 
+enum
+{
+  OPT_BREAK_TYPECHECK = 0
+};
+
 char *const p_opts[] = {
   [OPT_PRINT_PROGRAM] = "program",
   [OPT_PRINT_MATCHES] = "matches",
   [OPT_PRINT_TYPES] = "types",
+  NULL
+};
+
+char *const b_opts[] = {
+  [OPT_BREAK_TYPECHECK] = "typecheck",
   NULL
 };
 
@@ -51,6 +61,7 @@ usage ()
 	   "usage:\n"
 	   "\t[-P<program,types,matches>] prints parsed program, types "
 	   "or match definitions\n"
+	   "\t[-B<typecheck>] stops compiling on typecheck stage\n"
 	   "\t[-V] prints version and exits\n" "\t<input-file>\n");
 }
 
@@ -85,7 +96,7 @@ main (int argc, char *argv[])
 
   memset (&options, 0, sizeof (options));
 
-  while (-1 != (c = getopt (argc, argv, "P:V")))
+  while (-1 != (c = getopt (argc, argv, "B:P:V")))
     switch (c)
       {
       case 'P':
@@ -104,6 +115,20 @@ main (int argc, char *argv[])
 	      break;
 	    default:
 	      fprintf (stderr, "unknown -P suboption `%s'\n", value);
+	      goto cleanup;
+	      break;
+	    }
+	break;
+      case 'B':
+	subopts = optarg;
+	while (*subopts != '\0')
+	  switch (getsubopt (&subopts, b_opts, &value))
+	    {
+	    case OPT_BREAK_TYPECHECK:
+	      options.break_typecheck = true;
+	      break;
+	    default:
+	      fprintf (stderr, "unknown -B suboption `%s'\n", value);
 	      goto cleanup;
 	      break;
 	    }
@@ -142,7 +167,8 @@ main (int argc, char *argv[])
     }
 
   parser_init (parser, lex);
-  if (parse (parser) == 0)
+
+  if (parse (parser) == 0 && !options.break_typecheck)
    typecheck ();
 
   /* printing debug routine.  */

@@ -153,6 +153,7 @@ struct eq_options
   unsigned print_program:1;
   unsigned print_matches:1;
   unsigned print_types:1;
+  unsigned break_typecheck:1;
 };
 
 extern struct eq_options options;
