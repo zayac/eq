@@ -174,6 +174,7 @@ buffer_add_char (char **buffer, char **index, size_t * size, char c)
   if (*buffer == NULL)
     {
       *buffer = (char *) malloc (initial_size * sizeof (char));
+      memset(*buffer, 0, initial_size * sizeof (char));
       *index = *buffer;
       *(*index)++ = c;
       *size = initial_size;

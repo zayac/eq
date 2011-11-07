@@ -196,6 +196,7 @@ free_tree (tree node)
   int i;
   enum tree_code code;
 
+
   if (node == NULL
       /* Types are removed separetely.  */
       || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type

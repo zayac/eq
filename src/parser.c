@@ -771,11 +771,20 @@ handle_ext_type (struct parser * parser)
 	  goto error;
     }
   else if (token_class (tok) == tok_intnum)
-    shape = make_integer_tok (tok);
+    {
+      shape = make_tree_list ();
+      tree_list_append (shape, make_integer_tok (tok));
+    }
   else if (token_class (tok) == tok_realnum)
-    shape = make_real_tok (tok);
+    {
+      shape = make_tree_list ();
+      tree_list_append (shape, make_real_tok (tok));
+    }
   else if (is_id (tok, false))
-    shape = make_identifier_tok (tok);
+    {
+      shape = make_tree_list ();
+      tree_list_append (shape, make_identifier_tok (tok));
+    }
   else
     goto error_shift;
 
@@ -1097,7 +1106,6 @@ handle_instr_list (struct parser * parser)
 
       DL_FOREACH_SAFE (TREE_LIST (t), el, tmp)
 	{
-	  DL_DELETE (TREE_LIST (t), el);
 
 	  /* There is a convention that if instruction was a \match
 	     statement, we return NULL.
@@ -1123,7 +1131,13 @@ handle_instr_list (struct parser * parser)
 
 	  if (el->entry != NULL && !parse_error)
 	    tree_list_append(instrs, el->entry);
-	  free (el);
+
+	  /* In case the error we will delete the whole list.  */
+	  if (!parse_error)
+	    {
+	      DL_DELETE (TREE_LIST (t), el);
+	      free (el);
+	    }
 	}
       free_tree (t);
     }
@@ -1131,6 +1145,7 @@ handle_instr_list (struct parser * parser)
   if (parse_error)
     {
       free_tree (instrs);
+      free_tree (t);
       return error_mark_node;
     }
   else

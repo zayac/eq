@@ -75,6 +75,7 @@ is_var_in_list (tree var, tree lst)
 int typecheck_type (tree type, tree ext_vars, tree vars)
 {
   int ret = 0;
+  
 
   assert (TREE_CODE_CLASS ( TREE_CODE (type)) == tcl_type,
 	  "type node must belong to class type");
@@ -88,10 +89,10 @@ int typecheck_type (tree type, tree ext_vars, tree vars)
 
       /* dimension must be some kind of integer type.
 	 We check here just static values.  */
-      if ((TREE_TYPE (TYPE_DIM (type)) != z_type_node &&
-	  (TREE_TYPE (TYPE_DIM (type)) != n_type_node ||
-		      TYPE_DIM (type)  != NULL ||
-		     TYPE_SHAPE (type) != NULL)))
+      if ((TREE_TYPE	(TYPE_DIM (type)) != z_type_node
+	  && (TREE_TYPE (TYPE_DIM (type)) != n_type_node
+		     ||  TYPE_DIM (type)  != NULL
+		     || TYPE_SHAPE (type) != NULL)))
 	{
 	  error_loc (TREE_LOCATION (TYPE_DIM (type)), 
 		    "type dimension must be an integer");
@@ -102,28 +103,40 @@ int typecheck_type (tree type, tree ext_vars, tree vars)
   /* validate shape.  */
   if (TYPE_SHAPE (type) != NULL)
     {
+      int dim = 0;
       struct tree_list_element *el;
+      if (TYPE_DIM (type) != NULL && TREE_CONSTANT (TYPE_DIM (type)))
+	dim = TREE_INTEGER_CST (TYPE_DIM (type));
       /* in general case, a shape is a list of integers.  */
       DL_FOREACH (TREE_LIST (TYPE_SHAPE(type)), el)
 	{
 	  int ret_val;
 	  tree t = el->entry;
+	  if (--dim <= -1)
+	    goto shape_fail;
 	  if ((ret_val = typecheck_expression (t, ext_vars, vars)))
 	    return ret_val;
   
-	  if (TREE_TYPE (t) != z_type_node ||
-	       TYPE_DIM (t) != NULL ||
-
-	     TYPE_SHAPE (t) != NULL)
+	  if (TREE_TYPE (t) != z_type_node
+	     ||   TYPE_DIM (TREE_TYPE (t)) != NULL
+	     || TYPE_SHAPE (TREE_TYPE (t)) != NULL)
 	    {
 	      error_loc (TREE_LOCATION (t),
 		"type shape must be a list of integers");
 	      ret += 1;
 	    }
 	}
+      if (dim != 0)
+	goto shape_fail;
     }
 
   return ret;
+
+shape_fail:
+  error_loc (TREE_LOCATION (TYPE_SHAPE (type)),
+    "type shape doesn't correspond with the dimension %d",
+    TREE_INTEGER_CST (TYPE_DIM (type)));
+  return ret + 1;
 }
 
 int
@@ -299,6 +312,9 @@ typecheck_function (tree func)
     }
 
   ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars);
+ 
+  /* Free list with local variables.  */
+  free_tree (vars);
   return ret;
 }
 
