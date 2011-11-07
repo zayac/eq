@@ -230,7 +230,7 @@ set_tree_operand (tree node, int idx, tree value)
 	node->base_op.operands[idx] = value;
     }
   else
-    unreachable ("nod `%s` does not have operands", TREE_CODE_NAME (code));
+    unreachable ("node `%s` does not have operands", TREE_CODE_NAME (code));
 }
 
 #define TREE_OPERAND(node, i) get_tree_operand ((node), (i))

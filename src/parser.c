@@ -1024,9 +1024,15 @@ handle_lower (struct parser * parser)
   else
     {
       if (token_class (tok) == tok_intnum)
-	t = make_integer_tok (tok);
+	{
+	  t = make_tree_list ();
+	  tree_list_append (t, make_integer_tok (tok));
+	}
       else if (is_id (tok, false))
-	t = make_identifier_tok (tok);
+	{
+	  t = make_tree_list ();
+	  tree_list_append (t, make_identifier_tok (tok));
+	}
       else if (token_is_keyword (tok, tv_frac)
 	       || token_is_keyword (tok, tv_dfrac))
 	{
@@ -2941,7 +2947,7 @@ handle_numx (struct parser * parser)
       t = handle_divide (parser);
     }
 
-  return t;
+  return handle_indexes (parser, t);
 }
 
 /*

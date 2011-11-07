@@ -487,6 +487,102 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	TREE_TYPE (expr) = TREE_TYPE (op);
       }
       break;
+    case CIRCUMFLEX:
+      {
+	tree lhs = TREE_OPERAND (expr, 0);
+	tree rhs = TREE_OPERAND (expr, 1);
+
+	ret += typecheck_expression (lhs, ext_vars, vars);
+	ret += typecheck_expression (rhs, ext_vars, vars);
+
+	if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
+	  return 1;
+
+	/* This is a recurrent variable.  */
+	if (TREE_CIRCUMFLEX_INDEX_STATUS (expr))
+	  {
+	    if (TREE_TYPE (rhs) != z_type_node)
+	      {
+		error_loc (TREE_LOCATION (lhs), "index of a recurrent variable "
+						"must be '%s`, not `%s'",
+				TREE_CODE_NAME (TREE_CODE (z_type_node)),
+				TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+		return 1;
+	      }
+	    TREE_TYPE (expr) = TREE_TYPE (lhs);
+	  }
+	else
+	  {
+	    /* This is the only case when we set the result of power operation
+	       to the integer type.  */
+	    if  (TREE_TYPE (lhs) == z_type_node
+		&& TREE_TYPE (rhs) == z_type_node
+		&& TREE_CONSTANT (rhs)
+		&& TREE_INTEGER_CST (rhs) >= 0)
+	      TREE_TYPE (expr) = z_type_node;
+	    else
+	      TREE_TYPE (expr) = r_type_node;
+	}
+      }
+      break;
+    case LOWER:
+      {
+	struct tree_list_element *el;
+	tree lhs = TREE_OPERAND (expr, 0);
+	tree rhs = TREE_OPERAND (expr, 1);
+	int dim = 0;
+	int i; 
+	tree shape = NULL;
+
+	ret += typecheck_expression (lhs, ext_vars, vars);
+
+	if  (TYPE_DIM (TREE_TYPE (lhs)) == NULL)
+	  {
+	    error_loc (TREE_LOCATION (lhs), "index operations are valid "
+					   "for vector types only");
+	    return 1;
+	  }
+	else
+	  dim = TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (lhs)));
+	
+	DL_FOREACH (TREE_LIST (rhs), el)
+	  {
+	    tree t = el->entry;
+	    if (--dim <= -1)
+	      break;
+
+	    ret += typecheck_expression (t, ext_vars, vars);
+	    /* Index is not the integer.  */
+	    if (TREE_TYPE (t) != z_type_node)
+	      {
+		error_loc (TREE_LOCATION (t), "the index must be '%s',"
+					      " not`%s'",
+			      TREE_CODE_NAME (TREE_CODE (z_type_node)),
+			      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (t))));
+		return ret + 1;
+	      }
+	  }
+
+	i = 0;
+	if (dim != 0)
+	  {
+	    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (lhs))), el)
+	      {
+		if (i++ > dim)
+		  {
+		    if (shape == NULL)
+		      shape = make_tree_list();
+		    tree_list_append (shape, el->entry);
+		  }
+	      }
+	  }
+
+	TREE_TYPE (expr) = types_assign_type (TREE_CODE (TREE_TYPE (lhs)), 
+				    TYPE_SIZE (TREE_TYPE (lhs)),
+				    dim ? make_integer_cst (dim) : NULL,
+				    shape);
+      }
+      break;
     default:
       error ("cannot typecheck expression of type `%s'",
 	     TREE_CODE_NAME (TREE_CODE (expr)));
