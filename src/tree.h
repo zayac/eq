@@ -288,6 +288,8 @@ tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);
 tree tree_copy (tree);
 bool tree_compare (tree, tree);
+void tree_list_combine (tree, tree);
+void tree_list_split (tree, tree);
 void free_list (tree);
 
 

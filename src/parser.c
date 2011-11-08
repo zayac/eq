@@ -1603,7 +1603,12 @@ handle_relations (struct parser * parser)
 	}
     }
   else
-    goto error;
+    {
+      error_loc (token_location (tok),
+		 "relation operator expected here, `%s' found",
+		 token_as_string (tok));
+      goto error;
+    }
 
   t2 = handle_expr (parser);
   if (t2 == NULL || t2 == error_mark_node)
@@ -2224,12 +2229,14 @@ handle_if_cond (struct parser * parser)
 	head = iftree = t;
       else if (status == ELSEIF)
 	{
-	  TREE_OPERAND_SET (iftree, 2, t);
+	  TREE_OPERAND_SET (iftree, 2, make_tree_list ());
+	  tree_list_append (TREE_OPERAND (iftree, 2), t);
 	  iftree = t;
 	}
       else
 	{
-	  TREE_OPERAND_SET (iftree, 2, instrs);
+	  TREE_OPERAND_SET (iftree, 2, make_tree_list ());
+	  tree_list_append (TREE_OPERAND (iftree, 2), instrs);
 	}
 
       tok = parser_get_token (parser);

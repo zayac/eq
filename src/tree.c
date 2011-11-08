@@ -327,6 +327,7 @@ make_string_cst_str (const char *value)
   t = make_tree (STRING_CST);
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
+  TREE_CONSTANT (t) = true;
   TREE_TYPE (t) =
     types_assign_type (STRING_TYPE, ((strlen (value) + 1) * 8), NULL, NULL);
   /* FIXME Add is_char modifier to the tree.  */
@@ -377,6 +378,7 @@ make_integer_cst (int value)
 {
   tree t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = value;
+  TREE_CONSTANT (t) = true; 
   TREE_TYPE (t) = z_type_node;
   return t;
 }
@@ -391,6 +393,7 @@ make_integer_tok (struct token * tok)
 
   t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
+  TREE_CONSTANT (t) = true; 
   assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
   TREE_TYPE (t) = z_type_node;
   TREE_LOCATION (t) = token_location (tok);
@@ -407,11 +410,45 @@ make_real_tok (struct token * tok)
 
   t = make_tree (REAL_CST);
   TREE_REAL_CST (t) = atof (token_as_string (tok));
+  TREE_CONSTANT (t) = true; 
   assert (TREE_CODE_TYPED (REAL_CST), "real number has to have a type");
   TREE_TYPE (t) = r_type_node;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
+
+/* Combine two lists into one.  There is no memory allocation, just pointer
+   reallocation.
+   NOTE You need both of *left* and *right* pointers to split these lists
+   again.  */
+void
+tree_list_combine (tree left, tree right)
+{
+  struct tree_list_element *tmp;
+  if (TREE_LIST (left) == NULL || TREE_LIST (right) == NULL)
+    return;
+  tmp = TREE_LIST (right)->prev;
+  TREE_LIST (right)->prev = TREE_LIST (left)->prev;
+  TREE_LIST (left)->prev->next = TREE_LIST (right);
+  TREE_LIST (left)->prev = tmp;
+  return;
+}
+
+/* Split a combined list.
+   NOTE It doesn't check if the *right* is a part of the *left* list.  So be 
+   careful to use it and check it's affilation by yourself.  */
+void
+tree_list_split (tree left, tree right)
+{
+  if (TREE_LIST (left) == NULL || TREE_LIST (right) == NULL)
+    return;
+  struct tree_list_element *tmp = TREE_LIST(left)->prev;
+  TREE_LIST(left)->prev = TREE_LIST (right)->prev;
+  TREE_LIST (right)->prev->next = NULL;
+  TREE_LIST (right)->prev = tmp;
+  return;
+}
+
 
 bool
 tree_list_append (tree list, tree elem)
@@ -696,7 +733,7 @@ tree_compare (tree left, tree right)
 	   && !strcmp (TREE_STRING_CST (left), TREE_STRING_CST (right));
 
   if (TREE_CODE (left) == INTEGER_CST)
-    return TREE_INTEGER_CST (left) != TREE_INTEGER_CST (right);
+    return TREE_INTEGER_CST (left) == TREE_INTEGER_CST (right);
 
   if (TREE_CODE (left) == REAL_CST)
     return TREE_REAL_CST (left) == TREE_REAL_CST (right);
@@ -710,5 +747,4 @@ tree_compare (tree left, tree right)
       return false;
 
   return true;
-
 }

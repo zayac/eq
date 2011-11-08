@@ -181,7 +181,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
 	  TREE_TYPE (lhs) = TREE_TYPE (rhs);
 	else if (!tree_compare (TREE_TYPE(lhs), TREE_TYPE(rhs)))
 	  {
-	    error_loc (TREE_LOCATION (lhs),
+	    error_loc (TREE_LOCATION (rhs),
 		       "Assignment left hand side type does not "
 		       "match right hand side type");
 	    return 1;
@@ -226,6 +226,41 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
 	tree_list_append (vars, lhs);
       }
       break;
+    case IF_STMT:
+      {
+	tree condition = TREE_OPERAND (stmt, 0);
+	tree tr_stmts = TREE_OPERAND (stmt, 1);
+	tree fs_stmts = TREE_OPERAND (stmt, 2);
+	tree new_scope = NULL;
+
+	/* Check condition type.  */
+	ret += typecheck_expression (condition, ext_vars, vars);
+	if (TREE_TYPE (condition) != b_type_node)
+	  {
+	    error_loc (TREE_LOCATION (condition),
+	      "condition expression is not boolean");
+	    ret += 1;
+	  }
+	
+	/* A new scope of variables is opened here. That's why we combine
+	   ext_vars and vars lists.  We just reassign pointers.  No additional
+	   memory is allocated.  */
+	tree_list_combine (ext_vars, vars);
+	new_scope = make_tree_list ();
+	ret += typecheck_stmt_list (tr_stmts, ext_vars, new_scope);
+	free_tree (new_scope);
+	/* Another scope for "else" statement list.  */
+	if (fs_stmts != NULL)
+	  {
+	    new_scope = make_tree_list ();
+	    ret += typecheck_stmt_list (fs_stmts, ext_vars, new_scope);
+	    free_tree (new_scope);
+	  }
+	/* split combined lists back.  */
+	tree_list_split (ext_vars, vars);
+      }
+      break;
+
     default:
       assert (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_expression,
 	      "expression expected");
@@ -442,6 +477,62 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	TREE_TYPE (expr) = TREE_OPERAND (t, 3);
       }
       break;
+    case EQ_EXPR:
+    case GT_EXPR:
+    case LT_EXPR:
+    case GE_EXPR:
+    case LE_EXPR:
+    case NE_EXPR:
+      {
+	tree lhs = TREE_OPERAND (expr, 0);
+	tree rhs = TREE_OPERAND (expr, 1);
+
+	ret += typecheck_expression (lhs, ext_vars, vars);
+	ret += typecheck_expression (rhs, ext_vars, vars);
+
+	if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
+	  return 1;
+
+	if (!tree_compare (TREE_TYPE (lhs), TREE_TYPE (rhs)))
+	  {
+	    /* FIXME Type printing is proper only for primitive types.  */
+	    error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
+					    "is `%s', the right operand is `%s'",
+		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
+		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+	    return 1;
+	  }
+	else
+	  TREE_TYPE (expr) = b_type_node;
+      }
+      break;
+    case LAND_EXPR:
+    case LOR_EXPR:
+      {
+	tree lhs = TREE_OPERAND (expr, 0);
+	tree rhs = TREE_OPERAND (expr, 1);
+
+	ret += typecheck_expression (lhs, ext_vars, vars);
+	ret += typecheck_expression (rhs, ext_vars, vars);
+
+	if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
+	  return 1;
+
+	if (TREE_TYPE (lhs) != b_type_node
+	 || TREE_TYPE (rhs) != b_type_node)
+	  {
+	    /* FIXME Type printing is proper only for primitive types.  */
+	    error_loc (TREE_LOCATION (lhs), "expected boolean expressions. "
+					    "The left operand is `%s', "
+					    "the right operand is `%s'.",
+		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
+		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+	    return 1;
+	  }
+	else
+	  TREE_TYPE (expr) = b_type_node;
+      }
+      break;
     case PLUS_EXPR:
     case MINUS_EXPR:
     case DIV_EXPR:
@@ -503,6 +594,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  {
 	    if (TREE_TYPE (rhs) != z_type_node)
 	      {
+		/* FIXME Type printing is proper only for primitive types.  */
 		error_loc (TREE_LOCATION (lhs), "index of a recurrent variable "
 						"must be '%s`, not `%s'",
 				TREE_CODE_NAME (TREE_CODE (z_type_node)),
@@ -527,7 +619,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       break;
     case LOWER:
       {
-	struct tree_list_element *el;
+	struct tree_list_element *el, *index_el;
 	tree lhs = TREE_OPERAND (expr, 0);
 	tree rhs = TREE_OPERAND (expr, 1);
 	int dim = 0;
@@ -535,7 +627,8 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	tree shape = NULL;
 
 	ret += typecheck_expression (lhs, ext_vars, vars);
-
+  
+	/* Indexes usage is valid only for vector types.  */
 	if  (TYPE_DIM (TREE_TYPE (lhs)) == NULL)
 	  {
 	    error_loc (TREE_LOCATION (lhs), "index operations are valid "
@@ -544,7 +637,17 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  }
 	else
 	  dim = TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (lhs)));
-	
+
+	/* The return type of index operation is constructed using the
+	   information about base type and index list.
+	   Code  -- remain the same.
+	   Dim   -- defined as <dim of base> - <length of index list>
+		    (in case of 0, assign NULL, not an empty list).
+	   Shape -- contains the tail of base type shape, where the number of
+		    elements are defined by "dim".
+		    (i.e. if the base type has {dim = 3; shape = {4, 3, 1}} and
+		    we perform indexing as _{3, 1}, then the resulting type
+		    will have {dim = 1; shape = {1}}).  */
 	DL_FOREACH (TREE_LIST (rhs), el)
 	  {
 	    tree t = el->entry;
@@ -555,6 +658,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    /* Index is not the integer.  */
 	    if (TREE_TYPE (t) != z_type_node)
 	      {
+		/* FIXME Type printing is proper only for primitive types.  */
 		error_loc (TREE_LOCATION (t), "the index must be '%s',"
 					      " not`%s'",
 			      TREE_CODE_NAME (TREE_CODE (z_type_node)),
@@ -563,11 +667,32 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	      }
 	  }
 
-	i = 0;
-	if (dim != 0)
+	if (dim != 0 && TYPE_SHAPE (TREE_TYPE (lhs)) != NULL)
 	  {
+	    i = 0;
+	
+	    /* FIXME It would be nice to combine the following loop with the
+	       previous one.  However, this loop is skiped if there is no shape
+	       defined in the base type, while the previous one runs every
+	       time when we deal with indexes.  */
+	    index_el = TREE_LIST (rhs);
 	    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (lhs))), el)
 	      {
+		/* check boundaries if both index and shape element are
+		   constants.  */
+		if (index_el != NULL)
+		  {
+		    if (TREE_CONSTANT (index_el->entry) 
+		      && TREE_CONSTANT (el->entry)
+		      && (TREE_INTEGER_CST (index_el->entry) - 
+			TREE_INTEGER_CST (el->entry) >= 0))
+		      {
+			error_loc (TREE_LOCATION (index_el->entry), 
+			    "array index is beyound its boundaries");
+			ret += 1;
+		      }
+		      index_el = index_el->next;
+		  }
 		if (i++ > dim)
 		  {
 		    if (shape == NULL)
@@ -584,6 +709,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       }
       break;
     default:
+      /* FIXME Type printing is proper only for primitive types.  */
       error ("cannot typecheck expression of type `%s'",
 	     TREE_CODE_NAME (TREE_CODE (expr)));
       unreachable (0);
