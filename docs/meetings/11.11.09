@@ -1,0 +1,38 @@
+Meeting #1. 10.11.11
+Pavel, Artem, Alex
+
+1.  Indexes/Domains.
+    At the moment it's possible to define sets of indexes using unions and
+    intersections of inequalities:
+      * \forall i
+      * 1 < i < 10 \cup i = 0
+
+    We are to introduce *domains*, which behave as self-sufficient objects.
+    With their help we can define
+      * (3, 5, 7) -x-> D
+      * 1 < i < 10 -x-> D
+      * etc.
+
+    The benefit is to use them instead of defining bulky inequalities.
+    Another option is to use them in complex types definitions.
+
+2.  Complex types/Arrays.
+    With the help of domains we can define not only rectangular arrays, but any
+    shapes of arrays.
+      * D -x-> Z -- means array of shape defined by domain D with elements of
+	type Z. 
+
+3.  Array assignment.
+    We are going to allow assigning elements of array in one statement.
+    Let's change elements of array <a>.
+    \begin{cases}
+      1 & i < 10 \lend
+      2 & i < 20 \lend
+      a_i & \otherwise
+    \end{cases}
+
+    Here <\otherwise> condition is essential. In this way a programmer can
+    decide either it's necessary to change just some elements of the array (in
+    this case he puts <a_i> expression, which denotes that value of other 
+    variables won't change), or it's possible to assign a new value (then it's
+    essential to put a new default value in <\otherwise> condition.
