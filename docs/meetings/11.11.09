@@ -1,7 +1,7 @@
 Meeting #1. 10.11.11
 Pavel, Artem, Alex
 
-1.  Indexes/Domains.
+1.  Domains.
     At the moment it's possible to define sets of indexes using unions and
     intersections of inequalities:
       * \forall i
@@ -9,30 +9,62 @@ Pavel, Artem, Alex
 
     We are to introduce *domains*, which behave as self-sufficient objects.
     With their help we can define
-      * (3, 5, 7) -x-> D
-      * 1 < i < 10 -x-> D
+      * D <- (3, 5, 7)
+      * D <- 1 < i < 10
       * etc.
 
-    The benefit is to use them instead of defining bulky inequalities.
-    Another option is to use them in complex types definitions.
+    This would allow us to generalize the concept and reuse it when defining
+    types or during the code.  A number of overloaded operations would allow
+    us to construct complicated domains of various shapes and forms.
 
-2.  Complex types/Arrays.
-    With the help of domains we can define not only rectangular arrays, but any
-    shapes of arrays.
-      * D -x-> Z -- means array of shape defined by domain D with elements of
-	type Z. 
+2.  Array types.
+    Currently an internal representation of array-types implies rectangular
+    form of the array.  In order to decouple the form and the shape from the
+    element-type of the array we use the following syntax:
+      * D -x-> Z
+    it means that the array is defined with indexes from the D domain, and
+    each element of the array is of type Z.  In case of rectangular arrays
+    D is a caretesian product of (0 <= i <= N) domains.
 
-3.  Array assignment.
-    We are going to allow assigning elements of array in one statement.
-    Let's change elements of array <a>.
-    \begin{cases}
-      1 & i < 10 \lend
-      2 & i < 20 \lend
-      a_i & \otherwise
-    \end{cases}
+    QUESTION TO DISCUSS.
+    If the set of indexes is defined by any domain, then what does the
+    following definition mean:
+      * A \in {3, 5, 7} -x-> Z
+    Literally we defined an array of integers with indexes 3, 5 and 7.
+      1) Is it a legal construction?
+      2) What is the size of the array A?
+      3) What happens if we select A[4]?
 
-    Here <\otherwise> condition is essential. In this way a programmer can
-    decide either it's necessary to change just some elements of the array (in
-    this case he puts <a_i> expression, which denotes that value of other 
-    variables won't change), or it's possible to assign a new value (then it's
-    essential to put a new default value in <\otherwise> condition.
+3.  Array definition.
+    Currently it is impossible to define an array of a given size and
+    initialize a subset of the array elements.  In order to make it
+    possible we combine declaration and array initialisation in a single
+    statement.  The syntax for this operation is the following:
+      * A_i \in D -x-> T | i:D1 
+      * <- \begin{cases} v1 & DD1; v2 & DD2; ... \end{cases}      
+      
+      With the following conditions:
+      * D1 <= D
+      * DD2 join DD2 join ... join DDN = D1,
+	if one of DDi is "otherwise" then this construct is always true.
+    
+    QUESTION TO DISCUSS.
+    One of the proposals to simplify the array initialisation code was to
+    define a domain per scope-definition like this:
+
+    \forall i \in D {
+      a_i <- ...
+      b_i <- ...
+      ...
+    }
+
+    Alternatively right now we could write the following:
+
+    a_i | i:D <- ...
+    b_i | i:D <- ...
+    ...
+
+    The advantage of the former approach is that we do not hit a special case
+    for scoping, i.e. variables defined in the scope are not visible outside.
+    In the first case we will have to violate this rule.  As a reward we get
+    no "| i:D" per statement.  Does it make any sense?
