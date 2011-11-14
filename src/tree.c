@@ -494,8 +494,11 @@ tree
 make_binary_op (enum tree_code code, tree lhs, tree rhs)
 {
   tree t;
-  assert (TREE_CODE_CLASS (code) == tcl_expression && code != UMINUS_EXPR
-	  && code != NOT_EXPR, "%s called with %s tree code", __func__,
+  assert ((TREE_CODE_CLASS (code) == tcl_expression && code != UMINUS_EXPR
+	  && code != NOT_EXPR)
+	  || code == DECLARE_STMT
+	  || code == ASSIGN_STMT
+	  , "%s called with %s tree code", __func__,
 	  TREE_CODE_NAME (code));
 
   t = make_tree (code);
@@ -544,7 +547,7 @@ make_genar (tree a, tree b, struct location loc)
 tree
 make_return (tree a, struct location loc)
 {
-  tree t = make_tree (RETURN_EXPR);
+  tree t = make_tree (RETURN_STMT);
   TREE_OPERAND_SET (t, 0, a);
   TREE_LOCATION (t) = loc;
   return t;
@@ -585,7 +588,7 @@ make_assign (enum token_kind tk, tree lhs, tree rhs)
   switch (tk)
     {
     case tv_gets:
-      return make_binary_op (ASSIGN_EXPR, lhs, rhs);
+      return make_binary_op (ASSIGN_STMT, lhs, rhs);
     default:
       unreachable ("assignment creation failed");
     }

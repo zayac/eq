@@ -36,12 +36,16 @@ print_expression (FILE * f, tree exp)
   //printf("%s\n", TREE_CODE_NAME(TREE_CODE(exp)));
   assert (exp != NULL
 	  && (TREE_CODE (exp) == FUNCTION || TREE_CODE (exp) == LIST
+
 	      || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_type
 	      || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_expression
 	      || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_constant
 	      || TREE_CODE (exp) == IDENTIFIER
 	      || TREE_CODE (exp) == ERROR_MARK
-	      || TREE_CODE (exp) == IF_STMT),
+	      || TREE_CODE (exp) == IF_STMT
+	      || TREE_CODE (exp) == DECLARE_STMT
+	      || TREE_CODE (exp) == ASSIGN_STMT
+	      || TREE_CODE (exp) == RETURN_STMT),
 	  "attempt to print non-expression tree %s",
 	  TREE_CODE_NAME (TREE_CODE (exp)));
 
@@ -232,7 +236,7 @@ print_expression (FILE * f, tree exp)
 	print_expression (f, TREE_OPERAND (exp, 0));
 	break;
       }
-    case RETURN_EXPR:
+    case RETURN_STMT:
       {
 	fprintf (f, "\\return {");
 	print_expression (f, TREE_OPERAND (exp, 0));
@@ -298,6 +302,12 @@ print_expression (FILE * f, tree exp)
 	fprintf (f, "\\end{tmatrix}");
 	break;
       }
+    case CONVERT_EXPR:
+      {
+	fprintf(f, "<convertion_marker> ");
+	print_expression (f, TREE_OPERAND (exp, 0));
+	break;
+      }
     case OTHERWISE_EXPR:
       fprintf (f, "\\otherwise");
       break;
@@ -360,10 +370,10 @@ print_expression (FILE * f, tree exp)
 	  case SLEFT_EXPR:
 	    opcode = "\\gg";
 	    break;
-	  case ASSIGN_EXPR:
+	  case ASSIGN_STMT:
 	    opcode = "\\gets";
 	    break;
-	  case DECLARE_EXPR:
+	  case DECLARE_STMT:
 	    opcode = "\\in";
 	    break;
 	  case LOWER:

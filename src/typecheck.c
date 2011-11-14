@@ -33,7 +33,7 @@ typecheck ()
 }
 
 int
-typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars)
+typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func)
 {
   struct tree_list_element *tle;
   int ret = 0;
@@ -41,7 +41,7 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars)
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
-    ret += typecheck_stmt (tle->entry, ext_vars, vars);
+    ret += typecheck_stmt (tle->entry, ext_vars, vars, func);
   return ret;
 }
 
@@ -72,7 +72,34 @@ is_var_in_list (tree var, tree lst)
   return ret;
 }
 
-int typecheck_type (tree type, tree ext_vars, tree vars)
+/* Check either type conversion is possible.
+   NOTE types are not validated here.  */
+bool
+conversion_possible (tree from, tree to)
+{
+  if ((from == z_type_node 
+    || from == n_type_node)
+    && to == r_type_node)
+    return true;
+  
+  if (TYPE_DIM (from) != NULL
+   && TYPE_DIM (to) != NULL)
+    {
+      if (tree_compare (TYPE_DIM (from), TYPE_DIM (to)))
+	{
+	  if  ((tree_compare (TYPE_SHAPE (from), TYPE_SHAPE (to))
+	   ||   TYPE_SHAPE (to) == NULL)
+	   && ((TREE_CODE (from) == Z_TYPE || TREE_CODE (from) == N_TYPE)
+	   &&   TREE_CODE (to) == R_TYPE))
+	    return true;
+	}
+    }
+
+  return false;
+}
+
+int 
+typecheck_type (tree type, tree ext_vars, tree vars)
 {
   int ret = 0;
   
@@ -140,13 +167,13 @@ shape_fail:
 }
 
 int
-typecheck_stmt (tree stmt, tree ext_vars, tree vars)
+typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 {
   int ret = 0;
 
   switch (TREE_CODE (stmt))
     {
-    case ASSIGN_EXPR:
+    case ASSIGN_STMT:
       {
 	tree lhs, rhs, var;
 	int rhs_ret;
@@ -181,15 +208,24 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
 	  TREE_TYPE (lhs) = TREE_TYPE (rhs);
 	else if (!tree_compare (TREE_TYPE(lhs), TREE_TYPE(rhs)))
 	  {
-	    error_loc (TREE_LOCATION (rhs),
+	    /* try to convert types.  */
+	    if (conversion_possible (TREE_TYPE (rhs), TREE_TYPE (lhs)))
+	      {
+		tree t = make_binary_op (CONVERT_EXPR, rhs, TREE_TYPE (lhs));
+		TREE_OPERAND_SET (stmt, 1, t);
+	      }
+	    else
+	      {
+		error_loc (TREE_LOCATION (rhs),
 		       "Assignment left hand side type does not "
 		       "match right hand side type");
-	    return 1;
+		return 1;
+	      }
 	  }
 	return 0;
       }
       break;
-    case DECLARE_EXPR:
+    case DECLARE_STMT:
       {
 	tree lhs = TREE_OPERAND (stmt, 0);
 	tree rhs = TREE_OPERAND (stmt, 1);
@@ -247,20 +283,42 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars)
 	   memory is allocated.  */
 	tree_list_combine (ext_vars, vars);
 	new_scope = make_tree_list ();
-	ret += typecheck_stmt_list (tr_stmts, ext_vars, new_scope);
+	ret += typecheck_stmt_list (tr_stmts, ext_vars, new_scope, func);
 	free_tree (new_scope);
 	/* Another scope for "else" statement list.  */
 	if (fs_stmts != NULL)
 	  {
 	    new_scope = make_tree_list ();
-	    ret += typecheck_stmt_list (fs_stmts, ext_vars, new_scope);
+	    ret += typecheck_stmt_list (fs_stmts, ext_vars, new_scope, func);
 	    free_tree (new_scope);
 	  }
 	/* split combined lists back.  */
 	tree_list_split (ext_vars, vars);
       }
       break;
-
+    case RETURN_STMT:
+      {
+	ret += typecheck_expression (TREE_OPERAND (stmt, 0), ext_vars, vars);
+	if (!tree_compare (TREE_TYPE (TREE_OPERAND (stmt, 0)), 
+	      TREE_OPERAND (func, 3)))
+	  {
+	    if (conversion_possible (TREE_TYPE (TREE_OPERAND (stmt, 0)),
+	      TREE_OPERAND (func, 3)))
+	      {
+		tree t = make_binary_op (CONVERT_EXPR, TREE_OPERAND (stmt, 0), 
+		    TREE_OPERAND (func, 3));
+		TREE_OPERAND_SET (stmt, 0, t);
+	      }
+	    else
+	      {
+		error_loc (TREE_LOCATION (TREE_OPERAND (stmt, 0)), 
+			  "wrong return value type `%s'",
+		  TREE_CODE_NAME (TREE_CODE (TREE_TYPE (TREE_OPERAND (stmt, 0)))));
+		return 1;
+	      }
+	  }
+      }
+      break;
     default:
       assert (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_expression,
 	      "expression expected");
@@ -322,9 +380,9 @@ typecheck_function (tree func)
 	    tree ext_vars = make_tree_list ();
 	    tree vars = make_tree_list ();
 	    ret_val = typecheck_type (type->entry, ext_vars, vars);
-	    
-	    free_tree (ext_vars);
-	    free_tree (vars);
+	     
+	    tree_list_append (delete_list, ext_vars);
+	    tree_list_append (delete_list, vars);
 
 	    if (ret_val)
 	      return ret_val;
@@ -346,10 +404,10 @@ typecheck_function (tree func)
       return 2;
     }
 
-  ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars);
+  ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars, func);
  
   /* Free list with local variables.  */
-  free_tree (vars);
+  tree_list_append (delete_list, vars);
   return ret;
 }
 
@@ -445,15 +503,25 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		if (!tree_compare (func_el->entry, 
 				 TREE_TYPE (expr_el->entry)))
 		    {
-		      error_loc (TREE_LOCATION (expr_el->entry), 
+		      /* try to convert types.  */
+		      if (conversion_possible 
+			    (TREE_TYPE (expr_el->entry), func_el->entry))
+			{
+			  tree t = make_binary_op (CONVERT_EXPR,
+				    expr_el->entry, func_el->entry);
+			  TREE_OPERAND_SET (expr, 1, t);
+			}
+		      else
+			{
+			  error_loc (TREE_LOCATION (expr_el->entry), 
 				"argument %u type mismatch: "
 				"`%s' expected, `%s' found",
 				expr_counter,
 				TREE_CODE_NAME (TREE_CODE (func_el->entry)),
 				TREE_CODE_NAME (TREE_CODE (TREE_TYPE 
 				 (expr_el->entry))));
-		      return 1;
-      
+			  return 1;
+		      }
 		    }
 		  func_counter++;
 		  func_el = func_el->next;
@@ -495,15 +563,26 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 
 	if (!tree_compare (TREE_TYPE (lhs), TREE_TYPE (rhs)))
 	  {
-	    /* FIXME Type printing is proper only for primitive types.  */
-	    error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
+	    /* try to convert types.  */
+	    if (conversion_possible 
+		    (TREE_TYPE (rhs), TREE_TYPE (lhs)))
+	      {
+		tree t = make_binary_op (CONVERT_EXPR,
+		    	    rhs, TREE_TYPE (lhs));
+		TREE_OPERAND_SET (expr, 1, t);
+	      }
+	    else
+	      {
+		/* FIXME Type printing is proper only for primitive types.  */
+		error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
 					    "is `%s', the right operand is `%s'",
 		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
 		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
-	    return 1;
+		return 1;
+	     }
 	  }
-	else
-	  TREE_TYPE (expr) = b_type_node;
+	
+	TREE_TYPE (expr) = b_type_node;
       }
       break;
     case LAND_EXPR:
@@ -555,14 +634,24 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 
 	if (!tree_compare (TREE_TYPE (lhs), TREE_TYPE (rhs)))
 	  {
-	    error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
+	    /* try to convert types.  */
+	    if (conversion_possible 
+		    (TREE_TYPE (rhs), TREE_TYPE (lhs)))
+	      {
+		tree t = make_binary_op (CONVERT_EXPR,
+		    	    rhs, TREE_TYPE (lhs));
+		TREE_OPERAND_SET (expr, 1, t);
+	      }
+	    else 
+	      {
+		error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
 					    "is `%s', the right operand is `%s'",
 		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
 		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
-	    return 1;
+		return 1;
+	      }
 	  }
-	else
-	  TREE_TYPE (expr) = TREE_TYPE (lhs);
+	TREE_TYPE (expr) = TREE_TYPE (lhs);
       }
       break;
     /* unary operations.  */
@@ -619,7 +708,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       break;
     case LOWER:
       {
-	struct tree_list_element *el, *index_el;
+	struct tree_list_element *el = NULL, *index_el = NULL;
 	tree lhs = TREE_OPERAND (expr, 0);
 	tree rhs = TREE_OPERAND (expr, 1);
 	int dim = 0;
@@ -640,7 +729,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 
 	/* The return type of index operation is constructed using the
 	   information about base type and index list.
-	   Code  -- remain the same.
+	   Code  -- remains the same.
 	   Dim   -- defined as <dim of base> - <length of index list>
 		    (in case of 0, assign NULL, not an empty list).
 	   Shape -- contains the tail of base type shape, where the number of
@@ -648,11 +737,20 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		    (i.e. if the base type has {dim = 3; shape = {4, 3, 1}} and
 		    we perform indexing as _{3, 1}, then the resulting type
 		    will have {dim = 1; shape = {1}}).  */
-	DL_FOREACH (TREE_LIST (rhs), el)
+	if (TYPE_SHAPE (TREE_TYPE (lhs)) != NULL)
+	  el = TREE_LIST (TYPE_SHAPE (TREE_TYPE (lhs)));
+	DL_FOREACH (TREE_LIST (rhs), index_el)
 	  {
-	    tree t = el->entry;
+	    tree t = index_el->entry;
+	  
 	    if (--dim <= -1)
-	      break;
+	      {
+		error_loc (TREE_LOCATION (t), "the number of indexes can't"
+					      " exceed type dimension, "
+					      "which is %d",
+				TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (lhs))));
+		return ret + 1;	
+	      }
 
 	    ret += typecheck_expression (t, ext_vars, vars);
 	    /* Index is not the integer.  */
@@ -665,40 +763,31 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 			      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (t))));
 		return ret + 1;
 	      }
+	    /* check boundaries if both index and shape element are
+	       constants.  */
+	    if (el != NULL)
+	      {
+		if (TREE_CONSTANT (t) && TREE_CONSTANT (el->entry) &&
+		    TREE_INTEGER_CST (t)
+		    - TREE_INTEGER_CST (el->entry) >= 0)
+	          {
+		    error_loc (TREE_LOCATION (index_el->entry), 
+		        "array index is beyond its boundaries");
+		    ret += 1;
+		  }
+		el = el->next;
+	      }
 	  }
 
-	if (dim != 0 && TYPE_SHAPE (TREE_TYPE (lhs)) != NULL)
+	if (dim > 0 && TYPE_SHAPE (TREE_TYPE (lhs)) != NULL)
 	  {
 	    i = 0;
 	
-	    /* FIXME It would be nice to combine the following loop with the
-	       previous one.  However, this loop is skiped if there is no shape
-	       defined in the base type, while the previous one runs every
-	       time when we deal with indexes.  */
-	    index_el = TREE_LIST (rhs);
-	    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (lhs))), el)
+	    for (el = el->next; el != NULL ; el = el->next)
 	      {
-		/* check boundaries if both index and shape element are
-		   constants.  */
-		if (index_el != NULL)
-		  {
-		    if (TREE_CONSTANT (index_el->entry) 
-		      && TREE_CONSTANT (el->entry)
-		      && (TREE_INTEGER_CST (index_el->entry) - 
-			TREE_INTEGER_CST (el->entry) >= 0))
-		      {
-			error_loc (TREE_LOCATION (index_el->entry), 
-			    "array index is beyound its boundaries");
-			ret += 1;
-		      }
-		      index_el = index_el->next;
-		  }
-		if (i++ > dim)
-		  {
-		    if (shape == NULL)
-		      shape = make_tree_list();
-		    tree_list_append (shape, el->entry);
-		  }
+		if (shape == NULL)
+		  shape = make_tree_list();
+		tree_list_append (shape, el->entry);
 	      }
 	  }
 

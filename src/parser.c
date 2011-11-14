@@ -2721,7 +2721,7 @@ handle_assign (struct parser * parser, tree prefix_id)
   if (expr == error_mark_node)
     goto error;
 
-  return make_binary_op (ASSIGN_EXPR, id, expr);
+  return make_binary_op (ASSIGN_STMT, id, expr);
 
 error:
   free_tree (id);
@@ -2747,7 +2747,7 @@ handle_declare (struct parser * parser, tree prefix_id)
     goto error;
 
   type = handle_ext_type (parser);
-  return make_binary_op (DECLARE_EXPR, id, type);
+  return make_binary_op (DECLARE_STMT, id, type);
 
 error:
   free_tree (id);
