@@ -1,0 +1,9 @@
+\begin{eqcode}{e}{a, b, c}{\type{Z}, \type{Z}^3_{4,3,1}, \type{Z}^1_1}{\type{Z}}
+  \alpha \in \type{Z} \lend
+  \qif {3 \leq a \leq 6 \cup a \leq 2} 
+    a \gets b_{3, 4, 0} \lend % eq-error: array index is beyond its boundaries
+    a \gets \alpha \lend
+  \qelseif {5 \leq 3}
+    a \gets 2 \lend
+  \qendif
+\end{eqcode}
