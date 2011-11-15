@@ -86,12 +86,12 @@
 \end{eqcode}
 %
 \begin{eqcode}{process}{A}{\type{Z}^1_{64}}{\type{Z}^1_{16}}
-    W \gets \begin{tvector}
+    W \gets \begin{tmatrix}
         \hex{01234567} \lend
         \hex{89ABCDEF} \lend
         \hex{FEDCBA98} \lend
         \hex{76543210} \lend
-    \end{tvector} \lend
+    \end{tmatrix} \lend
     Q \gets \call{transform}{A} \lend
     W \gets \call{P}{0,1,2,3, 0, 7, 0,W,Q} \lend \quad W \gets \call{P}{3,0,1,2, 1,12, 1,W,Q} \lend
 
@@ -132,7 +132,7 @@
 %
 \begin{eqcode}{main}{\ }{\ }{\type{Z}}
     w \in \type{Z}^1 \lend
-    w \gets \begin{tvector}
+    w \gets \begin{tmatrix}
         68 \lend
         61 \lend
         62 \lend
@@ -141,7 +141,7 @@
         68 \lend
         62 \lend
         72 \lend
-    \end{tvector} \lend
+    \end{tmatrix} \lend
     a \gets \call{divide}{w} \lend
 %    \print{\call{process}{a}} \lend
     \return{0} \lend 

@@ -180,7 +180,7 @@
 
 \newcommand{\BnfSExprOp}{
 \bHead{sexpr\_op}
-  \bAltBegin \bSpecial{idx\_numx} \bDAlt function\_call \bDAlt vector \bDAlt
+  \bAltBegin \bSpecial{idx\_numx} \bDAlt function\_call \bDAlt
   matrix \bAltEnd
 \bEnd
 }
@@ -201,18 +201,9 @@
 \bEnd
 }
 
-\newcommand{\BnfVector}{
-\bHead{vector}
-  \bToken{\bs begin} \bSymb{\{} \bToken{tvector} \bSymb{\}} \bSkip
-  \bPlus{expr\bToken{\bs lend}} \bSkip
-  \bToken{\bs end} \bSymb{\{} \bToken{tvector} \bSymb{\}}
-\bEnd
-}
-
 \newcommand{\BnfMatrix}{
 \bHead{matrix}
-  \bToken{\bs begin} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}\bSymb{\{}
-  \bSpecial{id} \bSymb{\}} \bSkip
+  \bToken{\bs begin} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}\bSkip
   \bPlus{expr \bStar{ \bSymb{\&} expr } \bToken{\bs lend}} \bSkip
   \bToken{\bs end} \bSymb{\{} \bToken{tmatrix} \bSymb{\}}
 \bEnd

@@ -100,7 +100,6 @@ tree handle_sexpr_op (struct parser *);
 tree handle_condition (struct parser *);
 tree handle_filter (struct parser *);
 tree handle_matrix (struct parser *);
-tree handle_vector (struct parser *);
 tree handle_genarray (struct parser *);
 tree handle_expr (struct parser *);
 tree handle_return (struct parser *);

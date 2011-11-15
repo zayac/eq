@@ -90,7 +90,8 @@ conversion_possible (tree from, tree to)
 	  if  ((tree_compare (TYPE_SHAPE (from), TYPE_SHAPE (to))
 	   ||   TYPE_SHAPE (to) == NULL)
 	   && ((TREE_CODE (from) == Z_TYPE || TREE_CODE (from) == N_TYPE)
-	   &&   TREE_CODE (to) == R_TYPE))
+	   &&  (TREE_CODE (to) == R_TYPE || TREE_CODE (to) == Z_TYPE
+	      || TREE_CODE (to) == N_TYPE)))
 	    return true;
 	}
     }
@@ -711,6 +712,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	struct tree_list_element *el = NULL, *index_el = NULL;
 	tree lhs = TREE_OPERAND (expr, 0);
 	tree rhs = TREE_OPERAND (expr, 1);
+	tree dim_t = NULL;
 	int dim = 0;
 	int i; 
 	tree shape = NULL;
@@ -791,10 +793,80 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	      }
 	  }
 
+	if (dim)
+	  dim_t = make_integer_cst (dim);
+
 	TREE_TYPE (expr) = types_assign_type (TREE_CODE (TREE_TYPE (lhs)), 
 				    TYPE_SIZE (TREE_TYPE (lhs)),
 				    dim ? make_integer_cst (dim) : NULL,
 				    shape);
+ 
+	if (dim_t != TYPE_DIM (TREE_TYPE (expr)))
+	  free_tree (dim_t);
+	if (shape != TYPE_SHAPE (TREE_TYPE (expr)))
+	  free_tree (shape);
+
+      }
+      break;
+    case MATRIX_EXPR:
+      {
+	tree el_list = TREE_OPERAND (expr, 0);
+	struct tree_list_element *l, *el;
+	unsigned shape_x, shape_y = 0;
+	enum tree_code code = 0;
+	size_t size = 0;
+	tree shape_t, dim_t;
+	
+	DL_FOREACH (TREE_LIST (el_list), l)
+	  {
+	    shape_x = 0;
+	    DL_FOREACH (TREE_LIST (l->entry), el)
+	      {
+		ret += typecheck_expression (el->entry, ext_vars, vars);
+
+		if  (TYPE_DIM (TREE_TYPE (el->entry)) != NULL
+		||  TYPE_SHAPE (TREE_TYPE (el->entry)) != NULL)
+		  {
+		    error_loc (TREE_LOCATION (el->entry),
+			"vector types are not supported in arrays at the moment");
+		    ret += 1;
+		  }
+
+		if (!code)
+		  code = TREE_CODE (TREE_TYPE (el->entry));
+		else if (TREE_CODE (TREE_TYPE (el->entry)) != code)
+		  {
+		    /* FIXME type conversion must be performed here.  */
+		    error_loc (TREE_LOCATION (el->entry), 
+				"type mismatch: `%s' expected, `%s' found",
+				TREE_CODE_NAME (code),
+				TREE_CODE_NAME (TREE_CODE (TREE_TYPE
+		      		(el->entry))));
+		    ret += 1;
+		  }
+		if (!size)
+		  size = TYPE_SIZE (TREE_TYPE (el->entry));
+		shape_x++;
+	      }
+	    shape_y++;
+	  }
+
+	if (shape_x == 1)	
+	  dim_t = make_integer_cst (1);
+	else
+	  dim_t = make_integer_cst (2);
+
+	shape_t = make_tree_list ();
+	if (shape_x != 1)
+	  tree_list_append (shape_t, make_integer_cst (shape_y));
+	tree_list_append (shape_t, make_integer_cst (shape_x));
+	
+	TREE_TYPE (expr) = types_assign_type (code, size, dim_t, shape_t);
+	
+	if (dim_t != TYPE_DIM (TREE_TYPE (expr)))
+	  free_tree (dim_t);
+	if (shape_t != TYPE_SHAPE (TREE_TYPE (expr)))
+	  free_tree (shape_t);
       }
       break;
     default:

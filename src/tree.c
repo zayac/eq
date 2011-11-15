@@ -513,21 +513,10 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
 }
 
 tree
-make_matrix (tree format, tree list, struct location loc)
+make_matrix (tree list, struct location loc)
 {
   tree t;
   t = make_tree (MATRIX_EXPR);
-  TREE_OPERAND_SET (t, 0, format);
-  TREE_OPERAND_SET (t, 1, list);
-  TREE_LOCATION (t) = loc;
-  return t;
-}
-
-tree
-make_vector (tree list, struct location loc)
-{
-  tree t;
-  t = make_tree (VECTOR_EXPR);
   TREE_OPERAND_SET (t, 0, list);
   TREE_LOCATION (t) = loc;
   return t;

@@ -2022,7 +2022,7 @@ out:
 
 /* sexpr_op:
    [ (\lnot | - ) ] ( idx_numx | function_call
-		      | matrix | vector | { sexpr } | ( sexpr ) )
+		      | matrix | { sexpr } | ( sexpr ) )
  */
 tree
 handle_sexpr_op (struct parser * parser)
@@ -2078,13 +2078,6 @@ handle_sexpr_op (struct parser * parser)
 	      parser_unget (parser);
 	      parser_unget (parser);
 	      t1 = handle_matrix (parser);
-	    }
-	  else if (token_is_keyword (tok, tv_tvector))
-	    {
-	      parser_unget (parser);
-	      parser_unget (parser);
-	      parser_unget (parser);
-	      t1 = handle_vector (parser);
 	    }
 	  else
 	    parser_unget (parser);
@@ -2421,14 +2414,13 @@ error:
 
 /*
    matrix:
-   \begin { tmatrix } { id }
+   \begin { tmatrix }
     [ expr [ & expr ]* \lend ]+
    \end { tmatrix }
  */
 tree
 handle_matrix (struct parser * parser)
 {
-  tree format = error_mark_node;
   tree list = error_mark_node;
   tree t = error_mark_node;
   struct token *tok;
@@ -2445,22 +2437,7 @@ handle_matrix (struct parser * parser)
     goto shift;
   if (!parser_forward_tval (parser, tv_rbrace))
     goto shift;
-  if (!parser_forward_tval (parser, tv_lbrace))
-    goto shift;
 
-  if (!is_id (parser_get_token (parser), true))
-    {
-      parser_unget (parser);
-      goto shift;
-    }
-  parser_unget (parser);
-
-  format = make_identifier_tok (parser_get_token (parser));
-
-  if (!parser_expect_tval (parser, tv_rbrace))
-    goto shift;
-
-  parser_get_token (parser);
   list = make_tree_list ();
   do
     {
@@ -2487,7 +2464,7 @@ handle_matrix (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
-  return make_matrix (format, list, loc);
+  return make_matrix (list, loc);
 
 shift:
   while (true)
@@ -2496,82 +2473,6 @@ shift:
       if (token_value (parser_get_token (parser)) != tv_lbrace)
 	continue;
       if (token_value (parser_get_token (parser)) != tv_tmatrix)
-	continue;
-      if (token_value (parser_get_token (parser)) != tv_rbrace)
-	continue;
-      break;
-    }
-error:
-  free_tree (list);
-  free_tree (t);
-  free_tree (format);
-  return error_mark_node;
-}
-
-/*
-   vector:
-   \begin { tvector }
-    [ expr \lendl ]+
-   \end { tvector }
- */
-tree
-handle_vector (struct parser * parser)
-{
-  tree list = error_mark_node;
-  tree t = error_mark_node;
-  struct token *tok;
-  struct location loc;
-
-  if (!(tok = parser_forward_tval (parser, tv_begin)))
-    goto shift;
-  else
-    loc = token_location (tok);
-
-  if (!parser_forward_tval (parser, tv_lbrace))
-    goto shift;
-  if (!parser_forward_tval (parser, tv_tvector))
-    goto shift;
-  if (!parser_forward_tval (parser, tv_rbrace))
-    goto shift;
-
-  list = make_tree_list ();
-  do
-    {
-      t = handle_expr (parser);
-      tree_list_append (list, t);
-
-      if (token_is_keyword (tok = parser_get_token (parser), tv_lend))
-	{
-	  if (token_is_keyword (tok = parser_get_token (parser), tv_end))
-	    break;
-	  else
-	    parser_unget (parser);
-	}
-      else if (token_is_keyword (tok, tv_end))
-	break;
-      else
-	goto error;
-    }
-  while (true);
-
-  if (token_value (tok) != tv_end)
-    goto error;
-
-  if (token_value (parser_get_token (parser)) != tv_lbrace)
-    goto error;
-  if (token_value (parser_get_token (parser)) != tv_tvector)
-    goto error;
-  if (token_value (parser_get_token (parser)) != tv_rbrace)
-    goto error;
-  return make_vector (list, loc);
-
-shift:
-  while (true)
-    {
-      parser_get_until_tval (parser, tv_end);
-      if (token_value (parser_get_token (parser)) != tv_lbrace)
-	continue;
-      if (token_value (parser_get_token (parser)) != tv_tvector)
 	continue;
       if (token_value (parser_get_token (parser)) != tv_rbrace)
 	continue;

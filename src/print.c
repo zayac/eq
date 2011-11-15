@@ -108,21 +108,6 @@ print_expression (FILE * f, tree exp)
 	fprintf (f, " ) ");
 	break;
       }
-    case VECTOR_EXPR:
-      {
-	struct tree_list_element *tle = NULL;
-	fprintf (f, "\\begin { tvector }\n");
-	level += 2;
-	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 0)), tle)
-	{
-	  indent (f, level);
-	  print_expression (f, tle->entry);
-	  fprintf (f, " \\lend\n");
-	}
-	level -= 2;
-	fprintf (f, "\\end{tvector}");
-	break;
-      }
     case CIRCUMFLEX:
       {
 	print_expression (f, TREE_OPERAND (exp, 0));
