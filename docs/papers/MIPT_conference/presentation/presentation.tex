@@ -1,0 +1,202 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{qtree}
+\usepackage{tikz} 
+\usepackage{amsmath, amsthm, amssymb}
+
+\usetheme{progressbar}
+\usefonttheme{professionalfonts}
+\progressbaroptions{
+  headline=sections,
+  imagename=eq.png
+}
+
+\title {Язык программирования Eq}
+\subtitle{54-я научная конференция МФТИ}
+\author{Зайченков П.О.}
+\date{26 ноября, 2011}
+\institute{
+  Московский физико-технический институт
+}
+\begin{document}
+
+\maketitle
+
+\begin{frame}
+  \frametitle{Agenda}
+  \tableofcontents
+\end{frame}
+
+\section{Структура программы}
+\subsection*{Уравнение теплопроводности}
+\begin{frame}
+  \frametitle{Структура программы}
+  \begin{block}{Краевая задача для уравнения теплопроводности}
+\begin{equation}
+\label{eq:heat_eq}
+\frac{\partial u}{\partial t} = \mu\frac{\partial^2u}{\partial x^2}\quad (\mu > 0)\  \textrm{при}\  0<t<T,\  0 < x < 1, 
+\end{equation}
+\begin{equation}
+\label{eq:start_cond}
+u(0,x) = \phi(x)
+\end{equation}
+\begin{equation}
+\label{eq:bound_cond1}
+u(t, 0) = \psi_1(t)
+\end{equation}
+\begin{equation}
+\label{eq:bound_cond2}
+u(t, 1) = \psi_2(t) 
+\end{equation}
+  \end{block}
+\end{frame}
+
+\begin{frame}
+  \begin{block}{Метод сетки}
+\begin{figure}[ht]
+  \centering
+  \setlength{\unitlength}{5cm}
+  \begin{picture}(1.2,0.9)(-0.1,-0.1)
+  \put(0,0){\line(0,1){0.8}}
+  \put(0,0){\line(1,0){1}} 
+  \put(0.167,0){\line(0,1){0.64}}  
+  \put(0.334,0){\line(0,1){0.64}}
+  \put(0.501,0){\line(0,1){0.64}}  
+  \put(0.668,0){\line(0,1){0.64}}  
+  \put(0.835,0){\line(0,1){0.64}}   
+  \put(0,0.16){\line(1,0){0.835}}   
+  \put(0,0.32){\line(1,0){0.835}}      
+  \put(0,0.48){\line(1,0){0.835}}  
+  \put(0,0.64){\line(1,0){0.835}}    
+  \put(0.336,0.32){\circle*{0.025}}
+  \put(1.01,-0.06){\large$x$}
+  \put(-0.05,0.76){\large$t$}
+  \put(-0.05,-0.06){\large$0$}  
+  \put(0.325,-0.06){\large$x_j$}  
+  \put(0.828,-0.06){\large$1$}  
+  \put(-0.05,0.31){\large$t_i$} 
+  \put(-0.06,0.62){\large$T$} 
+  \put(0.35,0.35){\large$u^i_j$} 
+  \end{picture}
+  $$t \in (0, T), x \in (0, 1)$$
+  $$ u(t,x):\quad u(0,x) = \phi(x), u(t, 0) = \psi_1(t), u(t, 1) = \psi_2(t) $$
+\end{figure}
+  \end{block}
+\end{frame}
+
+\begin{frame}
+  \begin{block}{Разностная схема}
+  \centering
+  \setlength{\unitlength}{5cm}
+  \begin{picture}(1.3,0.7)(-0.1,-0.1)
+  \put(0,0){\line(1,0){1}}
+  \put(-0.0265,-0.0261){\Large $\times$}
+  \put(0.96,-0.0261){\Large $\times$}
+  \put(0.46675,-0.0261){\Large $\times$}
+  \put(0.5,0){\line(0,1){0.5}}
+  \put(0.46675,0.4739){\Large $\times$}
+  \put(0.52,0.4739){\large $(i+1,j)$}
+  \put(0.44,-0.08){\large $(i,j)$}
+  \put(0.9,-0.08){\large $(i,j+1)$}
+  \put(-0.1,-0.08){\large $(i,j-1)$}
+  \end{picture}
+  \label{fig:template.png}
+  $$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
+  \end{block}
+\end{frame}
+
+\begin{frame}
+	\begin{exampleblock}{\ }
+	  $$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
+	\begin{itemize}
+	\item Вычисления на каждом этапе производятся независимо.
+	\item Вычисления представляют собой итеративный процесс по индексу $i$.
+\end{itemize}
+	\end{exampleblock}
+\end{frame}
+
+\section{Концепция языка Eq}
+\begin{frame}
+\frametitle{Концепция языка Eq}
+$$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
+	\scriptsize{
+	\lstinputlisting[language=Fortran,frame=single,   label=code:fortran,breaklines=true,numbers=left,caption={Язык C}]{c.c}
+	}
+\end{frame}
+
+\begin{frame}
+$$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
+	\begin{figure}[ht]
+	\scriptsize{
+	\lstinputlisting[language=Haskell,frame=single,   label=code:haskell,breaklines=true,numbers=left,caption={Haskell}]{haskell.hs}
+	}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	$$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
+	\begin{figure}[ht]
+	  \centering
+\Tree [.$u^i_j$ [.$u^{i-1}_j$ $u^{i-2}_j$ $u^{i-2}_{j-1}$ $u^{i-2}_j$ $u^{i-2}_{j+1}$ ] 
+[.$u^{i-1}_{j-1}$ ]
+$u^{i-1}_j$ $u^{i-1}_{j+1}$
+ ]
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+
+\begin{exampleblock}{$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$}
+$$
+  u^{[0]} =
+  \begin{pmatrix}
+    0.84 \\
+    0.91 \\
+    0.14 \\
+    -0.76 \\
+    -0.96 \\
+  \end{pmatrix} $$
+$$  u^{[i]}_j = 
+  \begin{cases}
+    \phi_i & j = 0 \\
+    \psi_i & j = 4 \\
+  u^{[i-1]}_j + \alpha \cdot (u^{[i-1]}_{j-1} + 2 \cdot u^{[i-1]}_j + u^{[i-1]}_{j+1})
+  & 1 \leq j \leq 3 \\
+  \end{cases}
+$$
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}
+
+	\begin{figure}[ht]
+	\scriptsize{
+	\lstinputlisting[frame=single,   label=code:haskell,breaklines=true,numbers=left,caption={\LaTeX}]{latex.tex}
+	}
+	\end{figure}
+\end{frame}
+
+\section{Выводы}
+\begin{frame}
+\frametitle{Выводы}
+\begin{exampleblock}{\ }
+	\begin{itemize}
+		\item Объединение функционального и императивного подходов.
+		\item Параллельное исполнение независимых участков.
+		\item Объединение в рекуррентные соотношения.
+		\item \LaTeX в качестве синтаксиса
+	\end{itemize}
+\end{exampleblock}
+\end{frame}
+\begin{frame}
+	\centering \underline{University of Hertfordshire} \\
+	\centering \underline{Compiler Technology and Computer Architecture Group} \\	
+	
+	\centering http://github.com/zayac/EqCode \\
+	\centering zaichenkov@gmail.com \\
+\end{frame}
+\end{document}
