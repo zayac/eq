@@ -35,11 +35,12 @@
 \subsection*{Уравнение теплопроводности}
 \begin{frame}
   \frametitle{Структура программы}
-  \begin{block}{Краевая задача для уравнения теплопроводности}
-\begin{equation}
-\label{eq:heat_eq}
-\frac{\partial u}{\partial t} = \mu\frac{\partial^2u}{\partial x^2}\quad (\mu > 0)\  \textrm{при}\  0<t<T,\  0 < x < 1, 
-\end{equation}
+  \begin{block}{Краевая задача для уравнения теплопроводности} 
+  \begin{equation}
+    \label{eq:heat_eq}
+    \frac{\partial u}{\partial t} = \mu\frac{\partial^2u}{\partial x^2}\quad (\mu
+    > 0)\  \textrm{при}\  0<t<T,\  0 < x < 1, 
+  \end{equation}
 \begin{equation}
 \label{eq:start_cond}
 u(0,x) = \phi(x)
@@ -84,7 +85,7 @@ u(t, 1) = \psi_2(t)
   \end{picture}
   $$t \in (0, T), x \in (0, 1)$$
   $$ u(t,x):\quad u(0,x) = \phi(x), u(t, 0) = \psi_1(t), u(t, 1) = \psi_2(t) $$
-\end{figure}
+  \end{figure}
   \end{block}
 \end{frame}
 
@@ -113,7 +114,7 @@ u(t, 1) = \psi_2(t)
 	\begin{exampleblock}{\ }
 	  $$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
 	\begin{itemize}
-	\item Вычисления на каждом этапе производятся независимо.
+	\item Вычисления на каждом этапе производятся независимо.  
 	\item Вычисления представляют собой итеративный процесс по индексу $i$.
 \end{itemize}
 	\end{exampleblock}
@@ -124,7 +125,8 @@ u(t, 1) = \psi_2(t)
 \frametitle{Концепция языка Eq}
 $$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
 	\scriptsize{
-	\lstinputlisting[language=Fortran,frame=single,   label=code:fortran,breaklines=true,numbers=left,caption={Язык C}]{c.c}
+	\lstinputlisting[language=Fortran,frame=single,
+	label=code:fortran,breaklines=true,numbers=left,caption={Язык C}]{c.c}
 	}
 \end{frame}
 
@@ -132,7 +134,8 @@ $$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
 $$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
 	\begin{figure}[ht]
 	\scriptsize{
-	\lstinputlisting[language=Haskell,frame=single,   label=code:haskell,breaklines=true,numbers=left,caption={Haskell}]{haskell.hs}
+	\lstinputlisting[language=Haskell,frame=single,
+	label=code:haskell,breaklines=true,numbers=left,caption={Haskell}]{haskell.hs}
 	}
 	\end{figure}
 \end{frame}
@@ -141,8 +144,8 @@ $$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
 	$$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$$
 	\begin{figure}[ht]
 	  \centering
-\Tree [.$u^i_j$ [.$u^{i-1}_j$ $u^{i-2}_j$ $u^{i-2}_{j-1}$ $u^{i-2}_j$ $u^{i-2}_{j+1}$ ] 
-[.$u^{i-1}_{j-1}$ ]
+\Tree [.$u^i_j$ [.$u^{i-1}_j$ $u^{i-2}_j$ $u^{i-2}_{j-1}$ $u^{i-2}_j$
+$u^{i-2}_{j+1}$ ] [.$u^{i-1}_{j-1}$ ]
 $u^{i-1}_j$ $u^{i-1}_{j+1}$
  ]
 	\end{figure}
@@ -150,8 +153,8 @@ $u^{i-1}_j$ $u^{i-1}_{j+1}$
 
 \begin{frame}
 
-\begin{exampleblock}{$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j + u^i_{j+1})$}
-$$
+\begin{exampleblock}{$u^{i+1}_j  = u^i_j + \alpha(u^i_{j-1} - 2u^i_j +
+u^i_{j+1})$} $$
   u^{[0]} =
   \begin{pmatrix}
     0.84 \\
@@ -164,8 +167,8 @@ $$  u^{[i]}_j =
   \begin{cases}
     \phi_i & j = 0 \\
     \psi_i & j = 4 \\
-  u^{[i-1]}_j + \alpha \cdot (u^{[i-1]}_{j-1} + 2 \cdot u^{[i-1]}_j + u^{[i-1]}_{j+1})
-  & 1 \leq j \leq 3 \\
+  u^{[i-1]}_j + \alpha \cdot (u^{[i-1]}_{j-1} + 2 \cdot u^{[i-1]}_j +
+  u^{[i-1]}_{j+1}) & 1 \leq j \leq 3 \\
   \end{cases}
 $$
 \end{exampleblock}
@@ -175,7 +178,8 @@ $$
 
 	\begin{figure}[ht]
 	\scriptsize{
-	\lstinputlisting[frame=single,   label=code:haskell,breaklines=true,numbers=left,caption={\LaTeX}]{latex.tex}
+	\lstinputlisting[frame=single,
+	label=code:haskell,breaklines=true,numbers=left,caption={\LaTeX}]{latex.tex}
 	}
 	\end{figure}
 \end{frame}
