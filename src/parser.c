@@ -864,9 +864,7 @@ upper_wrapper (struct parser *parser, tree t)
 tree
 handle_indexes (struct parser * parser, tree prefix)
 {
-  tree idx = NULL;
-  tree t = NULL;
-  bool circumflex_first = true;
+  tree up = NULL, low = NULL;
 
   if (prefix == error_mark_node)
     return error_mark_node;
@@ -874,44 +872,47 @@ handle_indexes (struct parser * parser, tree prefix)
   if (token_is_operator (parser_get_token (parser), tv_circumflex))
     {
       parser_unget (parser);
-      idx = upper_wrapper (parser, prefix);
+      up = upper_wrapper (parser, NULL);
     }
   else
-    {
-      circumflex_first = false;
-      parser_unget (parser);
-    }
+    parser_unget (parser);
 
   if (token_is_operator (parser_get_token (parser), tv_lower_index))
     {
       parser_unget (parser);
-      t = handle_lower (parser);
-
-      if (t != NULL && t != error_mark_node)
-	{
-	  if (idx != NULL)
-	    TREE_OPERAND_SET (t, 0, idx);
-	  else
-	    TREE_OPERAND_SET (t, 0, prefix);
-	  idx = t;
-	}
+      low = handle_lower (parser);
+      if (low != NULL && low != error_mark_node)
+	TREE_OPERAND_SET (low, 0, prefix);
       else
 	return error_mark_node;
     }
   else
     parser_unget (parser);
 
-  if (idx == NULL)
-    idx = prefix;
-
   /* In case we not encountered 'upper' production before the 'lower',
      we have to check now - may be 'upper' is after the 'lower' one */
-  if (!circumflex_first)
+  if (!up)
     {
-      idx = upper_wrapper (parser, idx);
+      if (token_is_operator (parser_get_token (parser), tv_circumflex))
+	{
+	  parser_unget (parser);
+	  up = upper_wrapper (parser, low);
+	}
+      else
+	{
+	  parser_unget (parser);
+	}
     }
+  else
+    TREE_OPERAND_SET (up, 0, low);
 
-  return idx;
+  if (low != NULL && up == NULL)
+    return low;
+  else if (low == NULL && up == NULL)
+    return prefix;
+  else if (low == NULL && up != NULL)
+    TREE_OPERAND_SET (up, 0, prefix);
+  return up;
 }
 
 /*

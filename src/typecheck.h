@@ -21,4 +21,7 @@ int typecheck_function (tree);
 int typecheck_stmt_list (tree, tree, tree, tree);
 int typecheck_stmt (tree, tree, tree, tree);
 int typecheck_expression (tree, tree, tree);
+int typecheck_type (tree, tree, tree);
+int typecheck_generator (tree, tree, tree);
+int typecheck_lower (tree, tree, tree, bool);
 #endif /* __TYPECHECK_H__ */
