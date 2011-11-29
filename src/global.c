@@ -62,7 +62,9 @@ void
 init_global_tree ()
 {
   global_tree[TG_ERROR_MARK] = (tree) malloc (sizeof (struct tree_base));
+  global_tree[TG_UNKNOWN_MARK] = (tree) malloc (sizeof (struct tree_base));
   TREE_CODE_SET (global_tree[TG_ERROR_MARK], ERROR_MARK);
+  TREE_CODE_SET (global_tree[TG_UNKNOWN_MARK], UNKNOWN_MARK);
   types_init ();
 }
 

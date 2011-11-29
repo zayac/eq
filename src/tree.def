@@ -29,6 +29,9 @@ DEF_TREE_CODE (EMPTY_MARK, "empty_mark", tcl_misc, 0, false)
 /* Used to return an error.  */
 DEF_TREE_CODE (ERROR_MARK, "error_mark", tcl_misc, 0, false)
 
+/* A node that has insufficient information to be parsed.  */
+DEF_TREE_CODE (UNKNOWN_MARK, "unknown_mark", tcl_misc, 0, false)
+
 /* Represents any variable declared.  */
 DEF_TREE_CODE (IDENTIFIER, "identifier_node", tcl_misc, 0, true)
 

@@ -93,6 +93,11 @@ conversion_possible (tree from, tree to)
 	   &&  (TREE_CODE (to) == R_TYPE || TREE_CODE (to) == Z_TYPE
 	      || TREE_CODE (to) == N_TYPE)))
 	    return true;
+	  
+	  /* if shape is marked as an unknown, we propose that conversion is
+	     possible, however, it has to be checked later.  */
+	  if (TYPE_SHAPE (from) == unknown_mark_node)
+	    return true;
 	}
     }
 
@@ -606,7 +611,9 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
 					  TYPE_SIZE (TREE_TYPE (lhs)),
 				    dim ? make_integer_cst (dim) : NULL,
 				    shape);
-
+      /* We consider indexing operation to be non-constant, as we can't really
+	 check it at this point.  */
+      TREE_CONSTANT (expr) = false;
       if (dim_t != TYPE_DIM (TREE_TYPE (expr)))
 	free_tree (dim_t);
       if (shape != TYPE_SHAPE (TREE_TYPE (expr)))
@@ -690,6 +697,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  {
 	    assert (TREE_TYPE (var) != NULL, 0);
 	    TREE_TYPE (expr) = TREE_TYPE (var);
+	    TREE_CONSTANT (expr) = TREE_CONSTANT (var);
 	  }
 	else
 	  {
@@ -792,6 +800,9 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  }
 	
 	TREE_TYPE (expr) = TREE_OPERAND (t, 3);
+	/* We suppose that function calls aren't constant expressions.
+	   so we can't predict the return value statically.  */
+	TREE_CONSTANT (expr) = false;
       }
       break;
     case EQ_EXPR:
@@ -832,6 +843,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  }
 	
 	TREE_TYPE (expr) = b_type_node;
+	TREE_CONSTANT (expr) = TREE_CONSTANT (lhs) && TREE_CONSTANT (rhs);
       }
       break;
     case LAND_EXPR:
@@ -901,6 +913,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	      }
 	  }
 	TREE_TYPE (expr) = TREE_TYPE (lhs);
+	TREE_CONSTANT (expr) = TREE_CONSTANT (lhs) && TREE_CONSTANT (rhs);
       }
       break;
     /* unary operations.  */
@@ -914,6 +927,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  return 1;
 
 	TREE_TYPE (expr) = TREE_TYPE (op);
+	TREE_CONSTANT (expr) = TREE_CONSTANT (op);
       }
       break;
     case CIRCUMFLEX:
@@ -967,6 +981,127 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       {
 	ret += typecheck_generator (expr, ext_vars, vars);
       }
+      break;
+    case GENAR_EXPR:
+      {
+	tree lim = TREE_OPERAND (expr, 0);
+	tree exp = TREE_OPERAND (expr, 1);
+	enum tree_code code;
+	size_t size;
+	tree dim = NULL;
+	tree shape = NULL;
+	ret += typecheck_expression (lim, ext_vars, vars);
+	ret += typecheck_expression (exp, ext_vars, vars);
+
+	if (ret)
+	  return ret;
+	code = TREE_CODE (TREE_TYPE (exp));
+	size = TYPE_SIZE (TREE_TYPE (exp));
+
+	if ((TREE_CODE (TREE_TYPE (lim)) != Z_TYPE
+	  && TREE_CODE (TREE_TYPE (lim)) != N_TYPE)
+	  || ((TYPE_DIM (TREE_TYPE (lim)) != NULL)
+	  &&  TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (lim))) != 1))
+	  {
+	    error_loc (TREE_LOCATION (expr),
+	      "boundary for 'genar' expression must be either integer"
+	      " or vector");
+	    ret += 1;
+	  }
+	if (TYPE_DIM (TREE_TYPE (lim)) == NULL)
+	  {
+    
+	    if (TYPE_DIM (TREE_TYPE (exp)) == NULL)
+	      {
+		dim = make_integer_cst (1);
+		if (TREE_CODE (lim) == INTEGER_CST)
+		  {
+		    shape = make_tree_list ();
+		    tree_list_append (shape, make_integer_cst
+			(TREE_INTEGER_CST (lim)));
+		  }
+		else
+		  /* there is lack of information to draw conclusions about
+		     shape.  */
+		  shape = unknown_mark_node;
+	      }
+	    else
+	      {
+		dim = make_integer_cst (1 
+		  + TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (exp))));
+		if (TYPE_SHAPE (TREE_TYPE (exp)) != NULL)
+		  {
+		    struct tree_list_element *el;
+		    shape = make_tree_list ();
+		    tree_list_append (shape, 
+			make_integer_cst (TREE_INTEGER_CST (lim)));
+		    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (exp))), 
+							    el)
+		      {
+			tree_list_append (shape, make_integer_cst
+			    (TREE_INTEGER_CST (el->entry)));
+		      }
+		  }
+	      }
+	  }
+	else
+	  {
+	    if (TYPE_DIM (TREE_TYPE (exp)) == NULL)
+		dim = make_integer_cst ( TREE_INTEGER_CST (
+		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (lim)))->entry));
+	    else
+	      {
+		dim = make_integer_cst (TREE_INTEGER_CST (
+		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (lim)))->entry)
+		      + TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (exp))));	
+
+	      }
+	    if (TREE_CODE (lim) == MATRIX_EXPR)
+	      {
+		struct tree_list_element *el, *tel;
+		shape = make_tree_list ();
+
+		DL_FOREACH (TREE_LIST (TREE_OPERAND (lim, 0)), tel)
+		  {
+		    DL_FOREACH (TREE_LIST (tel->entry), el)	
+		      {
+			if (TREE_CODE (el->entry) == INTEGER_CST)
+			  tree_list_append (shape, el->entry);
+			else
+			  {
+			    free_tree (shape);
+			    shape = unknown_mark_node;
+			    break;
+			  }
+		      }
+		  }
+		if (TYPE_SHAPE (TREE_TYPE (exp)) != NULL
+		 && shape != unknown_mark_node)
+		  {
+		    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (exp))), el)
+		      {
+			if (TREE_CODE (el->entry) == INTEGER_CST)
+			  tree_list_append (shape, el->entry);
+			else
+			  {
+			    free_tree (shape);
+			    shape = unknown_mark_node;
+			    break;
+			  }
+		      }
+		  }
+	      }
+	    else
+	      shape = unknown_mark_node;
+	  }
+	TREE_TYPE (expr) = types_assign_type (code, size, dim, shape);
+	
+	if (dim != TYPE_DIM (TREE_TYPE (expr))) 
+	  free_tree (dim);
+	if (shape != TYPE_SHAPE (TREE_TYPE (expr)))
+	  free_tree (shape);
+      }
+      break;
     case MATRIX_EXPR:
       {
 	tree el_list = TREE_OPERAND (expr, 0);
@@ -974,6 +1109,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	unsigned shape_x, shape_y = 0;
 	enum tree_code code = 0;
 	size_t size = 0;
+	bool const_matrix = true;
 	tree shape_t, dim_t;
 	
 	DL_FOREACH (TREE_LIST (el_list), l)
@@ -982,6 +1118,9 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    DL_FOREACH (TREE_LIST (l->entry), el)
 	      {
 		ret += typecheck_expression (el->entry, ext_vars, vars);
+
+		if (!TREE_CONSTANT (el->entry))
+		    const_matrix = false;
 
 		if  (TYPE_DIM (TREE_TYPE (el->entry)) != NULL
 		||  TYPE_SHAPE (TREE_TYPE (el->entry)) != NULL)
@@ -1016,12 +1155,14 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  dim_t = make_integer_cst (2);
 
 	shape_t = make_tree_list ();
+
+	tree_list_append (shape_t, make_integer_cst (shape_y));
 	if (shape_x != 1)
-	  tree_list_append (shape_t, make_integer_cst (shape_y));
-	tree_list_append (shape_t, make_integer_cst (shape_x));
+	  tree_list_append (shape_t, make_integer_cst (shape_x));
 	
 	TREE_TYPE (expr) = types_assign_type (code, size, dim_t, shape_t);
-	
+	TREE_CONSTANT (expr) = const_matrix;
+
 	if (dim_t != TYPE_DIM (TREE_TYPE (expr)))
 	  free_tree (dim_t);
 	if (shape_t != TYPE_SHAPE (TREE_TYPE (expr)))

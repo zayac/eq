@@ -1,0 +1,13 @@
+\begin{eqcode}{e}{a }{\type{Z}^2_{5,2}}{\type{Z}}
+  b \in \type{Z}^2 \lend
+  c \gets
+  \begin{tmatrix}
+  2 \lend
+  3 \lend
+  \end{tmatrix} \lend
+%  a \gets \genar \limits ^ {5}(c) \lend
+  b \gets \genar \limits ^ {  \begin{tmatrix} % eq-error: Assignment left hand side type does not match right hand side type
+  2 \lend
+  3 \lend
+  \end{tmatrix} }(c) \lend 
+\end{eqcode}

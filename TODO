@@ -41,8 +41,19 @@ Here is a TODO list of the things that must be done very soon.
 
 *  [DONE] A support of boolean operations in `sexpr` is needed.
 
-*  [PARTLY DONE] Errors have to be handled better (let's see how it's implemented in gcc).
+*  Errors have to be handled better (let's see how it's implemented in gcc).
 
 *  [DONE] Comments that could be viewed in LaTeX are needed.
 
 *  [DONE] In addition to `\not \eq`, `\neq` has to be supported too.
+
+*  Type conversion is done fairly bad now. The only supported conversion is
+   z_type_node => r_type_node. Need to extend it.
+
+*  Type construction can be improved in `\matrix`. For instance, if we define
+   matrix as [3; 5; 2.1; 3], then the resulting type could be `a vector of
+   float`. At this moment, this example will cause an error due to disagreement
+   of matrix elements types.
+
+*  Size property is included in the type, yet it is useless. Nevertheless, we
+   are to handle it properly.
