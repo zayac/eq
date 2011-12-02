@@ -172,49 +172,185 @@ shape_fail:
   return ret + 1;
 }
 
+/* Typecheck assign statement if the left operand is an identifier.  */
+int 
+typecheck_assign_identifier (tree stmt, tree ext_vars, tree vars)
+{
+  tree lhs, rhs, var;
+  int rhs_ret;
+
+  lhs = TREE_OPERAND (stmt, 0);
+  rhs = TREE_OPERAND (stmt, 1);
+
+  assert (TREE_CODE (lhs) == IDENTIFIER,
+	"Left hand side of the assignment expression "
+	"must be an identifier");
+
+  if ((rhs_ret = typecheck_expression (rhs, vars, ext_vars)) != 0)
+    return rhs_ret;
+      
+
+  /* Check if the variable was defined locally. */
+  if ((var = is_var_in_list (lhs, vars)) != NULL
+   || (var = is_var_in_list (lhs, ext_vars)) != NULL)
+    {
+      /* Replace the variable with the variable from the list. */
+      TREE_OPERAND_SET (stmt, 0, var);
+      free_tree (lhs);
+      lhs = TREE_OPERAND (stmt, 0);
+    }
+  else
+    {
+      tree_list_append (ext_vars, lhs);
+    }
+
+  /* FIXME Check that these types are not NULL. */
+  if (TREE_TYPE (lhs) == NULL)
+    TREE_TYPE (lhs) = TREE_TYPE (rhs);
+  else if (!tree_compare (TREE_TYPE(lhs), TREE_TYPE(rhs)))
+    {
+      /* try to convert types. */
+      if (conversion_possible (TREE_TYPE (rhs), TREE_TYPE (lhs)))
+	{
+	  tree t = make_binary_op (CONVERT_EXPR, rhs, TREE_TYPE (lhs));
+	  TREE_OPERAND_SET (stmt, 1, t);
+	}
+      else
+	{
+	  error_loc (TREE_LOCATION (rhs),
+	      "Assignment left hand side type does not "
+	      "match right hand side type");
+	  return 1;
+	}
+    }
+  return 0;
+}
+
 int
 typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 {
-  int ret = 0;
-
+  int ret = 0, tmp_ret;
+  tree new_scope;
   switch (TREE_CODE (stmt))
     {
     case ASSIGN_STMT:
       {
-	tree lhs, rhs, var;
-	int rhs_ret;
+	tree lhs = TREE_OPERAND (stmt, 0);
+	tree rhs = TREE_OPERAND (stmt, 1);
 
-	lhs = TREE_OPERAND (stmt, 0);
-	rhs = TREE_OPERAND (stmt, 1);
-
-	assert (TREE_CODE (lhs) == IDENTIFIER,
-		"Left hand side of the assignment expression "
-		"must be an identifier");
-
-	if ((rhs_ret = typecheck_expression (rhs, vars, ext_vars)) != 0)
-	  return rhs_ret;
-      
-
-	/* Check if the variable was defined locally.  */
-	if ((var = is_var_in_list (lhs, vars)) != NULL
-	    || (var = is_var_in_list (lhs, ext_vars)) != NULL)
+	if (TREE_CODE (lhs) == IDENTIFIER)
+	  return typecheck_assign_identifier (stmt, ext_vars, vars);
+	else if (TREE_CODE (lhs) == CIRCUMFLEX)
 	  {
-	    /* Replace the variable with the variable from the list.  */
-	    TREE_OPERAND_SET (stmt, 0, var);
-	    free_tree (lhs);
-	    lhs = TREE_OPERAND (stmt, 0);
+	    tree index;
+
+	    if (!TREE_CIRCUMFLEX_INDEX_STATUS (lhs))
+	      {
+		error_loc (TREE_LOCATION (lhs), "only recurrent relation "
+						"is allowed here");
+		ret += 1;
+	      }
+	    
+	    /* this check is to be performed before new scope definition.  */
+	    if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
+	      ret += typecheck_assign_identifier (TREE_OPERAND (lhs, 0),
+						  ext_vars,  
+						  vars);
+	    else
+	      {
+		/* It must be a LOWER node. 
+		   Otherwise, a parser made a bad job.  */
+		assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER
+			&& TREE_CODE (TREE_OPERAND (TREE_OPERAND (lhs, 0), 0))
+			== IDENTIFIER, "invalid node type `%s`. "
+				       "Something wrong with parser.",
+			  TREE_CODE_NAME (TREE_CODE (TREE_OPERAND (lhs, 0))));
+
+		ret += typecheck_assign_identifier (TREE_OPERAND (
+						    TREE_OPERAND (lhs, 0), 0),
+						    ext_vars,
+						    vars);
+	      }
+	  
+	      
+	    /* prepare a new scope.  */
+	    new_scope = make_tree_list ();
+	    index = TREE_OPERAND (lhs, 1);
+	    
+	    tree_list_combine (ext_vars, vars);
+	    
+	    /* a^{[i]} has different meanings depending on the context
+	      (either `i` is defined or not).  */
+	    if (TREE_CODE (index) == IDENTIFIER
+	     && !is_var_in_list (index, new_scope))
+	      {
+		TREE_TYPE (index) = z_type_node;
+		tree_list_append (new_scope, index);
+	      }
+	    else
+	      {
+		tmp_ret = typecheck_expression (index, ext_vars,
+						new_scope);
+		if (tmp_ret)
+		  {
+		    ret += tmp_ret;
+		    goto finalize_assign;
+		  }
+		if (TREE_TYPE (index) != z_type_node)
+		  {
+		    error_loc (TREE_LOCATION (index),
+			       "in case of recurrence, upper index is to be "
+			       "of type `%s', not `%s'",
+			       TREE_CODE_NAME (TREE_CODE (z_type_node)),
+			       TREE_CODE_NAME (TREE_CODE (TREE_TYPE (index))));
+		    ret += 1;
+		    goto finalize_assign;
+		  }
+	      }
+	   
+	    /* there could be lower indexes.  */
+	    if (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER)
+	      {
+		ret += typecheck_expression (TREE_OPERAND (
+					     TREE_OPERAND (lhs, 0), 1), 
+					     ext_vars,
+					     new_scope);
+	  
+	      }
+
+	    /* check the right operand at last.  */
+	    tmp_ret = typecheck_expression (rhs, ext_vars, new_scope);
+	    if (tmp_ret)
+	      {
+		ret += tmp_ret;
+		goto finalize_assign;
+	      }
 	  }
 	else
 	  {
-	    tree_list_append (ext_vars, lhs);
+	    /* It must be a LOWER node. 
+	       Otherwise, a parser made a bad job.  */
+	    assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER, 
+						"invalid node type `%s`. "
+						"Something wrong with parser.",
+			  TREE_CODE_NAME (TREE_CODE (TREE_OPERAND (lhs, 0))));
+	    ret += typecheck_expression (TREE_OPERAND (lhs, 0), ext_vars,
+					 vars);
+      	    /* check the right operand at last.  */
+	    tmp_ret = typecheck_expression (rhs, ext_vars, vars);
+	    if (tmp_ret)
+	      {
+		ret += tmp_ret;
+		goto finalize_assign;
+	      }
+
 	  }
 
-	/* FIXME Check that these types are not NULL.  */
 	if (TREE_TYPE (lhs) == NULL)
 	  TREE_TYPE (lhs) = TREE_TYPE (rhs);
 	else if (!tree_compare (TREE_TYPE(lhs), TREE_TYPE(rhs)))
 	  {
-	    /* try to convert types.  */
+	    /* try to convert types. */
 	    if (conversion_possible (TREE_TYPE (rhs), TREE_TYPE (lhs)))
 	      {
 		tree t = make_binary_op (CONVERT_EXPR, rhs, TREE_TYPE (lhs));
@@ -223,12 +359,27 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	    else
 	      {
 		error_loc (TREE_LOCATION (rhs),
-		       "Assignment left hand side type does not "
-		       "match right hand side type");
-		return 1;
+				"Assignment left hand side type does not "
+				"match right hand side type");
+		return ret + 1;
 	      }
 	  }
-	return 0;
+
+finalize_assign:
+	if (new_scope != NULL)
+	  {
+	    struct tree_list_element *el, *tmp;
+	    DL_FOREACH_SAFE (TREE_LIST (new_scope), el, tmp)
+	      {
+		DL_DELETE (TREE_LIST (new_scope), el);
+		free (el);
+	      }
+	    free_tree (new_scope);
+
+	    /* split combined lists back.  */
+	    tree_list_split (ext_vars, vars);
+	  }
+	return ret;
       }
       break;
     case DECLARE_STMT:
@@ -300,12 +451,12 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	  }
 	ret += typecheck_lower (lower, ext_vars, new_scope, true);
 	if(ret)
-	  goto finalize;
+	  goto finalize_withloop;
 
 	/* check generator.  */
 	ret += typecheck_generator (gen, ext_vars, new_scope);
 	if (ret)
-	  goto finalize;
+	  goto finalize_withloop;
 
 	DL_FOREACH (TREE_LIST (cases), el)
 	  {
@@ -326,7 +477,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 
 	  }
 
-finalize:
+finalize_withloop:
 	DL_FOREACH_SAFE (TREE_LIST (new_scope), el, tmp)
 	  {
 	    DL_DELETE (TREE_LIST (new_scope), el);
@@ -981,6 +1132,69 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       {
 	ret += typecheck_generator (expr, ext_vars, vars);
       }
+      break;
+    case FILTER_EXPR:
+      {
+	struct tree_list_element *el, *tmp;
+	tree gen = TREE_OPERAND (expr, 1);
+      	tree new_scope = make_tree_list ();
+	unsigned var_counter = 0;
+
+	tree_list_combine (ext_vars, vars);
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), el)
+	  {
+	    tree index = NULL;
+	    if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == IDENTIFIER)
+	      index = is_var_in_list (TREE_OPERAND (el->entry, 1), new_scope);
+
+	    assert (TREE_CODE (el->entry) == CIRCUMFLEX, "only operations with"
+				    " upper indexes are supported in filter");
+	    ret += typecheck_expression (TREE_OPERAND (el->entry, 0), ext_vars,
+							new_scope);
+	    
+	    if (index == NULL)
+	      {
+		if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == IDENTIFIER)
+		  {
+		    index = TREE_OPERAND (el->entry, 1);
+		    tree_list_append (new_scope, index);
+		  }
+		else
+		  ret += typecheck_expression (index, ext_vars, new_scope);
+
+		TREE_TYPE (index) = z_type_node;
+	      }
+
+	    TREE_TYPE (el->entry) = TREE_TYPE (TREE_OPERAND (el->entry, 0));
+	    var_counter++;
+	  }
+	TREE_TYPE (expr) = TREE_TYPE (TREE_OPERAND (expr, 0));
+
+	ret += typecheck_generator (gen, ext_vars, new_scope);
+
+	/* if we filter multiple variables, the type of filter expression will
+	   be the list of types.  */
+	if (var_counter == 1)
+	  TREE_TYPE (expr) = TREE_TYPE (TREE_LIST 
+			    (TREE_OPERAND (expr, 0))->entry);
+	else
+	  {
+	    TREE_TYPE (expr) = make_tree_list ();
+	    DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), el)
+	      tree_list_append (TREE_TYPE (expr), TREE_TYPE (el->entry));
+	  }
+
+	DL_FOREACH_SAFE (TREE_LIST (new_scope), el, tmp)
+	  {
+	    DL_DELETE (TREE_LIST (new_scope), el);
+	    free (el);
+	  }
+	free_tree (new_scope);
+
+	/* split combined lists back.  */
+	tree_list_split (ext_vars, vars);
+	return ret;
+     }
       break;
     case GENAR_EXPR:
       {

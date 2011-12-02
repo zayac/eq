@@ -19,35 +19,35 @@
 \begin{document}
 
 \begin{eqcode}{mod}{v, d}{\type{Z},\type{Z}}{\type{Z}}
-	res = {(v+d) \mod d } \lend
-	\return {res}
+	res \gets {(v+d) \mod d } \lend
+	\return {res} \lend
 \end{eqcode}
 
 \begin{eqcode}{simps}{f, h}{\type{R}^1,\type{R}^1}{\type{R}^1}
 	r \in \type{R}^2_{100, 80} \lend
-	n = \call{shape}{f}_0 \lend
-	undef = \genar \limits^{\call{drop}{[1], \call{shape}{f}}} 0.0 \lend
-	r_i\  |\  i \in [0,n-1] =
+	n \gets \call{shape}{f}_0 \lend
+	undef \gets \genar \limits^{\call{drop}{[1], \call{shape}{f}}} 0.0 \lend
+	r_i\  |\  i \in [0,n-1] \gets
 	\begin{cases}
 		\dfrac{11.0 \cdot f_0+14.0 \cdot f_1-f_2}{24.0} & i=0 \lend	
 		\dfrac{f_{i-1}+4.0 \cdot f_i+f_{i+1}}{3.0} & 1 \leq i \leq n-2 \lend
 		undef & \otherwise
 	\end{cases}
 	\lend	
-	rs = r_2	\lend
-	r_2 = r_1	\lend
-	r_1 = r_0	\lend
-	r_0 = undef \lend
-    r^{[i]}_i = r^{[i-2]}_{i-2} + rs^{[i-1]} \lend
-	rs^{[i]} = r^{[i-1]}_{i-1} \lend
+	rs \gets r_2	\lend
+	r_2 \gets r_1	\lend
+	r_1 \gets r_0	\lend
+	r_0 \gets undef \lend
+    r^{[i]}_i \gets r^{[i-2]}_{i-2} + rs^{[i-1]} \lend
+	rs^{[i]} \gets r^{[i-1]}_{i-1} \lend
 	\filter{r^{[i]}\  |\  i=n-1} \lend
 	\return {r \cdot h}
 \end{eqcode}
 
 \begin{eqcode}{N}{u,dx,dy}{\type{R}^2,\type{R}^1,\type{R}^1}{\type{R}^2}
-	undef = \genar \limits^{\call{drop}{[1], \call{shape}{u}}} 0.0 \lend
+	undef \gets \genar \limits^{\call{drop}{[1], \call{shape}{u}}} 0.0 \lend
 	z_{i,j}\  |\  [i,j : 0 \leq i \leq s_0 \land  0 \leq j \leq s_1]
- =  
+ \gets  
 	\begin{cases}
 		\dfrac{u_{i,j+1} - 2.0 \cdot u_{i,j} + u_{i,s_1-1}}{dy \cdot dy} 
 			& [i,j: 0 \leq i \leq s_0 \land  0 \leq j \leq 1] \lend
@@ -63,15 +63,15 @@
 		undef & \text{otherwise}
 	\end{cases}
 	\lend
-	du_0 = \dfrac{u_1-u_0}{ dx} \lend
-	du_{s_0-1} = \dfrac{u_{s_0-1}-u_{s_0}-2}{dx} \lend
+	du_0 \gets \dfrac{u_1-u_0}{ dx} \lend
+	du_{s_0-1} \gets \dfrac{u_{s_0-1}-u_{s_0}-2}{dx} \lend
 	\return {3.0 \cdot \call{simps}{z,dx}-6.0 \cdot u \cdot du}
 \end{eqcode}
 
 \begin{eqcode}{L}{u, dx}{\type{R}^1,\type{R}^1}{\type{R}^1}
-	undef = \genar \limits^{\call{drop}{[1] ,\call{shape}{u}}} 0.0 \lend
-	s = \call{shape}{u}_0 \lend
-	z_i\  |\  i \in [0, \call{take}{[1], \call{shape}{u}}] =  
+	undef \gets \genar \limits^{\call{drop}{[1] ,\call{shape}{u}}} 0.0 \lend
+	s \gets \call{shape}{u}_0 \lend
+	z_i\  |\  i \in [0, \call{take}{[1], \call{shape}{u}}] \gets
 	\begin{cases}
 		- \dfrac{u_{i+2}-2.0 \cdot u_{i+1} + 2.0 
 				\cdot u_{i-1} - u_{i-2}}{ 2.0 \cdot dx \cdot dx \cdot dx} 
@@ -79,20 +79,20 @@
 		undef 
 			& \otherwise \lend
 	\end{cases} \lend
-	z_0 = - \dfrac{u_0 -2.0 \cdot u_1 + u_2}{dx \cdot dx \cdot dx}
+	z_0 \gets - \dfrac{u_0 -2.0 \cdot u_1 + u_2}{dx \cdot dx \cdot dx}
 \lend
-	z_1 = - \dfrac{-u_0 + 3.0 \cdot u_1 - 3.0 \cdot u_2 + u_3}{ dx \cdot dx
+	z_1 \gets - \dfrac{-u_0 + 3.0 \cdot u_1 - 3.0 \cdot u_2 + u_3}{ dx \cdot dx
     \cdot dx} \lend
-	z_{s-2} = - \dfrac{-u_{s-4} + 3.0 \cdot u_{s-3} -3.0 \cdot u_{s-2} +
+	z_{s-2} \gets - \dfrac{-u_{s-4} + 3.0 \cdot u_{s-3} -3.0 \cdot u_{s-2} +
     u_{s-1}}{ dx \cdot dx \cdot dx} \lend
-	z_{s-1} = \dfrac{u_{s-3} - 2.0 \cdot u_{s-2} + u_{s-1}}{ dx \cdot dx \cdot
+	z_{s-1} \gets \dfrac{u_{s-3} - 2.0 \cdot u_{s-2} + u_{s-1}}{ dx \cdot dx \cdot
     dx} \lend
 	\return {x}
 \end{eqcode}
 
 \begin{eqcode}{prepent}{a,b,c,d,e}{\type{R}^1, \type{R}^1, \type{R}^1, \type{R}^1, \type{R}^1}{\type{R}^1, \type{R}^1, \type{R}^1, \type{R}^1}
-	n = \call{shape}{a}_0 \lend
-	undef = \genar \limits^{\call{drop}{[1], \call{shape}{a}}} 0.0 \lend
+	n \gets \call{shape}{a}_0 \lend
+	undef \gets \genar \limits^{\call{drop}{[1], \call{shape}{a}}} 0.0 \lend
 	p = q = bet = den = \genar \limits^{n} undef \lend
 	bet_0 = \dfrac{1.0}{c_0} \lend
 	p_0 = -d_0 \cdot bet_0 \lend
