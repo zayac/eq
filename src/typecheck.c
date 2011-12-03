@@ -230,16 +230,32 @@ int
 typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 {
   int ret = 0, tmp_ret;
-  tree new_scope;
+  tree new_scope = NULL;
   switch (TREE_CODE (stmt))
     {
     case ASSIGN_STMT:
       {
+	tree id = NULL;
 	tree lhs = TREE_OPERAND (stmt, 0);
 	tree rhs = TREE_OPERAND (stmt, 1);
 
 	if (TREE_CODE (lhs) == IDENTIFIER)
-	  return typecheck_assign_identifier (stmt, ext_vars, vars);
+	  {
+	    tree var;
+	    /* Check if the variable was defined locally. */
+	    if ((var = is_var_in_list (lhs, vars)) != NULL
+	     || (var = is_var_in_list (lhs, ext_vars)) != NULL)
+	      {
+		/* Replace the variable with the variable from the list. */
+		TREE_OPERAND_SET (stmt, 0, var);
+		free_tree (lhs);
+		lhs = TREE_OPERAND (stmt, 0);
+	      }
+	    else
+	      {
+		tree_list_append (ext_vars, lhs);
+	      }
+	  }
 	else if (TREE_CODE (lhs) == CIRCUMFLEX)
 	  {
 	    tree index;
@@ -251,28 +267,6 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		ret += 1;
 	      }
 	    
-	    /* this check is to be performed before new scope definition.  */
-	    if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
-	      ret += typecheck_assign_identifier (TREE_OPERAND (lhs, 0),
-						  ext_vars,  
-						  vars);
-	    else
-	      {
-		/* It must be a LOWER node. 
-		   Otherwise, a parser made a bad job.  */
-		assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER
-			&& TREE_CODE (TREE_OPERAND (TREE_OPERAND (lhs, 0), 0))
-			== IDENTIFIER, "invalid node type `%s`. "
-				       "Something wrong with parser.",
-			  TREE_CODE_NAME (TREE_CODE (TREE_OPERAND (lhs, 0))));
-
-		ret += typecheck_assign_identifier (TREE_OPERAND (
-						    TREE_OPERAND (lhs, 0), 0),
-						    ext_vars,
-						    vars);
-	      }
-	  
-	      
 	    /* prepare a new scope.  */
 	    new_scope = make_tree_list ();
 	    index = TREE_OPERAND (lhs, 1);
@@ -308,23 +302,41 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		  }
 	      }
 	   
-	    /* there could be lower indexes.  */
-	    if (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER)
+	    tmp_ret = typecheck_expression (TREE_OPERAND (lhs, 0),
+					 ext_vars,
+					 new_scope);
+	      
+	    if (tmp_ret)
 	      {
-		ret += typecheck_expression (TREE_OPERAND (
-					     TREE_OPERAND (lhs, 0), 1), 
-					     ext_vars,
-					     new_scope);
-	  
+		ret += 1;
+		goto finalize_assign;
 	      }
 
+	    if (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER)
+	      id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
+	    else if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
+	      id = TREE_OPERAND (lhs, 0);
+	    
+	    /* left operand identifier is not allowed to be the same as the
+	       identifier in the upper index.  */
+	    if (id != NULL && is_var_in_list (id, new_scope))
+	      {
+		error_loc (TREE_LOCATION (id),
+			   "array identifier `%s' is not allowed to be "
+			   "the same as upper index identifier",
+			   TREE_STRING_CST (TREE_ID_NAME (id)));
+		ret += 1;
+
+	      }
+
+	    TREE_TYPE (lhs) = TREE_TYPE (TREE_OPERAND (lhs, 0));
 	    /* check the right operand at last.  */
-	    tmp_ret = typecheck_expression (rhs, ext_vars, new_scope);
+	    /*tmp_ret = typecheck_expression (rhs, ext_vars, new_scope);
 	    if (tmp_ret)
 	      {
 		ret += tmp_ret;
 		goto finalize_assign;
-	      }
+	      }*/
 	  }
 	else
 	  {
@@ -336,14 +348,18 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 			  TREE_CODE_NAME (TREE_CODE (TREE_OPERAND (lhs, 0))));
 	    ret += typecheck_expression (TREE_OPERAND (lhs, 0), ext_vars,
 					 vars);
-      	    /* check the right operand at last.  */
-	    tmp_ret = typecheck_expression (rhs, ext_vars, vars);
-	    if (tmp_ret)
-	      {
-		ret += tmp_ret;
-		goto finalize_assign;
-	      }
-
+      
+	  }
+	
+	/* check the right operand at last.  */
+	if (TREE_CODE (lhs) == CIRCUMFLEX)
+	  tmp_ret = typecheck_expression (rhs, ext_vars, new_scope);
+	else
+	  tmp_ret = typecheck_expression (rhs, ext_vars, vars);
+	if (tmp_ret)
+	  {
+	    ret += tmp_ret;
+	    goto finalize_assign;
 	  }
 
 	if (TREE_TYPE (lhs) == NULL)
