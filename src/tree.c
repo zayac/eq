@@ -598,8 +598,8 @@ tree_list_copy (tree lst)
 
   cpy = make_tree_list ();
 
-  DL_FOREACH (TREE_LIST (lst), el) tree_list_append (cpy,
-						     tree_copy (el->entry));
+  DL_FOREACH (TREE_LIST (lst), el) 
+    tree_list_append (cpy, tree_copy (el->entry));
   return cpy;
 }
 

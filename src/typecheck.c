@@ -945,7 +945,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 			{
 			  tree t = make_binary_op (CONVERT_EXPR,
 				    expr_el->entry, func_el->entry);
-			  TREE_OPERAND_SET (expr, 1, t);
+			  expr_el->entry = t;
 			}
 		      else
 			{
@@ -957,7 +957,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 				TREE_CODE_NAME (TREE_CODE (TREE_TYPE 
 				 (expr_el->entry))));
 			  return 1;
-		      }
+			}
 		    }
 		  func_counter++;
 		  func_el = func_el->next;
