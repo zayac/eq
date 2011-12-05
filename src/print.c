@@ -268,11 +268,9 @@ print_expression (FILE * f, tree exp)
       {
 	struct tree_list_element *tle = NULL;
 	struct tree_list_element *tle2 = NULL;
-	fprintf (f, "\\begin{tmatrix}{");
-	print_expression (f, TREE_OPERAND (exp, 0));
-	fprintf (f, "}\n");
+	fprintf (f, "\\begin{tmatrix}\n");
 	level += 2;
-	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 1)), tle)
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 0)), tle)
 	{
 	  indent (f, level);
 	  DL_FOREACH (TREE_LIST (tle->entry), tle2)

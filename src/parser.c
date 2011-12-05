@@ -1024,21 +1024,20 @@ handle_lower (struct parser * parser)
     }
   else
     {
+      t = make_tree_list ();
       if (token_class (tok) == tok_intnum)
-	{
-	  t = make_tree_list ();
-	  tree_list_append (t, make_integer_tok (tok));
-	}
+	tree_list_append (t, make_integer_tok (tok));
       else if (is_id (tok, false))
-	{
-	  t = make_tree_list ();
-	  tree_list_append (t, make_identifier_tok (tok));
-	}
+	tree_list_append (t, make_identifier_tok (tok));
       else if (token_is_keyword (tok, tv_frac)
 	       || token_is_keyword (tok, tv_dfrac))
 	{
+	  tree tmp;
 	  parser_unget (parser);
-	  t = handle_divide (parser);
+	  tmp = handle_divide (parser);
+	  if (tmp == NULL || t == error_mark_node)
+	    goto error;
+	  tree_list_append (t, tmp);
 	}
       else
 	goto error;
@@ -1055,6 +1054,7 @@ error_shift:
   parser_get_until_tval (parser, tv_rbrace);
 
 error:
+  free_tree (t);
   free_tree (lower);
   return error_mark_node;
 }

@@ -27,8 +27,11 @@ typecheck ()
   int function_check = 0;
 
   DL_FOREACH (TREE_LIST (function_list), tl)
-    function_check += typecheck_function (tl->entry);
-
+    {
+      function_check += typecheck_function (tl->entry);
+      if (function_check)
+	return function_check;
+    }
   return function_check;
 }
 
@@ -41,7 +44,11 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func)
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
-    ret += typecheck_stmt (tle->entry, ext_vars, vars, func);
+    {
+      ret += typecheck_stmt (tle->entry, ext_vars, vars, func);
+      if (ret)
+	return ret;
+    }
   return ret;
 }
 
@@ -342,10 +349,10 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	  {
 	    /* It must be a LOWER node. 
 	       Otherwise, a parser made a bad job.  */
-	    assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER, 
+	    assert (TREE_CODE (lhs) == LOWER, 
 						"invalid node type `%s`. "
 						"Something wrong with parser.",
-			  TREE_CODE_NAME (TREE_CODE (TREE_OPERAND (lhs, 0))));
+			  TREE_CODE_NAME (TREE_CODE (lhs)));
 	    ret += typecheck_expression (TREE_OPERAND (lhs, 0), ext_vars,
 					 vars);
       
@@ -543,6 +550,8 @@ finalize_withloop:
     case RETURN_STMT:
       {
 	ret += typecheck_expression (TREE_OPERAND (stmt, 0), ext_vars, vars);
+	if (ret)
+	  return ret;
 	if (!tree_compare (TREE_TYPE (TREE_OPERAND (stmt, 0)), 
 	      TREE_OPERAND (func, 3)))
 	  {
@@ -730,8 +739,11 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
 	    }
 	}
       else
-	ret += typecheck_expression (t, ext_vars, vars);
-      
+	{
+	  ret += typecheck_expression (t, ext_vars, vars);
+	  if (ret)
+	    return ret;
+	}
       /* Index is not the integer.  */
       if (TREE_TYPE (t) != z_type_node)
 	{
@@ -906,7 +918,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       
 		if ((ret = typecheck_expression (expr_el->entry, 
 			      ext_vars, vars)))
-		  return 1;
+		  return ret;
 
 		expr_counter++;
 		if (func_el == NULL)
@@ -1060,26 +1072,34 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
 	  return 1;
 
-	if (!tree_compare (TREE_TYPE (lhs), TREE_TYPE (rhs)))
+
+	/* division's result is always real number.  */
+	if (TREE_CODE (expr) != DIV_EXPR)
 	  {
-	    /* try to convert types.  */
-	    if (conversion_possible 
-		    (TREE_TYPE (rhs), TREE_TYPE (lhs)))
+	    if (!tree_compare (TREE_TYPE (lhs), TREE_TYPE (rhs)))
 	      {
-		tree t = make_binary_op (CONVERT_EXPR,
-		    	    rhs, TREE_TYPE (lhs));
-		TREE_OPERAND_SET (expr, 1, t);
+		/* try to convert types.  */
+		if (conversion_possible 
+			(TREE_TYPE (rhs), TREE_TYPE (lhs)))
+		  {
+		    tree t = make_binary_op (CONVERT_EXPR,
+				rhs, TREE_TYPE (lhs));
+		    TREE_OPERAND_SET (expr, 1, t);
+		  }
+		else 
+		  {
+		    error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
+						"is `%s', the right operand is `%s'",
+			  TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
+			  TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+		    return 1;
+		  }
 	      }
-	    else 
-	      {
-		error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
-					    "is `%s', the right operand is `%s'",
-		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
-		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
-		return 1;
-	      }
+	  TREE_TYPE (expr) = TREE_TYPE (lhs);
 	  }
-	TREE_TYPE (expr) = TREE_TYPE (lhs);
+	else
+	  TREE_TYPE (expr) = r_type_node;
+	
 	TREE_CONSTANT (expr) = TREE_CONSTANT (lhs) && TREE_CONSTANT (rhs);
       }
       break;
