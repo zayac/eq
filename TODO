@@ -58,7 +58,7 @@ Here is a TODO list of the things that must be done very soon.
 *  Size property is included in the type, yet it is useless. Nevertheless, we
    are to handle it properly.
 
-*  Arrays with custom dimensions (`*` in SaC) are not supported as a function
+*  Arrays with custom dimensions (`*` in SaC) are not supported as function
    arguments.
 
 *  There is no distinction between signed and unsigned integer types.
