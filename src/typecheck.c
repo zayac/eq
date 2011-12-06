@@ -611,7 +611,7 @@ typecheck_function (tree func)
 			  "than once in argument list", 
 			  TREE_STRING_CST (TREE_ID_NAME (dup)));
 	    return 1;
-	  }
+	  } 
 
 	var_counter++;
 	if (type == NULL)
@@ -657,10 +657,12 @@ typecheck_function (tree func)
       return 2;
     }
 
+  ext_vars = tree_copy (TREE_OPERAND (func, 1));
   ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars, func);
- 
+
   /* Free list with local variables.  */
   tree_list_append (delete_list, vars);
+  tree_list_append (delete_list, ext_vars);
   return ret;
 }
 

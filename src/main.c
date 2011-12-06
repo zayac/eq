@@ -21,6 +21,7 @@
 #include "typecheck.h"
 #include "print.h"
 #include "matcher.h"
+#include "codegen.h"
 
 #include <stdlib.h>
 #include <getopt.h>
@@ -33,7 +34,8 @@ enum
 
 enum
 {
-  OPT_BREAK_PARSER = 0
+  OPT_BREAK_PARSER = 0,
+  OPT_BREAK_TYPECHECK
 };
 
 char *const p_opts[] = {
@@ -45,6 +47,7 @@ char *const p_opts[] = {
 
 char *const b_opts[] = {
   [OPT_BREAK_PARSER] = "parser",
+  [OPT_BREAK_TYPECHECK] = "typecheck",
   NULL
 };
 
@@ -126,7 +129,10 @@ main (int argc, char *argv[])
 	  switch (getsubopt (&subopts, b_opts, &value))
 	    {
 	    case OPT_BREAK_PARSER:
-	      options.break_typecheck = true;
+	      options.break_option = break_parser;
+	      break;
+	    case OPT_BREAK_TYPECHECK:
+	      options.break_option = break_typecheck;
 	      break;
 	    default:
 	      fprintf (stderr, "unknown -B suboption `%s'\n", value);
@@ -169,7 +175,7 @@ main (int argc, char *argv[])
 
   parser_init (parser, lex);
 
-  if (parse (parser) == 0 && !options.break_typecheck)
+  if (parse (parser) == 0 && options.break_option != break_parser)
    typecheck ();
 
   /* printing debug routine.  */
@@ -196,6 +202,9 @@ main (int argc, char *argv[])
       print_matches ();
     }
 
+  if (options.break_option != break_typecheck
+      && options.break_option != break_parser)
+    codegen ();
 
 cleanup:
   parser_finalize (parser);

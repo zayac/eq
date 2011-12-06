@@ -28,6 +28,12 @@ option (DEBUG_ENABLE "set debugging flag")
 # Set BUILD_LEXER variable value to ON if you want to compile the lexer only
 set (BUILD_LEXER OFF)
 
+# A list of available backends
+set (BACKENDS python haskell)
+
+# Select one of backends
+list(GET BACKENDS 0 BACKEND_LANG)
+
 set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
 	    " -D_GNU_SOURCE -pedantic")
 
@@ -39,7 +45,8 @@ configure_file (
 )
 
 include_directories ("${PROJECT_BINARY_DIR}")
-
+include_directories ("src")
+include_directories ("src/backend_${BACKEND_LANG}")
 add_subdirectory (src)
 
 add_definitions (${CFLAGS})
@@ -66,7 +73,7 @@ macro (run_test arg opt)
 endmacro (run_test)
 
 # Add tests that produce errors and have appropriate error-annotations
-macro (fail_test arg)
+macro (fail_test arg opt)
   execute_process (COMMAND ${PROJECT_SOURCE_DIR}/tests/eq-error.sh ${arg}
 		   OUTPUT_VARIABLE out
   		   ERROR_VARIABLE err
@@ -87,12 +94,11 @@ macro (fail_test arg)
     set (out "error:")
   endif()
 
-  add_test (fail_test_${arg} eq ${arg})
+  add_test (fail_test_${arg} eq ${opt} ${arg})
   set_tests_properties (fail_test_${arg}
   PROPERTIES
     PASS_REGULAR_EXPRESSION ${out})
 endmacro(fail_test)
-
 
 # include files for standard testing
 file (GLOB run_tests "tests/parser_tests/*.tex")
@@ -103,19 +109,20 @@ endforeach ()
 
 # include files for erro-testin
 file (GLOB_RECURSE fail_tests "tests/parser_tests/fail_tests/*.tex")
+set (opt "-Bparser")
 foreach (test ${fail_tests})
-  fail_test (${test})
+  fail_test (${test} ${opt})
 endforeach ()
 
 file (GLOB run_tests "tests/type_tests/*.tex")
+set (opt "-Btypecheck")
 foreach (test ${run_tests})
   run_test (${test} ${opt})
 endforeach ()
 
 # include files for erro-testin
 file (GLOB_RECURSE fail_tests "tests/type_tests/fail_tests/*.tex")
+set (opt "-Btypecheck")
 foreach (test ${fail_tests})
-  fail_test (${test})
+  fail_test (${test} ${opt})
 endforeach ()
-
-

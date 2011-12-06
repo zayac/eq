@@ -148,12 +148,19 @@ struct lexer
   bool error_notifications;
 };
 
+enum break_options
+{
+  break_nothing,
+  break_parser,
+  break_typecheck
+};
+
 struct eq_options
 {
   unsigned print_program:1;
   unsigned print_matches:1;
   unsigned print_types:1;
-  unsigned break_typecheck:1;
+  enum break_options break_option;
 };
 
 extern struct eq_options options;
