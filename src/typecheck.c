@@ -32,6 +32,7 @@ typecheck ()
       if (function_check)
 	return function_check;
     }
+  printf ("note: finished typechecking.\n");
   return function_check;
 }
 
@@ -49,33 +50,6 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func)
       if (ret)
 	return ret;
     }
-  return ret;
-}
-
-static inline tree
-is_var_in_list (tree var, tree lst)
-{
-  struct tree_list_element *tle;
-  tree ret = NULL;
-  
-
-  assert (TREE_CODE (lst) == LIST, "Variable list expected");
-  assert (TREE_CODE (var) == IDENTIFIER, "Variable expected");
-
-  if (lst == NULL)
-    return NULL;
-
-  /* NOTE we *must* return the last match value  at this point
-     because the list could be concatenation of two variable
-     lists of nested blocks. */
-  DL_FOREACH (TREE_LIST (lst), tle)
-  {
-    if (strcmp
-	(TREE_STRING_CST (TREE_ID_NAME (var)),
-	 TREE_STRING_CST (TREE_ID_NAME (tle->entry))) == 0)
-      ret = tle->entry;
-  }
-
   return ret;
 }
 

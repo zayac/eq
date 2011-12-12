@@ -68,7 +68,7 @@ macro (run_test arg opt)
 	    COMMAND eq ${opt} ${arg})
   set_tests_properties (run_test_${arg}
   PROPERTIES 
-    PASS_REGULAR_EXPRESSION "finished parsing"
+    PASS_REGULAR_EXPRESSION "finished compiling"
     FAIL_REGULAR_EXPRESSION "^error:")
 endmacro (run_test)
 
@@ -100,29 +100,36 @@ macro (fail_test arg opt)
     PASS_REGULAR_EXPRESSION ${out})
 endmacro(fail_test)
 
-# include files for standard testing
+# include files for parser testing
 file (GLOB run_tests "tests/parser_tests/*.tex")
 set (opt "-Bparser")
 foreach (test ${run_tests})
   run_test (${test} ${opt})
 endforeach ()
 
-# include files for erro-testin
+# include files for error-testing
 file (GLOB_RECURSE fail_tests "tests/parser_tests/fail_tests/*.tex")
 set (opt "-Bparser")
 foreach (test ${fail_tests})
   fail_test (${test} ${opt})
 endforeach ()
 
+#include files for typechecker testing
 file (GLOB run_tests "tests/type_tests/*.tex")
 set (opt "-Btypecheck")
 foreach (test ${run_tests})
   run_test (${test} ${opt})
 endforeach ()
 
-# include files for erro-testin
+# include files for error-testing
 file (GLOB_RECURSE fail_tests "tests/type_tests/fail_tests/*.tex")
 set (opt "-Btypecheck")
 foreach (test ${fail_tests})
   fail_test (${test} ${opt})
+endforeach ()
+
+# include files for codegen testing
+file (GLOB run_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex")
+foreach (test ${run_tests})
+  run_test (${test} "")
 endforeach ()

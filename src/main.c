@@ -176,7 +176,7 @@ main (int argc, char *argv[])
   parser_init (parser, lex);
 
   if (parse (parser) == 0 && options.break_option != break_parser)
-   typecheck ();
+    typecheck ();
 
   /* printing debug routine.  */
   if (options.print_program)
@@ -205,7 +205,7 @@ main (int argc, char *argv[])
   if (options.break_option != break_typecheck
       && options.break_option != break_parser)
     codegen ();
-
+  printf ("note: finished compiling.\n");
 cleanup:
   parser_finalize (parser);
   finalize_global_tree ();

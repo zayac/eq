@@ -425,12 +425,17 @@ void
 tree_list_combine (tree left, tree right)
 {
   struct tree_list_element *tmp;
-  if (TREE_LIST (left) == NULL || TREE_LIST (right) == NULL)
+  if (TREE_LIST (right) == NULL)
     return;
-  tmp = TREE_LIST (right)->prev;
-  TREE_LIST (right)->prev = TREE_LIST (left)->prev;
-  TREE_LIST (left)->prev->next = TREE_LIST (right);
-  TREE_LIST (left)->prev = tmp;
+  if (TREE_LIST (left) != NULL)
+    {
+      tmp = TREE_LIST (right)->prev;
+      TREE_LIST (right)->prev = TREE_LIST (left)->prev;
+      TREE_LIST (left)->prev->next = TREE_LIST (right);
+      TREE_LIST (left)->prev = tmp;
+    }
+  else
+    TREE_LIST (left) = TREE_LIST (right);
   return;
 }
 
@@ -440,12 +445,17 @@ tree_list_combine (tree left, tree right)
 void
 tree_list_split (tree left, tree right)
 {
-  if (TREE_LIST (left) == NULL || TREE_LIST (right) == NULL)
+  if (TREE_LIST (right) == NULL)
     return;
-  struct tree_list_element *tmp = TREE_LIST(left)->prev;
-  TREE_LIST(left)->prev = TREE_LIST (right)->prev;
-  TREE_LIST (right)->prev->next = NULL;
-  TREE_LIST (right)->prev = tmp;
+  if (TREE_LIST (left) != TREE_LIST (right))
+    {
+      struct tree_list_element *tmp = TREE_LIST(left)->prev;
+      TREE_LIST(left)->prev = TREE_LIST (right)->prev;
+      TREE_LIST (right)->prev->next = NULL;
+      TREE_LIST (right)->prev = tmp;
+    }
+  else
+    TREE_LIST (left) = NULL;
   return;
 }
 

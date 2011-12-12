@@ -40,5 +40,6 @@ tree add_user_type (tree type);
 tree function_exists (const char *);
 tree constant_exists (const char *);
 bool type_lists_eq (tree, tree);
+tree is_var_in_list (tree, tree);
 
 #endif /* __GLOBAL_H__  */
