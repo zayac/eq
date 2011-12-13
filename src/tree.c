@@ -62,6 +62,22 @@ static tree *atomic_trees = NULL;
 static size_t atomic_trees_size = 0;
 static size_t atomic_trees_idx = 0;
 
+
+/* Convert tree into it's string representation.  
+   NOTE This string is your resposibility to clean up.  */
+char* 
+tree_to_str (tree t)
+{
+  FILE* stream;
+  char* s;
+  size_t size;
+  stream = open_memstream (&s, &size);
+  print_expression (stream, t);
+  fflush (stream);
+  fclose (stream);
+  return s;
+}
+
 size_t
 get_tree_size (enum tree_code code)
 {

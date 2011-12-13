@@ -17,7 +17,9 @@
 
 int codegen ();
 int codegen_function (FILE*, tree);
-int codegen_stmt_list (FILE*, tree, char*);
-int codegen_stmt (FILE*, tree, char*);
+int codegen_stmt_list (FILE*, tree, char*, tree);
+int codegen_stmt (FILE*, tree, char*, tree);
 int codegen_expression (FILE*, tree);
+int codegen_genar (FILE*, tree, struct tree_list_element*);
+int codegen_iterative (FILE*, tree, tree);
 #endif /* __CODEGEN_H__ */

@@ -273,12 +273,15 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		  }
 		if (TREE_TYPE (index) != z_type_node)
 		  {
+		    char* z_type = tree_to_str (z_type_node);
+		    char* index_type = tree_to_str (TREE_TYPE (index));
 		    error_loc (TREE_LOCATION (index),
 			       "in case of recurrence, upper index is to be "
 			       "of type `%s', not `%s'",
-			       TREE_CODE_NAME (TREE_CODE (z_type_node)),
-			       TREE_CODE_NAME (TREE_CODE (TREE_TYPE (index))));
+			       z_type, index_type);
 		    ret += 1;
+		    free (z_type);
+		    free (index_type);
 		    goto finalize_assign;
 		  }
 	      }
@@ -465,10 +468,13 @@ finalize_assign:
 	    
 	    if (!tree_compare (TREE_TYPE (var), TREE_TYPE (exp))) 
 	      {
+		char* var_type = tree_to_str (TREE_TYPE (var));
+		char* exp_type = tree_to_str (TREE_TYPE (exp));
 		error_loc (TREE_LOCATION (exp), "type mismatch. `%s' expected,"
 						" `%s' found.",
-				TREE_CODE_NAME (TREE_CODE (TREE_TYPE (var))),
-				TREE_CODE_NAME (TREE_CODE (TREE_TYPE (exp))));
+					        var_type, exp_type);
+		free (var_type);
+		free (exp_type);
 		ret += 1;
 	      }
 
@@ -538,9 +544,11 @@ finalize_withloop:
 	      }
 	    else
 	      {
+		char* type = tree_to_str (TREE_TYPE (TREE_OPERAND (stmt, 0)));
 		error_loc (TREE_LOCATION (TREE_OPERAND (stmt, 0)), 
 			  "wrong return value type `%s'",
-		  TREE_CODE_NAME (TREE_CODE (TREE_TYPE (TREE_OPERAND (stmt, 0)))));
+			  type);
+		free (type);
 		return 1;
 	      }
 	  }
@@ -723,11 +731,14 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
       /* Index is not the integer.  */
       if (TREE_TYPE (t) != z_type_node)
 	{
-	  /* FIXME Type printing is proper only for primitive types.  */
+	  char* z_type = tree_to_str (z_type_node);
+	  char* t_type = tree_to_str (TREE_TYPE (t));
 	  error_loc (TREE_LOCATION (t), "the index must be '%s',"
 					" not`%s'",
-			TREE_CODE_NAME (TREE_CODE (z_type_node)),
-			TREE_CODE_NAME (TREE_CODE (TREE_TYPE (t))));
+					z_type,
+					t_type);
+	  free (z_type);
+	  free (t_type);
 	  return ret + 1;
 	}
 
@@ -925,13 +936,16 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 			}
 		      else
 			{
+			  char* func_el_type = tree_to_str (func_el->entry);
+			  char* expr_el_type = tree_to_str (TREE_TYPE
+							    (expr_el->entry));
 			  error_loc (TREE_LOCATION (expr_el->entry), 
 				"argument %u type mismatch: "
 				"`%s' expected, `%s' found",
 				expr_counter,
-				TREE_CODE_NAME (TREE_CODE (func_el->entry)),
-				TREE_CODE_NAME (TREE_CODE (TREE_TYPE 
-				 (expr_el->entry))));
+				func_el_type, expr_el_type);
+			  free (func_el_type);
+			  free (expr_el_type);
 			  return 1;
 			}
 		    }
@@ -988,11 +1002,13 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	      }
 	    else
 	      {
-		/* FIXME Type printing is proper only for primitive types.  */
+	 	char* lhs_type = tree_to_str (TREE_TYPE (lhs));
+		char* rhs_type = tree_to_str (TREE_TYPE (rhs));
 		error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
 					    "is `%s', the right operand is `%s'",
-		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
-		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+					    lhs_type, rhs_type);
+		free (lhs_type);
+		free (rhs_type);
 		return 1;
 	     }
 	  }
@@ -1016,12 +1032,14 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	if (TREE_TYPE (lhs) != b_type_node
 	 || TREE_TYPE (rhs) != b_type_node)
 	  {
-	    /* FIXME Type printing is proper only for primitive types.  */
+    	    char* lhs_type = tree_to_str (TREE_TYPE (lhs));
+	    char* rhs_type = tree_to_str (TREE_TYPE (rhs));
 	    error_loc (TREE_LOCATION (lhs), "expected boolean expressions. "
 					    "The left operand is `%s', "
 					    "the right operand is `%s'.",
-		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
-		      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+		      lhs_type, rhs_type);
+	    free (lhs_type);
+	    free (rhs_type);
 	    return 1;
 	  }
 	else
@@ -1064,10 +1082,13 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		  }
 		else 
 		  {
+		    char* lhs_type = tree_to_str (TREE_TYPE (lhs));
+		    char* rhs_type = tree_to_str (TREE_TYPE (rhs));
 		    error_loc (TREE_LOCATION (lhs), "type mismatch. the left operand "
 						"is `%s', the right operand is `%s'",
-			  TREE_CODE_NAME (TREE_CODE (TREE_TYPE (lhs))),
-			  TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+			  lhs_type, rhs_type);
+		    free (lhs_type);
+		    free (rhs_type);
 		    return 1;
 		  }
 	      }
@@ -1109,11 +1130,14 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  {
 	    if (TREE_TYPE (rhs) != z_type_node)
 	      {
-		/* FIXME Type printing is proper only for primitive types.  */
+		char* z_type = tree_to_str (z_type_node);
+		char* rhs_type = tree_to_str (TREE_TYPE (rhs));
 		error_loc (TREE_LOCATION (lhs), "index of a recurrent variable "
 					      "must be '%s`, not `%s'",
-			      TREE_CODE_NAME (TREE_CODE (z_type_node)),
-			      TREE_CODE_NAME (TREE_CODE (TREE_TYPE (rhs))));
+			   z_type,
+			   rhs_type);
+		free (z_type);
+		free (rhs_type);
 		return 1;
 	      }
 	    TREE_TYPE (expr) = TREE_TYPE (lhs);
@@ -1292,7 +1316,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		    DL_FOREACH (TREE_LIST (tel->entry), el)	
 		      {
 			if (TREE_CODE (el->entry) == INTEGER_CST)
-			  tree_list_append (shape, el->entry);
+			  tree_list_append (shape, tree_copy (el->entry));
 			else
 			  {
 			    free_tree (shape);
@@ -1307,7 +1331,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (exp))), el)
 		      {
 			if (TREE_CODE (el->entry) == INTEGER_CST)
-			  tree_list_append (shape, el->entry);
+			  tree_list_append (shape, tree_copy (el->entry));
 			else
 			  {
 			    free_tree (shape);
@@ -1320,6 +1344,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    else
 	      shape = unknown_mark_node;
 	  }
+
 	TREE_TYPE (expr) = types_assign_type (code, size, dim, shape);
 	
 	if (dim != TYPE_DIM (TREE_TYPE (expr))) 
@@ -1328,6 +1353,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  free_tree (shape);
       }
       break;
+
     case MATRIX_EXPR:
       {
 	tree el_list = TREE_OPERAND (expr, 0);
@@ -1360,12 +1386,12 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		  code = TREE_CODE (TREE_TYPE (el->entry));
 		else if (TREE_CODE (TREE_TYPE (el->entry)) != code)
 		  {
-		    /* FIXME type conversion must be performed here.  */
+		    char* el_type = tree_to_str (TREE_TYPE (el->entry));
 		    error_loc (TREE_LOCATION (el->entry), 
 				"type mismatch: `%s' expected, `%s' found",
 				TREE_CODE_NAME (code),
-				TREE_CODE_NAME (TREE_CODE (TREE_TYPE
-		      		(el->entry))));
+				el_type);
+		    free (el_type);
 		    ret += 1;
 		  }
 		if (!size)

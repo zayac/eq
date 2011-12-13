@@ -26,6 +26,7 @@
   } while (0)
 
 static int level;
+
 int 
 codegen ()
 {
@@ -58,6 +59,8 @@ codegen_function (FILE* f, tree func)
   struct tree_list_element *el;
   int error = 0;
   char* func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0))); 
+  /* Here we store variables which have recurrent dependencies.  */
+  tree iter_list;
 
   assert (TREE_CODE (func) == FUNCTION, "function tree expected");
   if (strcmp(func_name, "\\mu"))
@@ -73,25 +76,43 @@ codegen_function (FILE* f, tree func)
     }
   fprintf (f, "):\n");
   level++;
-  error = codegen_stmt_list (f, TREE_OPERAND (func, 4), func_name); 
+  iter_list = make_tree_list ();
+  error = codegen_stmt_list (f, TREE_OPERAND (func, 4), func_name, iter_list); 
+  DL_FOREACH (TREE_LIST (iter_list), el)
+    {
+      DL_DELETE (TREE_LIST (iter_list), el);
+      free (el);
+    }
+  free_tree (iter_list);
   level--;
   indent (f, level);
   return error;
 }
 
 int
-codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
+codegen_stmt_list (FILE* f, tree stmt_list, char* func_name, tree iter_list)
 {
   struct tree_list_element *tle;
   int error = 0;
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
   DL_FOREACH (TREE_LIST (stmt_list), tle)
-    error += codegen_stmt (f, tle->entry, func_name);
+    error += codegen_stmt (f, tle->entry, func_name, iter_list);
   return error;
 }
 
+/* TODO Iterative process on the upper index is to be implemented here.  */
+/*  Python code examples:
+    N = lambda i: 1 if (i == 1 or i == 2) else N(i-1) + N(i-2)
+    L = lambda i: n if i == 0 else [L(i-1)[j]+1 for j in range(len(n))].  */
 int
-codegen_stmt (FILE* f, tree stmt, char* func_name)
+codegen_iterative (FILE* f, tree stmt, tree iter_list)
+{
+
+  return 0;
+}
+
+int
+codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 {
   int error = 0;
   indent (f, level); 
@@ -99,9 +120,15 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
     {
     case ASSIGN_STMT:
       {
-	codegen_expression (f, TREE_OPERAND (stmt, 0));
-    	fprintf (f, " = ");
-	codegen_expression (f, TREE_OPERAND (stmt, 1));
+	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == CIRCUMFLEX
+	 && TREE_CIRCUMFLEX_INDEX_STATUS (stmt))
+	  codegen_iterative (f, stmt, iter_list);
+	else
+	  {
+	    codegen_expression (f, TREE_OPERAND (stmt, 0));
+	    fprintf (f, " = ");
+	    codegen_expression (f, TREE_OPERAND (stmt, 1));
+	  }
       }
       break;
     case DECLARE_STMT:
@@ -211,9 +238,13 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
       break;
     case RETURN_STMT:
       {
-	fprintf (f, "print('%s -> {}'.format(", func_name);
-	error += codegen_expression (f, TREE_OPERAND (stmt, 0));
-	fprintf (f, "))\n");
+	/* print return value of main `\mu' function.  */
+	if (!strcmp(func_name, "\\mu"))
+	  {
+	    fprintf (f, "print(");
+	    error += codegen_expression (f, TREE_OPERAND (stmt, 0));
+	    fprintf (f, ")\n");
+	  }
 	indent(f, level);
 	fprintf (f, "return(");
 	codegen_expression (f, TREE_OPERAND (stmt, 0));
@@ -226,14 +257,14 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	error += codegen_expression (f, TREE_OPERAND (stmt, 0));
 	fprintf (f, ":\n");
 	level++;
-	error += codegen_stmt_list (f, TREE_OPERAND (stmt, 1), func_name);
+	error += codegen_stmt_list (f, TREE_OPERAND (stmt, 1), func_name, iter_list);
 	level--;
 	indent (f, level);
 	if (TREE_OPERAND (stmt, 2) != NULL)
 	  {
 	    fprintf (f, "else:\n");
 	    level++;
-	    error += codegen_stmt_list (f, TREE_OPERAND (stmt, 2), func_name);
+	    error += codegen_stmt_list (f, TREE_OPERAND (stmt, 2), func_name, iter_list);
 	    level--;
 	  }
       }
@@ -248,6 +279,20 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
       return error;
     }
     fprintf (f, "\n");
+  return error;
+}
+
+int
+codegen_genar (FILE* f, tree expr, struct tree_list_element *shape)
+{
+  int error = 0;
+  if (shape == NULL)
+    return codegen_expression (f, expr);
+  fprintf (f, "[");
+  error += codegen_genar (f, expr, shape->next);
+  fprintf (f, " for __i in range (");
+  error += codegen_expression (f, TREE_LIST (shape->entry)->entry);
+  fprintf (f, ")]");
   return error;
 }
 
@@ -356,7 +401,7 @@ codegen_expression (FILE* f, tree expr)
 	  {
 	    error += codegen_expression (f, el->entry);
 	    if (el->next != NULL)
-	      fprintf (f, ", ");
+	      fprintf (f, "][");
 	  }
 	fprintf (f, "]");
       }
@@ -370,16 +415,35 @@ codegen_expression (FILE* f, tree expr)
       {
 	assert (!TREE_CIRCUMFLEX_INDEX_STATUS (expr), "circumflex as index "
 		"is not supported by now");
-	fprintf (f, "(");
-	error += codegen_expression (f, TREE_OPERAND (expr, 0));
-	fprintf (f, "**");
-	error += codegen_expression (f, TREE_OPERAND (expr, 1));
-	fprintf (f, ")");
+	if (!TREE_CIRCUMFLEX_INDEX_STATUS (expr))
+	  {
+	    fprintf (f, "(");
+	    error += codegen_expression (f, TREE_OPERAND (expr, 0));
+	    fprintf (f, "**");
+	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
+	    fprintf (f, ")");
+	  }
       }
       break;
     case CONVERT_EXPR:
       {
 	error += codegen_expression (f, TREE_OPERAND (expr, 0));
+      }
+      break;
+    case GENAR_EXPR:
+      {
+	if (TREE_CODE (TREE_OPERAND (expr, 0)) == INTEGER_CST)
+	  {
+	    fprintf (f, "[");
+	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
+	    fprintf (f, " for __i in range(");
+	    error += codegen_expression (f, TREE_OPERAND (expr, 0));
+	    fprintf (f, ")]");
+	  }
+	else
+	  error += codegen_genar (f, TREE_OPERAND (expr, 1), 
+				  TREE_LIST (TREE_OPERAND (
+				    TREE_OPERAND (expr, 0), 0)));
       }
       break;
     case UMINUS_EXPR:

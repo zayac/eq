@@ -292,6 +292,6 @@ bool tree_compare (tree, tree);
 void tree_list_combine (tree, tree);
 void tree_list_split (tree, tree);
 void free_list (tree);
-
+char* tree_to_str (tree);
 
 #endif /* __TREE_H__  */
