@@ -1,9 +1,9 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
-		      Pavel Zaichenkov <zaichenkov@gmail.com> 
+		      Pavel Zaichenkov <zaichenkov@gmail.com>
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -18,16 +18,17 @@
 #include "global.h"
 #include "codegen.h"
 
-#define indent(f, x)  \
-  do { \
-    int __i;  \
-    for (__i = 0; __i < (x); __i++) \
-      fprintf (f, "\t");  \
+#define indent(f, x)			      \
+  do {					      \
+    int __i;				      \
+    for (__i = 0; __i < (x); __i++)	      \
+      fprintf (f, "\t");		      \
   } while (0)
+
 
 static int level;
 
-int 
+int
 codegen ()
 {
   struct tree_list_element *tl;
@@ -53,20 +54,23 @@ codegen ()
   return function_error;
 }
 
-int 
+int
 codegen_function (FILE* f, tree func)
 {
   struct tree_list_element *el;
   int error = 0;
-  char* func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0))); 
+  char* func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0)));
+
   /* Here we store variables which have recurrent dependencies.  */
   tree iter_list;
 
   assert (TREE_CODE (func) == FUNCTION, "function tree expected");
+
   if (strcmp(func_name, "\\mu"))
     fprintf(f, "def %s(", func_name);
   else
     fprintf(f, "def __main(");
+
   DL_FOREACH (TREE_LIST (TREE_OPERAND (func, 1)), el)
     {
       fprintf (f, "%s",
@@ -74,10 +78,14 @@ codegen_function (FILE* f, tree func)
       if (el->next != NULL)
 	fprintf (f, ", ");
     }
+
   fprintf (f, "):\n");
+
   level++;
   iter_list = make_tree_list ();
-  error = codegen_stmt_list (f, TREE_OPERAND (func, 4), func_name, iter_list); 
+  error = codegen_stmt_list (f, TREE_OPERAND (func, 4), func_name, iter_list);
+
+  /* FIXME: Why the tree is being freed here?  */
   DL_FOREACH (TREE_LIST (iter_list), el)
     {
       DL_DELETE (TREE_LIST (iter_list), el);
@@ -94,9 +102,12 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name, tree iter_list)
 {
   struct tree_list_element *tle;
   int error = 0;
+
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
+
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     error += codegen_stmt (f, tle->entry, func_name, iter_list);
+
   return error;
 }
 
@@ -107,7 +118,6 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name, tree iter_list)
 int
 codegen_iterative (FILE* f, tree stmt, tree iter_list)
 {
-
   return 0;
 }
 
@@ -115,13 +125,13 @@ int
 codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 {
   int error = 0;
-  indent (f, level); 
+  indent (f, level);
   switch (TREE_CODE (stmt))
     {
     case ASSIGN_STMT:
       {
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == CIRCUMFLEX
-	 && TREE_CIRCUMFLEX_INDEX_STATUS (stmt))
+	    && TREE_CIRCUMFLEX_INDEX_STATUS (stmt))
 	  codegen_iterative (f, stmt, iter_list);
 	else
 	  {
@@ -134,6 +144,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
     case DECLARE_STMT:
       {
 	tree type = TREE_OPERAND (stmt, 1);
+
 	codegen_expression (f, TREE_OPERAND (stmt, 0));
 	fprintf (f, " = ");
 	if (type == z_type_node || type == n_type_node)
@@ -146,32 +157,39 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	      {
 		struct tree_list_element *el;
 		unsigned counter = 0;
+
 		fprintf (f, "(");
 		DL_FOREACH (TREE_LIST (TYPE_SHAPE (type)), el)
 		  {
 		    error += codegen_expression (f, el->entry);
+
 		    if (el->next == NULL)
 		      fprintf (f, "*[0]");
 		    else
 		      fprintf (f, "*[");
+
 		    counter++;
 		  }
+
 		while (--counter)
 		  fprintf(f, "]");
+
 		fprintf (f, ")");
 	      }
 	    else if (TYPE_DIM (type) != NULL)
 	      {
 		assert (TREE_CODE (TYPE_DIM (type)) == INTEGER_CST,
 			"only integer dimension is supported by now.");
+
 		if (TREE_CODE (TYPE_DIM (type)) == INTEGER_CST)
 		  {
 		    unsigned dim = TREE_INTEGER_CST (TYPE_DIM (type));
 		    int i;
+
 		    for (i = 0; i < dim * 2; i++)
 		      if (i < dim)
 			fprintf (f, "[");
-		      else  
+		      else
 			fprintf (f, "]");
 		  }
 	      }
@@ -182,15 +200,18 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
       {
 	tree id;
 	struct tree_list_element *el;
+
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == LOWER)
 	  id = TREE_OPERAND (TREE_OPERAND (stmt, 0), 0);
 	else
 	  id = TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0), 0);
+
 	assert (TREE_CODE (id) == IDENTIFIER, "identifier expected");
+
 	/* FIXME We don't distinguish a newly defined list and an existing one.
 	   In this case, if an array was defined already, and we want to change
-	    *some*(not all) values in it, we are to include old values into
-	    cases as well.  */
+	   *some*(not all) values in it, we are to include old values into
+	   cases as well.  */
 	error += codegen_expression (f, id);
 	fprintf (f, " = ");
 	//if (TYPE_SHAPE (TREE_TYPE (id)) == NULL)
@@ -202,13 +223,14 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	    /* FIXME only generators '<const> < <variable> < <const>' are
 	       supported at the moment.  */
 	    assert (TREE_CODE (bound) == LAND_EXPR
-	         && TREE_CODE (TREE_OPERAND (bound, 0)) == LE_EXPR
-		 && TREE_CODE (TREE_OPERAND (bound, 1)) == LE_EXPR
-		 && TREE_CODE (TREE_OPERAND (TREE_OPERAND (bound, 0), 1))
-		      == IDENTIFIER
-		 && TREE_CODE (TREE_OPERAND (TREE_OPERAND (bound, 1), 0))
-		      == IDENTIFIER, "only generators '<const < <variable> < "
-		      "<const>' are supported at the moment");
+		    && TREE_CODE (TREE_OPERAND (bound, 0)) == LE_EXPR
+		    && TREE_CODE (TREE_OPERAND (bound, 1)) == LE_EXPR
+		    && TREE_CODE (TREE_OPERAND (TREE_OPERAND (bound, 0), 1))
+		       == IDENTIFIER
+		    && TREE_CODE (TREE_OPERAND (TREE_OPERAND (bound, 1), 0))
+		       == IDENTIFIER,
+		    "only generators '<const <= <variable> <= "
+		    "<const>' are supported at the moment");
 
 	    lowerb = TREE_INTEGER_CST (TREE_OPERAND (
 				       TREE_OPERAND (bound, 0), 0));
@@ -220,22 +242,24 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	      {
 		fprintf (f, " ");
 		error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
+
 		if (el->next != NULL)
 		  {
 		    fprintf (f, " if ");
-		    error += codegen_expression (f, 
+		    error += codegen_expression (f,
 						 TREE_OPERAND (el->entry, 1));
 		    fprintf (f, " else");
 		  }
+
 		case_counter++;
 	      }
 	    fprintf (f, " for %s in range(%d,%d)]",
-			TREE_STRING_CST (TREE_ID_NAME (it)),
-			lowerb,
-			upperb);
+		     TREE_STRING_CST (TREE_ID_NAME (it)),
+		     lowerb, upperb);
 	  }
       }
       break;
+
     case RETURN_STMT:
       {
 	/* print return value of main `\mu' function.  */
@@ -251,6 +275,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	fprintf (f, ")");
       }
       break;
+
     case IF_STMT:
       {
 	fprintf (f, "if ");
@@ -264,21 +289,24 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	  {
 	    fprintf (f, "else:\n");
 	    level++;
-	    error += codegen_stmt_list (f, TREE_OPERAND (stmt, 2), func_name, iter_list);
+	    error += codegen_stmt_list (f, TREE_OPERAND (stmt, 2),
+				        func_name, iter_list);
 	    level--;
 	  }
       }
       break;
+
     default:
       {
 	error_loc (TREE_LOCATION (stmt), "cannot generate code for "
 		   "statement of type `%s'",
 		   TREE_CODE_NAME (TREE_CODE (stmt)));
 	error += 1;
+	return error;
       }
-      return error;
     }
-    fprintf (f, "\n");
+
+  fprintf (f, "\n");
   return error;
 }
 
@@ -286,17 +314,22 @@ int
 codegen_genar (FILE* f, tree expr, struct tree_list_element *shape)
 {
   int error = 0;
+
   if (shape == NULL)
     return codegen_expression (f, expr);
+
   fprintf (f, "[");
   error += codegen_genar (f, expr, shape->next);
+
+  /* FIXME: Make the internal variables of different names.  */
   fprintf (f, " for __i in range (");
+
   error += codegen_expression (f, TREE_LIST (shape->entry)->entry);
   fprintf (f, ")]");
   return error;
 }
 
-int 
+int
 codegen_expression (FILE* f, tree expr)
 {
   int error = 0;
@@ -318,16 +351,20 @@ codegen_expression (FILE* f, tree expr)
 	  }
       }
       break;
+
     case REAL_CST:
       fprintf (f, "%f", TREE_REAL_CST (expr));
       break;
+
+    /* FIXME: This is wrong -- python strings support escape-characters.
+       Also, why only first symbol of the string is being checked?  */
     case STRING_CST:
       fprintf (f, "\"");
       if ((TREE_STRING_CST (expr))[0] == '\\')
 	{
 	  char* c = TREE_STRING_CST (expr);
 	  fprintf (f, "_");
-	  while (*(++c)) 
+	  while (*(++c))
 	    {
 	      fprintf (f, "%c", *c);
 	    }
@@ -336,13 +373,14 @@ codegen_expression (FILE* f, tree expr)
 	fprintf (f, "%s", TREE_STRING_CST (expr));
       fprintf (f, "\"");
       break;
+
     case IDENTIFIER:
       {
 	char* c = TREE_STRING_CST (TREE_ID_NAME (expr));
 	if (*c == '\\')
 	  {
 	    fprintf (f, "_");
-	    while (*(++c)) 
+	    while (*(++c))
 	      {
 		fprintf (f, "%c", *c);
 	      }
@@ -351,50 +389,63 @@ codegen_expression (FILE* f, tree expr)
 	  fprintf (f, "%s", c);
       }
       break;
+
     case FUNCTION_CALL:
       {
 	struct tree_list_element *el;
+
 	fprintf(f, "%s(",
 		TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0))));
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 1)), el)
 	  {
-	    fprintf (f, "%s", TREE_STRING_CST (TREE_ID_NAME (el->entry)));
+	    codegen_expression (f, el->entry);
 	    if (el->next != NULL)
 	      fprintf (f, ", ");
 	  }
 	fprintf (f, ")\n");
       }
       break;
+
     case MATRIX_EXPR:
-      {	
+      {
 	struct tree_list_element *eli, *elj;
+
 	fprintf (f, "[");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), eli)
 	  {
 	    bool type_dim;
-	    assert (TREE_CODE (TYPE_DIM (TREE_TYPE (expr)))  == INTEGER_CST, 
+
+	    assert (TREE_CODE (TYPE_DIM (TREE_TYPE (expr)))  == INTEGER_CST,
 		    "only integer dimensions are supported in the types for "
 		    "matrixes");
+
 	    type_dim = TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (expr)));
+
 	    if (type_dim != 1)
 	      fprintf (f, "[");
+
 	    DL_FOREACH (TREE_LIST (eli->entry), elj)
 	      {
 		error += codegen_expression (f, elj->entry);
+
 		if (elj->next != NULL)
 		  fprintf (f, ", ");
 	      }
+
 	    if (type_dim != 1)
 	      fprintf (f, "]");
+
 	    if (eli->next != NULL)
 	      fprintf (f, ", ");
 	  }
 	fprintf (f, "]");
       }
       break;
+
     case LOWER:
       {
 	struct tree_list_element *el;
+
 	error += codegen_expression (f, TREE_OPERAND (expr, 0));
 	fprintf (f, "[");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 1)), el)
@@ -406,15 +457,18 @@ codegen_expression (FILE* f, tree expr)
 	fprintf (f, "]");
       }
       break;
+
     case GENERATOR:
       {
 	error += codegen_expression (f, TREE_OPERAND (expr, 1));
       }
       break;
+
     case CIRCUMFLEX:
       {
 	assert (!TREE_CIRCUMFLEX_INDEX_STATUS (expr), "circumflex as index "
 		"is not supported by now");
+
 	if (!TREE_CIRCUMFLEX_INDEX_STATUS (expr))
 	  {
 	    fprintf (f, "(");
@@ -425,11 +479,14 @@ codegen_expression (FILE* f, tree expr)
 	  }
       }
       break;
+
+    /* FIXME Check if an explicit conversion is needed.  */
     case CONVERT_EXPR:
       {
 	error += codegen_expression (f, TREE_OPERAND (expr, 0));
       }
       break;
+
     case GENAR_EXPR:
       {
 	if (TREE_CODE (TREE_OPERAND (expr, 0)) == INTEGER_CST)
@@ -441,17 +498,19 @@ codegen_expression (FILE* f, tree expr)
 	    fprintf (f, ")]");
 	  }
 	else
-	  error += codegen_genar (f, TREE_OPERAND (expr, 1), 
+	  error += codegen_genar (f, TREE_OPERAND (expr, 1),
 				  TREE_LIST (TREE_OPERAND (
-				    TREE_OPERAND (expr, 0), 0)));
+				  TREE_OPERAND (expr, 0), 0)));
       }
       break;
+
     case UMINUS_EXPR:
       {
 	fprintf (f, "-");
 	error += codegen_expression (f, TREE_OPERAND (expr, 0));
       }
       break;
+
     case NOT_EXPR:
       {
 	fprintf (f, "~");
@@ -534,3 +593,4 @@ codegen_expression (FILE* f, tree expr)
     }
   return error;
 }
+
