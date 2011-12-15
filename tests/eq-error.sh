@@ -24,9 +24,9 @@
 
 
 cat -n $1 | \
-egrep '%\s*eq-error:' | \
-sed -e 's/^\s*\([0-9]*\)[^%]*%\s*eq-error:\s*\(.*\)/error:\1.*\2.*/g' | \
-sed ':a;N;$!ba;s/\n$//g' | \
+egrep '%[ \t]*eq-error:' | \
+sed -e 's/^[ \t]*\([0-9]*\)[^%]*%[ \t]*eq-error:[ \t]*\(.*\)/error:\1.*\2.*/g' | \
+sed ':a;N;$!ba;s/\(\n|\r|\r\n\)$//g' | \
 sed -e 's/\\/[\\\\]/g'
 
 # For example:
