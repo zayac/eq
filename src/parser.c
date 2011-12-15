@@ -556,7 +556,6 @@ handle_match (struct parser * parser)
     }
   while (true)
     {
-
       struct token_list_el *el = NULL;
       tok = token_copy (parser_get_token (parser));
 

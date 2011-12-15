@@ -157,6 +157,7 @@ main (int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
+  /* FIXME: What if we have multiple files?  */
   if (NULL == *argv)
     {
       fprintf (stderr, "%s:error: filename argument required\n", progname);
@@ -165,6 +166,7 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
+  /* Initialize the lexer.  */
   if (!lexer_init (lex, *argv))
     {
       fprintf (stderr, "%s cannot create a lexer for file `%s'\n", progname,
@@ -173,6 +175,7 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
+  /* Initialize the parser.  */
   parser_init (parser, lex);
 
   if (parse (parser) == 0 && options.break_option != break_parser)

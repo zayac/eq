@@ -40,8 +40,7 @@ codegen ()
   /* File to write files to.  */
   if ((f = fopen (filename, "w")) == NULL)
     {
-      fprintf (stderr, "Can't open file `%s' for writing",
-	       filename);
+      fprintf (stderr, "Can't open file `%s' for writing", filename);
       return 1;
     }
 
@@ -51,15 +50,16 @@ codegen ()
   fprintf (f, "\nif __name__ == '__main__':\n\t__main()\n");
   fclose (f);
   printf ("note: finished generating code.\n");
+
   return function_error;
 }
 
 int
 codegen_function (FILE* f, tree func)
 {
-  struct tree_list_element *el;
+  struct tree_list_element *  el;
   int error = 0;
-  char* func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0)));
+  char *  func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0)));
 
   /* Here we store variables which have recurrent dependencies.  */
   tree iter_list;
@@ -220,6 +220,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	    tree it = NULL;
 	    int case_counter = 0;
 	    tree bound = TREE_OPERAND (TREE_OPERAND (stmt, 1), 1);
+
 	    /* FIXME only generators '<const> < <variable> < <const>' are
 	       supported at the moment.  */
 	    assert (TREE_CODE (bound) == LAND_EXPR
@@ -269,7 +270,6 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	    error += codegen_expression (f, TREE_OPERAND (stmt, 0));
 	    fprintf (f, ")\n");
 	  }
-	indent(f, level);
 	fprintf (f, "return(");
 	codegen_expression (f, TREE_OPERAND (stmt, 0));
 	fprintf (f, ")");
@@ -402,7 +402,7 @@ codegen_expression (FILE* f, tree expr)
 	    if (el->next != NULL)
 	      fprintf (f, ", ");
 	  }
-	fprintf (f, ")\n");
+	fprintf (f, ")");
       }
       break;
 
@@ -516,6 +516,8 @@ codegen_expression (FILE* f, tree expr)
 	fprintf (f, "~");
 	error += codegen_expression (f, TREE_OPERAND (expr, 0));
       }
+      break;
+
     default:
       {
 	const char* opcode;

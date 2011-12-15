@@ -27,13 +27,15 @@ typecheck ()
   int function_check = 0;
 
   DL_FOREACH (TREE_LIST (function_list), tl)
-    {
-      function_check += typecheck_function (tl->entry);
-      if (function_check)
-	return function_check;
-    }
-  printf ("note: finished typechecking.\n");
-  return function_check;
+    function_check += typecheck_function (tl->entry);
+
+  if (function_check || error_count > 0)
+    printf ("note: finished typechecking, %i error(s) found.\n",
+	    error_count);
+  else
+    printf ("note: finished typechecking  [ok].\n");
+
+  return function_check || error_count;
 }
 
 int
@@ -45,11 +47,8 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func)
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
-    {
-      ret += typecheck_stmt (tle->entry, ext_vars, vars, func);
-      if (ret)
-	return ret;
-    }
+    ret += typecheck_stmt (tle->entry, ext_vars, vars, func);
+
   return ret;
 }
 
@@ -383,6 +382,7 @@ finalize_assign:
 	return ret;
       }
       break;
+
     case DECLARE_STMT:
       {
 	tree lhs = TREE_OPERAND (stmt, 0);
@@ -420,6 +420,7 @@ finalize_assign:
 	tree_list_append (vars, lhs);
       }
       break;
+
     case WITH_LOOP_EXPR:
       {
 	struct tree_list_element *el, *tmp;
@@ -447,9 +448,11 @@ finalize_assign:
 					    "is allowed here");
 		ret += 1;
 	      }
+
 	    TREE_TYPE (index) = z_type_node;
 	    tree_list_append (new_scope, index);
 	  }
+
 	ret += typecheck_lower (lower, ext_vars, new_scope, true);
 	if(ret)
 	  goto finalize_withloop;
@@ -1398,7 +1401,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		    const_matrix = false;
 
 		if  (TYPE_DIM (TREE_TYPE (el->entry)) != NULL
-		||  TYPE_SHAPE (TREE_TYPE (el->entry)) != NULL)
+		     || TYPE_SHAPE (TREE_TYPE (el->entry)) != NULL)
 		  {
 		    error_loc (TREE_LOCATION (el->entry),
 			       "vector types are not supported in "
