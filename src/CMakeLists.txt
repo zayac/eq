@@ -20,6 +20,7 @@ global.c  lex.c
 parser.c  print.c  
 tree.c	  matcher.c
 types.c	  typecheck.c
-backend_${BACKEND_LANG}/codegen.c)
+backend_${BACKEND_LANG}/codegen.c
+xfile.c)
 add_library (eqlib ${eqlib_src})
 

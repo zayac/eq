@@ -17,7 +17,7 @@
 #define __TREE_H__
 
 #include <stdlib.h>
-#include "expand.h"
+#include "eq.h"
 #include "utlist.h"
 #include "uthash.h"
 

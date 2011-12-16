@@ -13,7 +13,7 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #include <stdio.h>
-#include "expand.h"
+#include "eq.h"
 #include "tree.h"
 #include "global.h"
 #include "codegen.h"
@@ -199,6 +199,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
       }
       return error;
       //break;
+
     case WITH_LOOP_EXPR:
       {
 	tree id;

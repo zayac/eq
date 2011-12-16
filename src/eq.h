@@ -13,8 +13,8 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
-#ifndef __EXPAND_H__
-#define __EXPAND_H__
+#ifndef __EQ_H__
+#define __EQ_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -188,7 +188,7 @@ extern const bool is_token_id[];
 #define token_location(tok)         (tok)->loc
 
 
-__BEGIN_DECLS 
+__BEGIN_DECLS
 bool lexer_init (struct lexer *, const char *);
 bool lexer_finalize (struct lexer *);
 bool is_id (struct token *, bool);
@@ -201,4 +201,4 @@ void token_print (struct token *);
 const char *token_as_string (struct token *);
 bool token_uses_buf (struct token *);
 __END_DECLS
-#endif /* __EXPAND_H__  */
+#endif /* __EQ_H__  */

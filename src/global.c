@@ -17,7 +17,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include "types.h"
-#include "expand.h"
+#include "eq.h"
 #include "tree.h"
 #include "uthash.h"
 #include "global.h"
@@ -130,9 +130,9 @@ function_exists (const char *str)
 
   assert (function_list != NULL, "function-list is not initialized");
 
-  DL_FOREACH (TREE_LIST (function_list), tl) 
+  DL_FOREACH (TREE_LIST (function_list), tl)
     {
-      if (strcmp (TREE_STRING_CST (TREE_ID_NAME ((TREE_OPERAND (tl->entry, 0)))), 
+      if (strcmp (TREE_STRING_CST (TREE_ID_NAME ((TREE_OPERAND (tl->entry, 0)))),
 		str) == 0)
 	return tl->entry;
     }
@@ -145,7 +145,7 @@ is_var_in_list (tree var, tree lst)
 {
   struct tree_list_element *tle;
   tree ret = NULL;
-  
+
 
   assert (TREE_CODE (lst) == LIST, "Variable list expected");
   assert (TREE_CODE (var) == IDENTIFIER, "Variable expected");

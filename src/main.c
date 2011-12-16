@@ -13,7 +13,7 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
-#include "expand.h"
+#include "eq.h"
 #include "global.h"
 #include "parser.h"
 #include "config.h"
@@ -184,19 +184,22 @@ main (int argc, char *argv[])
   /* printing debug routine.  */
   if (options.print_program)
     {
+      xfile *  xf = xfile_init_file_stdout ();
+
       printf ("\n######### Output ########\n");
 
       DL_FOREACH (TREE_LIST (function_list), tle)
 	{
 	  if (tle->entry != error_mark_node)
 	    {
-	      print_expression (stdout, tle->entry);
+	      print_expression (xf, tle->entry);
 	      if (tle->next != NULL)
 		printf ("\n");
 	    }
 	  else
 	    printf ("Errors in function\n\n");
 	}
+      xfile_finalize (xf);
     }
 
   if (options.print_matches)

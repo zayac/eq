@@ -13,7 +13,7 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #include <stdio.h>
-#include "expand.h"
+#include "eq.h"
 #include "tree.h"
 #include "global.h"
 #include "typecheck.h"
