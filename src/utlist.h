@@ -26,9 +26,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define UTLIST_VERSION 1.9.4
 
-#include "expand.h"
+#include "eq.h"
 #define xassert(a) assert(a, 0)
-/* 
+/*
  * This file contains macros to manipulate singly and doubly-linked lists.
  *
  * 1. LL_ macros:  singly-linked lists.
@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * To use singly-linked lists, your structure must have a "next" pointer.
  * To use doubly-linked lists, your structure must "prev" and "next" pointers.
  * Either way, the pointer to the head of the list must be initialized to NULL.
- * 
+ *
  * ----------------.EXAMPLE -------------------------
  * struct item {
  *      int id;

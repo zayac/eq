@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "expand.h"
+#include "eq.h"
 #include "global.h"
 #include "uthash.h"
 #include "parser.h"
@@ -35,16 +35,16 @@ struct tree_list_el
 
 /* A hash table for token matches.
    A token string value is used here as a key. This is because we ought to put
-   here a pointer to the key. However, to use token class as another key (in 
+   here a pointer to the key. However, to use token class as another key (in
    addition to the value) would be better.
    Here we should be aware of two cases:
-   -- Because of the fact token's value can be either pointer or enum and we 
-      don't validate token class before, comparision between pointer and 
-      integer can be possible theoretically, however this situation is 
-      unlikely to happen, as pointer values usually are much bigger than enum 
+   -- Because of the fact token's value can be either pointer or enum and we
+      don't validate token class before, comparision between pointer and
+      integer can be possible theoretically, however this situation is
+      unlikely to happen, as pointer values usually are much bigger than enum
       values.
    -- At this point, all string represantations of tokens have the only token
-      class in correspondance. If several token classes can be relevant we 
+      class in correspondance. If several token classes can be relevant we
       are to include token class to the key as well.  */
 struct match_table
 {

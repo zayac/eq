@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "expand.h"
 #include "tree.h"
 #include "global.h"
 #include "parser.h"

@@ -4,7 +4,7 @@
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
-  
+
    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -16,9 +16,9 @@
 #ifndef __PRINT_H__
 #define __PRINT_H__
 
-int print_expression (FILE *, tree);
+#include "xfile.h"
 
-
-int print_type (FILE *, tree t);
+int print_expression (xfile *, tree);
+int print_type (xfile *, tree t);
 
 #endif /* __PRINT_H__  */

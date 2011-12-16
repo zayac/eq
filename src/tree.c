@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 
-#include "expand.h"
 #include "tree.h"
 #include "global.h"
 #include "print.h"
@@ -63,19 +62,19 @@ static size_t atomic_trees_size = 0;
 static size_t atomic_trees_idx = 0;
 
 
-/* Convert tree into it's string representation.  
+/* Convert tree into it's string representation.
    NOTE This string is your resposibility to clean up.  */
-char* 
+char*
 tree_to_str (tree t)
 {
-  FILE* stream;
-  char* s;
-  size_t size;
-  stream = open_memstream (&s, &size);
-  print_expression (stream, t);
-  fflush (stream);
-  fclose (stream);
-  return s;
+  char *  ret;
+  xfile *  xf = xfile_init_memory (16);
+
+  print_expression (xf, t);
+  ret = XFILE_BUFFER (xf);
+  free (xf);
+
+  return ret;
 }
 
 size_t
@@ -394,7 +393,7 @@ make_integer_cst (int value)
 {
   tree t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = value;
-  TREE_CONSTANT (t) = true; 
+  TREE_CONSTANT (t) = true;
   TREE_TYPE (t) = z_type_node;
   return t;
 }
@@ -409,7 +408,7 @@ make_integer_tok (struct token * tok)
 
   t = make_tree (INTEGER_CST);
   TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
-  TREE_CONSTANT (t) = true; 
+  TREE_CONSTANT (t) = true;
   assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
   TREE_TYPE (t) = z_type_node;
   TREE_LOCATION (t) = token_location (tok);
@@ -426,7 +425,7 @@ make_real_tok (struct token * tok)
 
   t = make_tree (REAL_CST);
   TREE_REAL_CST (t) = atof (token_as_string (tok));
-  TREE_CONSTANT (t) = true; 
+  TREE_CONSTANT (t) = true;
   assert (TREE_CODE_TYPED (REAL_CST), "real number has to have a type");
   TREE_TYPE (t) = r_type_node;
   TREE_LOCATION (t) = token_location (tok);
@@ -456,7 +455,7 @@ tree_list_combine (tree left, tree right)
 }
 
 /* Split a combined list.
-   NOTE It doesn't check if the *right* is a part of the *left* list.  So be 
+   NOTE It doesn't check if the *right* is a part of the *left* list.  So be
    careful to use it and check it's affilation by yourself.  */
 void
 tree_list_split (tree left, tree right)
@@ -624,7 +623,7 @@ tree_list_copy (tree lst)
 
   cpy = make_tree_list ();
 
-  DL_FOREACH (TREE_LIST (lst), el) 
+  DL_FOREACH (TREE_LIST (lst), el)
     tree_list_append (cpy, tree_copy (el->entry));
   return cpy;
 }

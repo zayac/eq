@@ -157,7 +157,7 @@ perform_transform (struct parser *parser)
 		struct token *tmp = NULL;
 		free_tree_list (exprs);
 		/* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
-		   we are inside another \match, 
+		   we are inside another \match,
 		   and we are to skip until right brace.  */
 		if (PARSER_MATCH_EXPR_ALLOWED (parser))
 		  {
@@ -190,7 +190,7 @@ perform_transform (struct parser *parser)
 			   "invalid token for macros `%s` ",
 			   token_as_string (tok));
 		/* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
-		   we are inside another \match, 
+		   we are inside another \match,
 		   and we are to skip until right brace.  */
 		if (PARSER_MATCH_EXPR_ALLOWED (parser))
 		  tmp = parser_get_until_tval (parser, tv_rbrace);
@@ -220,7 +220,7 @@ perform_transform (struct parser *parser)
 
 }
 
-/* In match we are to validate numbers in \expr { <num> } in the right part 
+/* In match we are to validate numbers in \expr { <num> } in the right part
    correspondingly to number of \expr which were enumerated in the left side.
    In case everything is fine return true. Otherwise, return list of trees with
    errors  */
@@ -292,6 +292,8 @@ print_matches ()
 {
   struct match_table *current, *tmp;
   struct token_list_el *el;
+  xfile *  xf = xfile_init_file_stdout ();
+
   HASH_ITER (hh, matches, current, tmp)
   {
     fprintf (stdout, "Transformation: \n");
@@ -300,7 +302,8 @@ print_matches ()
       fprintf (stdout, "%s ", token_as_string (el->value));
     }
     fprintf (stdout, " ->     \n");
-    print_expression (stdout, MATCHER_REPLACE (current));
+    print_expression (xf, MATCHER_REPLACE (current));
     fprintf (stdout, "\n");
   }
+  xfile_finalize (xf);
 }
