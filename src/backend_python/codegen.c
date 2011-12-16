@@ -143,6 +143,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
       break;
     case DECLARE_STMT:
       {
+#if 0
 	tree type = TREE_OPERAND (stmt, 1);
 
 	codegen_expression (f, TREE_OPERAND (stmt, 0));
@@ -194,8 +195,10 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 		  }
 	      }
 	  }
+#endif
       }
-      break;
+      return error;
+      //break;
     case WITH_LOOP_EXPR:
       {
 	tree id;
