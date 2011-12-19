@@ -104,7 +104,7 @@ DEF_TREE_CODE (LOR_EXPR, "lor_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (MATRIX_EXPR, "matrix_expr", tcl_expression, 1, true)
 
 /* Related to With Loop.  */
-DEF_TREE_CODE (WITH_LOOP_EXPR, "with_loop_expr", tcl_expression, 3, false)
+DEF_TREE_CODE (INDEX_LOOP_EXPR, "index_loop_expr", tcl_expression, 3, false)
 DEF_TREE_CODE (CASE_EXPR, "case_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (OTHERWISE_EXPR, "otherwise_expr", tcl_expression, 0, false)
 

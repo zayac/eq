@@ -102,7 +102,7 @@
 \bHead{instr}
   assign \bOr
   declare \bOr
-  with\_loop \bOr
+  index\_loop \bOr
   comment \bOr
   if\_cond \bOr
   return
@@ -216,15 +216,15 @@
 \bEnd
 }
 
-\newcommand{\BnfWithLoop}{
-\bHead{with\_loop}
+\newcommand{\BnfIndexLoop}{
+\bHead{index\_loop}
   idx \bSymb{|} generator \bToken {\bs gets}
-  \bAlt {expr} {with\_loop\_cases}
+  \bAlt {expr} {index\_loop\_cases}
 \bEnd
 }
 
-\newcommand{\BnfWithLoopCases}{
-\bHead{with\_loop\_cases}
+\newcommand{\BnfIndexLoopCases}{
+\bHead{index\_loop\_cases}
   \bToken{\bs begin} \bSymb{\{} \bToken{cases} \bSymb{\}} \bSkip
   \bPlus{expr \bSymb{\&} generator} \bSkip
   \bPlus{expr \bSymb{\&} \bToken{\bs otherwise}}\bSkip

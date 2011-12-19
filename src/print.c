@@ -234,7 +234,7 @@ print_expression (xfile *  xf, tree exp)
 	print_expression (xf, TREE_OPERAND (exp, 0));
 	break;
       }
-    case WITH_LOOP_EXPR:
+    case INDEX_LOOP_EXPR:
       {
 	struct tree_list_element *tle = NULL;
 	print_expression (xf, TREE_OPERAND (exp, 0));

@@ -20,6 +20,7 @@
 #include "print.h"
 #include "types.h"
 
+static int associate_variables (tree, tree, tree);
 int
 typecheck ()
 {
@@ -233,6 +234,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	      }
 	    else
 	      tree_list_append (ext_vars, lhs);
+	    TREE_ID_DEFINED (lhs) = true;
 	  }
 	else if (TREE_CODE (lhs) == CIRCUMFLEX)
 	  {
@@ -299,6 +301,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	    else if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
 	      id = TREE_OPERAND (lhs, 0);
 
+	    TREE_ID_DEFINED (id) = true;
 	    /* left operand identifier is not allowed to be the same as the
 	       identifier in the upper index.  */
 	    if (id != NULL && is_var_in_list (id, new_scope))
@@ -323,11 +326,10 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	else
 	  {
 	    /* It must be a LOWER node.
-	       Otherwise, a parser made a bad job.
-
-	       FIXME: This error-message sucks!  */
+	       Otherwise, a parser made a bad job.  */
 	    assert (TREE_CODE (lhs) == LOWER,
-		    "invalid node type `%s'. Something wrong with parser.",
+		    "invalid node type `%s'. "
+		    "A `lower node' has to be at this place.",
 		    TREE_CODE_NAME (TREE_CODE (lhs)));
 
 	    ret += typecheck_expression (TREE_OPERAND (lhs, 0),
@@ -421,7 +423,7 @@ finalize_assign:
       }
       break;
 
-    case WITH_LOOP_EXPR:
+    case INDEX_LOOP_EXPR:
       {
 	struct tree_list_element *el, *tmp;
 	tree var = TREE_OPERAND (stmt, 0);
@@ -452,8 +454,9 @@ finalize_assign:
 	    TREE_TYPE (index) = z_type_node;
 	    tree_list_append (new_scope, index);
 	  }
-
+	
 	ret += typecheck_lower (lower, ext_vars, new_scope, true);
+	ret += associate_variables (lower, ext_vars, new_scope);
 	if(ret)
 	  goto finalize_withloop;
 
@@ -658,13 +661,13 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
 {
   int ret = 0;
   struct tree_list_element *el = NULL, *index_el = NULL;
+  
   tree lhs = TREE_OPERAND (expr, 0);
   tree rhs = TREE_OPERAND (expr, 1);
   tree dim_t = NULL;
   int dim = 0;
   int i;
   tree shape = NULL;
-
 
   /* if 'generator' is not set, it means that this function was called from
      generator expression. Then 'lhs' must be an identifier.  */
@@ -797,6 +800,32 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
   return ret;
 }
 
+static int 
+associate_variables (tree t, tree ext_vars, tree vars)
+{
+  tree var;
+  int i = 0;
+  for(; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
+    {
+      tree id = TREE_OPERAND (t, i);
+      if (TREE_CODE (id) == IDENTIFIER)
+	{
+	  if ((var = is_var_in_list (id, vars)) != NULL
+	      || (var = is_var_in_list (id, ext_vars)) != NULL)
+	    {
+	      if (var != id)
+		{
+		  tree_list_append (delete_list, id);
+		  TREE_OPERAND_SET (t, i, var);
+		}
+	    }
+	}
+      else
+	associate_variables (id, ext_vars, vars);
+    }
+  return 0;
+}
+
 int
 typecheck_generator (tree expr, tree ext_vars, tree vars)
 {
@@ -837,6 +866,7 @@ typecheck_generator (tree expr, tree ext_vars, tree vars)
     {
       tree exp = TREE_OPERAND (expr, 1);
       ret += typecheck_expression (exp, ext_vars, vars);
+      associate_variables (exp, ext_vars, vars);
     }
   return ret;
 }

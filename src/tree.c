@@ -376,6 +376,7 @@ make_identifier_tok (struct token * tok)
 
   t = make_tree (IDENTIFIER);
   TREE_ID_NAME (t) = make_string_cst_tok (tok);
+  TREE_ID_DEFINED (t) = false;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
@@ -568,9 +569,9 @@ make_return (tree a, struct location loc)
 }
 
 tree
-make_with_loop (tree idx, tree cond, tree expr, bool flag)
+make_index_loop (tree idx, tree cond, tree expr, bool flag)
 {
-  tree t = make_tree (WITH_LOOP_EXPR);
+  tree t = make_tree (INDEX_LOOP_EXPR);
   TREE_OPERAND_SET (t, 0, idx);
   TREE_OPERAND_SET (t, 1, cond);
   TREE_OPERAND_SET (t, 2, expr);

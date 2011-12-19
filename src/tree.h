@@ -134,6 +134,7 @@ struct tree_identifier_node
 {
   struct tree_type_base typed;
   tree name;
+  unsigned defined:1;
 };
 
 union tree_node
@@ -244,6 +245,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
 
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
+#define TREE_ID_DEFINED(node) ((node)->identifier_node.defined)
 
 #define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
@@ -283,7 +285,7 @@ tree make_binary_op (enum tree_code, tree, tree);
 tree make_unary_op (enum tree_code, tree, struct location);
 tree make_matrix (tree, struct location);
 tree make_genar (tree, tree, struct location);
-tree make_with_loop (tree, tree, tree, bool);
+tree make_index_loop (tree, tree, tree, bool);
 tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
 tree tree_list_copy (tree);

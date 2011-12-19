@@ -2708,7 +2708,7 @@ handle_instr (struct parser * parser)
       else if (token_is_operator (tok, tv_vertical))
 	{
 	  parser_unget (parser);
-	  return handle_with_loop (parser, idx);
+	  return handle_index_loop (parser, idx);
 	}
     }
 
@@ -2718,11 +2718,11 @@ handle_instr (struct parser * parser)
 }
 
 /*
-   with_loop:
-   idx | generator \gets ( expr | with_loop_cases )
+   index_loop:
+   idx | generator \gets ( expr | index_loop_cases )
  */
 tree
-handle_with_loop (struct parser * parser, tree prefix_id)
+handle_index_loop (struct parser * parser, tree prefix_id)
 {
   tree t = NULL, idx = NULL, cond = NULL, expr = NULL;
 
@@ -2757,13 +2757,13 @@ handle_with_loop (struct parser * parser, tree prefix_id)
       tree_list_append (tlist,
 			make_binary_op (CASE_EXPR, expr,
 					make_tree (OTHERWISE_EXPR)));
-      t = make_with_loop (idx, cond, tlist, false);
+      t = make_index_loop (idx, cond, tlist, false);
     }
   else
     {
       parser_unget (parser);
-      expr = handle_with_loop_cases (parser);
-      t = make_with_loop (idx, cond, expr, true);
+      expr = handle_index_loop_cases (parser);
+      t = make_index_loop (idx, cond, expr, true);
     }
   return t;
 error:
@@ -2775,10 +2775,10 @@ error:
 }
 
 /*
-   with_loop_cases:
+   index_loop_cases:
  */
 tree
-handle_with_loop_cases (struct parser * parser)
+handle_index_loop_cases (struct parser * parser)
 {
   tree list = NULL, expr = NULL, gen = NULL;
 
