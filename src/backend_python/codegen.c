@@ -136,7 +136,29 @@ codegen_gen_condition (FILE* f, tree lhs, tree lst, tree t)
   assert (TREE_CODE (lhs) == IDENTIFIER,
 	  "lhs must be an identifier, not `%s'",
 	  TREE_CODE_NAME (TREE_CODE (lst)));
-  if (TREE_CODE (t) == LT_EXPR || TREE_CODE (t) == LE_EXPR)
+  /* FIXME `not equal expression has to be supported.  */
+  if (TREE_CODE (t) == EQ_EXPR)
+    {
+      tree var;
+      int cst_id;
+      if (TREE_CODE (TREE_OPERAND (t, 0)) == IDENTIFIER
+       && ((var = is_var_in_list (TREE_OPERAND (t, 0), lst)) != NULL))
+	cst_id = 1;
+      else if (TREE_CODE (TREE_OPERAND (t, 1)) == IDENTIFIER
+	&& ((var = is_var_in_list (TREE_OPERAND (t, 1), lst)) != NULL))
+	cst_id = 0;
+      else
+	{
+	  error_loc (TREE_LOCATION (t), "generator variable is not found. "
+				"Constant expressions are unsupported");
+	  error += 1;
+	  return error;
+	}
+      fprintf (f, "set([");
+      error += codegen_expression (f, TREE_OPERAND (t, cst_id));
+      fprintf (f, "])");
+    }
+  else if (TREE_CODE (t) == LT_EXPR || TREE_CODE (t) == LE_EXPR)
     {
       fprintf (f, "set(__gen(");
       if (TREE_CODE (TREE_OPERAND (t, 0)) == IDENTIFIER
