@@ -840,6 +840,16 @@ typecheck_generator (tree expr, tree ext_vars, tree vars)
       assert (TREE_CODE (el->entry) == IDENTIFIER,
 	      "only identifiers must be mentioned in generator");
 
+      /* variables can't be duplicated in the list.  */
+      if ((var = is_var_in_list (el->entry, TREE_OPERAND (expr, 0))) != NULL
+        && var != el->entry)
+	{
+	  error_loc (TREE_LOCATION (el->entry),
+		     "variable `%s' occurs more than once in the list",
+		     TREE_STRING_CST (TREE_ID_NAME (el->entry)));
+	  ret += 1; 
+
+	}
       if ((var = is_var_in_list (el->entry, vars)) == NULL)
 	{
 	  error_loc (TREE_LOCATION (el->entry),
