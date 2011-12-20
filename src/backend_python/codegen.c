@@ -27,8 +27,6 @@
 
 
 static int level;
-static bool generator_needed = 1;
-static int codegen_genfunction (FILE* f);
 
 int
 codegen ()
@@ -49,9 +47,6 @@ codegen ()
   DL_FOREACH (TREE_LIST (function_list), tl)
     function_error += codegen_function (f, tl->entry);
 
-  if (generator_needed)
-    codegen_genfunction (f);
-  
   fprintf (f, "\nif __name__ == '__main__':\n\t__main()\n");
   fclose (f);
   printf ("note: finished generating code.\n");
@@ -129,132 +124,6 @@ codegen_iterative (FILE* f, tree stmt, tree iter_list)
   return 0;
 }
 
-static int
-codegen_gen_condition (FILE* f, tree lhs, tree lst, tree t)
-{
-  int error = 0;
-  assert (TREE_CODE (lhs) == IDENTIFIER,
-	  "lhs must be an identifier, not `%s'",
-	  TREE_CODE_NAME (TREE_CODE (lst)));
-  /* FIXME `not equal expression has to be supported.  */
-  if (TREE_CODE (t) == EQ_EXPR)
-    {
-      tree var;
-      int cst_id;
-      if (TREE_CODE (TREE_OPERAND (t, 0)) == IDENTIFIER
-       && ((var = is_var_in_list (TREE_OPERAND (t, 0), lst)) != NULL))
-	cst_id = 1;
-      else if (TREE_CODE (TREE_OPERAND (t, 1)) == IDENTIFIER
-	&& ((var = is_var_in_list (TREE_OPERAND (t, 1), lst)) != NULL))
-	cst_id = 0;
-      else
-	{
-	  error_loc (TREE_LOCATION (t), "generator variable is not found. "
-				"Constant expressions are unsupported");
-	  error += 1;
-	  return error;
-	}
-      fprintf (f, "set([");
-      error += codegen_expression (f, TREE_OPERAND (t, cst_id));
-      fprintf (f, "])");
-    }
-  else if (TREE_CODE (t) == LT_EXPR || TREE_CODE (t) == LE_EXPR)
-    {
-      fprintf (f, "set(__gen(");
-      if (TREE_CODE (TREE_OPERAND (t, 0)) == IDENTIFIER
-       && (is_var_in_list (TREE_OPERAND (t, 0), lst)) != NULL)
-	{
-	  error += codegen_expression (f, TREE_OPERAND (t, 1));
-	  if (TREE_CODE (t) == LT_EXPR)
-	    fprintf (f, "-1");
-	  fprintf (f, ",-1,0");
-	}
-      else if (TREE_CODE (TREE_OPERAND (t, 1)) == IDENTIFIER
-       && (is_var_in_list (TREE_OPERAND (t, 1), lst)) != NULL)
-	{
-	  error += codegen_expression (f, TREE_OPERAND (t, 0));
-	  if (TREE_CODE (t) == LT_EXPR)
-	    fprintf (f, "+1");
-	  fprintf (f, ",1,");
-	  if (TREE_ID_DEFINED (lhs))
-	    {
-	      fprintf (f, "len(");
-	      error += codegen_expression (f, lhs);
-	      fprintf (f, ")");
-	    }
-	  else
-	    {
-	      error_loc (TREE_LOCATION (lhs), "variable `%s' must be defined",
-		  TREE_STRING_CST (TREE_ID_NAME (lhs)));
-	      error += 1;
-	      return error;
-	    }
-	}
-      else
-	{
-	  error_loc (TREE_LOCATION (t), "generator variable is not found. "
-				"Constant expressions are unsupported");
-	  error += 1;
-	  return error;
-	}
-      fprintf (f, "))");
-    }
-  else if (TREE_CODE (t) == GT_EXPR || TREE_CODE (t) == GE_EXPR)
-    {
-      fprintf (f, "set(__gen(");
-      if (TREE_CODE (TREE_OPERAND (t, 1)) == IDENTIFIER
-       && (is_var_in_list (TREE_OPERAND (t, 1), lst)) != NULL)
-	{
-	  error += codegen_expression (f, TREE_OPERAND (t, 0));
-	  if (TREE_CODE (t) == GT_EXPR)
-	    fprintf (f, "-1");
-	  fprintf (f, ",-1,0");
-
-	}
-      else if (TREE_CODE (TREE_OPERAND (t, 0)) == IDENTIFIER
-       && (is_var_in_list (TREE_OPERAND (t, 0), lst)) != NULL)
-	{
-	  error += codegen_expression (f, TREE_OPERAND (t, 1));
-	  if (TREE_CODE (t) == GT_EXPR)
-	    fprintf (f, "+1");
-	  fprintf (f, ",1,");
-	  if (TREE_ID_DEFINED (lhs))
-	    {
-	      fprintf (f, "len(");
-	      error +=codegen_expression (f, lhs);
-	      fprintf (f, ")");
-	    }
-	  else
-	    {
-	      error_loc (TREE_LOCATION (lhs), "variable `%s' must be defined",
-		  TREE_STRING_CST (TREE_ID_NAME (lhs)));
-	      error += 1;
-	      return error;
-	    }
-	}  
-      fprintf (f, "))");
-    }
-  /* other cases.  */
-  else if (TREE_CODE (t) == LAND_EXPR)
-    {
-      error += codegen_gen_condition (f, lhs, lst, TREE_OPERAND (t, 0));
-      fprintf (f, " & ");
-      error += codegen_gen_condition (f, lhs, lst, TREE_OPERAND (t, 1));
-    }
-  else if (TREE_CODE (t) == LOR_EXPR)
-    {
-      error += codegen_gen_condition (f, lhs, lst, TREE_OPERAND (t, 0));
-      fprintf (f, " | ");
-      error += codegen_gen_condition (f, lhs, lst, TREE_OPERAND (t, 1));
-    }
-  else
-    {
-      error_loc (TREE_LOCATION (t), "unsupported operation `%s'",
-		TREE_CODE_NAME (TREE_CODE (t)));
-    }
-  return error;
-}
-
 int
 codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 {
@@ -277,66 +146,11 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
       break;
     case DECLARE_STMT:
       {
-#if 0
-	tree type = TREE_OPERAND (stmt, 1);
-
-	codegen_expression (f, TREE_OPERAND (stmt, 0));
-	fprintf (f, " = ");
-	if (type == z_type_node || type == n_type_node)
-	  fprintf (f, "0");
-	else if (type == r_type_node)
-	  fprintf (f, "0.0");
-	else
-	  {
-	    if (TYPE_SHAPE (type) != NULL)
-	      {
-		struct tree_list_element *el;
-		unsigned counter = 0;
-
-		fprintf (f, "(");
-		DL_FOREACH (TREE_LIST (TYPE_SHAPE (type)), el)
-		  {
-		    error += codegen_expression (f, el->entry);
-
-		    if (el->next == NULL)
-		      fprintf (f, "*[0]");
-		    else
-		      fprintf (f, "*[");
-
-		    counter++;
-		  }
-
-		while (--counter)
-		  fprintf(f, "]");
-
-		fprintf (f, ")");
-	      }
-	    else if (TYPE_DIM (type) != NULL)
-	      {
-		assert (TREE_CODE (TYPE_DIM (type)) == INTEGER_CST,
-			"only integer dimension is supported by now.");
-
-		if (TREE_CODE (TYPE_DIM (type)) == INTEGER_CST)
-		  {
-		    unsigned dim = TREE_INTEGER_CST (TYPE_DIM (type));
-		    int i;
-
-		    for (i = 0; i < dim * 2; i++)
-		      if (i < dim)
-			fprintf (f, "[");
-		      else
-			fprintf (f, "]");
-		  }
-	      }
-	  }
-#endif
+	/* We skip declare (`\in') statement in python.  */  
       }
       return error;
-      //break;
-
     case INDEX_LOOP_EXPR:
       {
-	int case_counter = 0;
 	tree id, gen_id_list;
 	unsigned counter = 0;
 	struct tree_list_element *el, * tel;
@@ -347,35 +161,18 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	  id = TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0), 0);
 
 	assert (TREE_CODE (id) == IDENTIFIER, "identifier expected");
-
-	error += codegen_expression (f, id);
-	fprintf (f, " = ");
-	/* List comprehension.  */
-	/* A list of iterable variables.  */
 	gen_id_list = TREE_OPERAND (TREE_OPERAND (stmt, 1), 0);
-	fprintf (f, "[(lambda ");
-	DL_FOREACH (TREE_LIST (gen_id_list), el)
+	counter = 0;
+
+	/* iterate through all indexes.  */
+	fprintf (f, "for (");
+    	DL_FOREACH (TREE_LIST (gen_id_list), el)
 	  {
 	    error += codegen_expression (f, el->entry);
 	    if (el->next != NULL)
 	      fprintf (f, ", ");
 	  }
-	fprintf (f, ":");
-	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 2)), el)
-	  {
-	    fprintf (f, " ");
-	    error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
-
-	    if (el->next != NULL)
-	      {
-		fprintf (f, " if ");
-		error += codegen_expression (f,
-					     TREE_OPERAND (el->entry, 1));
-		fprintf (f, " else");
-	      }
-	    case_counter++;
-	  }
-	fprintf (f, ")(");
+	fprintf (f, ") in [(");
 	DL_FOREACH (TREE_LIST (gen_id_list), el)
 	  {
 	    error += codegen_expression (f, el->entry);
@@ -383,28 +180,6 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	      fprintf (f, ", ");
 	  }
 	fprintf (f, ")");
-	/* Skip this part for `\forall` generator.  */
-	if (TREE_CODE (TREE_OPERAND (stmt, 1)) == GENERATOR)
-	  {
-	    fprintf (f, " if ");
-	    DL_FOREACH (TREE_LIST (gen_id_list), el)
-	      {
-		fprintf (f, "%s in list(", 
-		    TREE_STRING_CST (TREE_ID_NAME (el->entry)));
-		codegen_gen_condition (f, id, gen_id_list, 
-		    TREE_OPERAND (TREE_OPERAND (stmt, 1), 1));
-		fprintf (f, ")");
-		if (el->next != NULL)
-		  fprintf (f, " and ");
-	      }
-	    fprintf (f, " else %s", TREE_STRING_CST (TREE_ID_NAME (id)));
-	    DL_FOREACH (TREE_LIST (gen_id_list), el)
-	      {
-		fprintf (f, "[");
-		error += codegen_expression (f, el->entry);
-		fprintf (f, "]");
-	      }
-	  }
 	DL_FOREACH (TREE_LIST (gen_id_list), el)
 	  {
 	    int i = 0;
@@ -417,12 +192,68 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 		  break;
 		fprintf (f, "[%s]",
 		    TREE_STRING_CST (TREE_ID_NAME (tel->entry)));
-		
 	      }
 	    counter++;
 	    fprintf (f, "))");
 	  }
-	fprintf (f, "]");
+	fprintf (f, "]:\n");
+	level++;
+	indent (f, level);
+	/* replace value only if condition is satisfied.  */
+	if (TREE_CODE (TREE_OPERAND (stmt, 1)) == GENERATOR)
+	  {
+	    fprintf (f, "if ");
+	    error += codegen_expression (f, 
+		TREE_OPERAND (TREE_OPERAND (stmt, 1), 1));
+	    fprintf (f, ":\n");
+	    level++;
+	    indent (f, level);
+	  }
+	counter = 0;
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 2)), el)
+	  {
+	    if (el->next == NULL)
+	      {
+		if (counter)
+		  {
+		    fprintf (f, "else:\n");
+		    level++;
+		    indent (f, level);
+		  }
+	      }
+	    else
+	      {
+		if (el == TREE_LIST (TREE_OPERAND (stmt, 2)))
+		  fprintf (f, "if");
+		else
+		  fprintf (f, "elif");
+		error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
+		fprintf (f, ":\n");
+		level++;
+		indent (f, level);
+	      }
+	    error += codegen_expression (f, id);
+	    DL_FOREACH (TREE_LIST (gen_id_list), tel)
+	      {
+		fprintf (f, "[");
+		error += codegen_expression (f, tel->entry);
+		fprintf (f, "]");
+	      }
+	    fprintf (f, " = ");
+	    error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
+	    fprintf (f, "\n");
+	    level--;
+	    counter++;
+	    if (el->next != NULL)
+	      indent (f, level);
+	  }
+	if (TREE_CODE (TREE_OPERAND (stmt, 1)) == GENERATOR)
+	  {
+	    level -= 2;
+	    if (TREE_LIST (TREE_OPERAND (stmt, 2))->next == NULL)
+	      level++;
+	    indent (f, level);
+	  }
       }
       break;
 
@@ -488,25 +319,11 @@ codegen_genar (FILE* f, tree expr, struct tree_list_element *shape)
   error += codegen_genar (f, expr, shape->next);
 
   /* FIXME: Make the internal variables of different names.  */
-  fprintf (f, " for __i in xrange (");
+  fprintf (f, " for __i in range (");
 
   error += codegen_expression (f, TREE_LIST (shape->entry)->entry);
   fprintf (f, ")]");
   return error;
-}
-
-static inline int 
-codegen_genfunction (FILE* f)
-{
-  fprintf (f,  "\ndef __gen(__start, __inc, __bound):\n"
-	      "\t__i = __start\n"
-	      "\twhile True:\n"
-	      "\t\tyield __i\n"
-	      "\t\t__i += __inc\n"
-	      "\t\tif (__inc > 0 and __i >= __bound) "
-	      "or (__inc < 0 and __i < __bound):\n"
-	      "\t\t\treturn");
-  return 0;
 }
 
 int
@@ -673,14 +490,15 @@ codegen_expression (FILE* f, tree expr)
 	  {
 	    fprintf (f, "[");
 	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
-	    fprintf (f, " for __i in xrange(");
+	    fprintf (f, " for __i in range(");
 	    error += codegen_expression (f, TREE_OPERAND (expr, 0));
 	    fprintf (f, ")]");
 	  }
-	else
+	else// if (TREE_CODE (TREE_OPERAND (expr, 0)) == MATRIX_EXPR)
 	  error += codegen_genar (f, TREE_OPERAND (expr, 1),
 				  TREE_LIST (TREE_OPERAND (
 				  TREE_OPERAND (expr, 0), 0)));
+	
       }
       break;
 
