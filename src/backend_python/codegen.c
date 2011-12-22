@@ -27,6 +27,7 @@
 
 
 static int level;
+static int codegen_genar_function (FILE*);
 
 int
 codegen ()
@@ -44,14 +45,39 @@ codegen ()
       return 1;
     }
 
-  DL_FOREACH (TREE_LIST (function_list), tl)
-    function_error += codegen_function (f, tl->entry);
+  fprintf (f, "import sys\n");
+  fprintf (f, "import itertools\n\n");
 
+  codegen_genar_function (f);
+  DL_FOREACH (TREE_LIST (function_list), tl)
+    {
+      level = 0;
+      function_error += codegen_function (f, tl->entry);
+    }
+  fprintf (f, "\nif sys.version_info < (3, 0):\n\trange = xrange\n");
   fprintf (f, "\nif __name__ == '__main__':\n\t__main()\n");
   fclose (f);
   printf ("note: finished generating code.\n");
 
   return function_error;
+}
+
+static int
+codegen_genar_function (FILE* f)
+{
+  indent(f, 0);
+  fprintf (f, "def __genarray (shape, value):\n"
+	      "\tret, tmp =[], []\n"
+	      "\tfor i in range(len(shape)-1,-1,-1):\n"
+	      "\t\tret=list(tmp)\n"
+	      "\t\ttmp=[]\n"
+	      "\t\tfor j in range(shape[i]):\n"
+	      "\t\t\tif i == len(shape)-1:\n"
+	      "\t\t\t\ttmp.append(value)\n"
+	      "\t\t\telse:\n"
+	      "\t\t\t\ttmp.append(list(ret))\n"
+	      "\treturn (tmp)\n");
+  return 0;
 }
 
 int
@@ -107,6 +133,7 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name, tree iter_list)
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     {
+      level = 1;
       /* We skip declare statements.  */
       if (TREE_CODE (tle->entry) != DECLARE_STMT)
 	error += codegen_stmt (f, tle->entry, func_name, iter_list);
@@ -171,32 +198,31 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	    error += codegen_expression (f, el->entry);
 	    if (el->next != NULL)
 	      fprintf (f, ", ");
+	    counter++;
 	  }
-	fprintf (f, ") in [(");
-	DL_FOREACH (TREE_LIST (gen_id_list), el)
-	  {
-	    error += codegen_expression (f, el->entry);
-	    if (el->next != NULL)
-	      fprintf (f, ", ");
-	  }
-	fprintf (f, ")");
+	fprintf (f, ") in ");
+	if (counter > 1)
+	  fprintf (f, "itertools.product(");
+	counter = 0;
 	DL_FOREACH (TREE_LIST (gen_id_list), el)
 	  {
 	    int i = 0;
-	    fprintf (f, " for %s in range(len(%s",
-		  TREE_STRING_CST (TREE_ID_NAME (el->entry)),
+	    fprintf (f, "range(len(%s",
 		  TREE_STRING_CST (TREE_ID_NAME (id)));
 	    DL_FOREACH (TREE_LIST (gen_id_list), tel)
 	      {
 		if (i++ == counter)
 		  break;
-		fprintf (f, "[%s]",
-		    TREE_STRING_CST (TREE_ID_NAME (tel->entry)));
+		fprintf (f, "[%d]", counter-1);
 	      }
 	    counter++;
 	    fprintf (f, "))");
+	    if (el->next != NULL)
+	      fprintf (f, ", ");
 	  }
-	fprintf (f, "]:\n");
+	if (counter > 1)
+	  fprintf (f, ")");
+	fprintf (f, ":\n");
 	level++;
 	indent (f, level);
 	/* replace value only if condition is satisfied.  */
@@ -486,7 +512,7 @@ codegen_expression (FILE* f, tree expr)
 
     case GENAR_EXPR:
       {
-	if (TREE_CODE (TREE_OPERAND (expr, 0)) == INTEGER_CST)
+	if (TREE_TYPE (TREE_OPERAND (expr, 0)) == z_type_node)
 	  {
 	    fprintf (f, "[");
 	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
@@ -494,11 +520,23 @@ codegen_expression (FILE* f, tree expr)
 	    error += codegen_expression (f, TREE_OPERAND (expr, 0));
 	    fprintf (f, ")]");
 	  }
-	else// if (TREE_CODE (TREE_OPERAND (expr, 0)) == MATRIX_EXPR)
+	else if (TREE_CODE (TREE_OPERAND (expr, 0)) == MATRIX_EXPR)
 	  error += codegen_genar (f, TREE_OPERAND (expr, 1),
 				  TREE_LIST (TREE_OPERAND (
 				  TREE_OPERAND (expr, 0), 0)));
-	
+	else
+	  {
+	    /* it should be variable of some vector type.  */
+	    assert (TREE_CODE (TREE_TYPE (TREE_OPERAND (expr, 0))) == Z_TYPE
+		 && TREE_INTEGER_CST (
+		    TYPE_DIM (TREE_TYPE (TREE_OPERAND (expr, 0)))) == 1,
+		 "unexpected type");
+	    fprintf (f, "__genarray(");
+	    error += codegen_expression (f, TREE_OPERAND (expr, 0));
+	    fprintf (f, ", ");
+	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
+	    fprintf (f, ")");
+	  }
       }
       break;
 
@@ -593,4 +631,3 @@ codegen_expression (FILE* f, tree expr)
     }
   return error;
 }
-
