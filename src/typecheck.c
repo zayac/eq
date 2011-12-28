@@ -21,6 +21,9 @@
 #include "types.h"
 
 static int associate_variables (tree, tree, tree);
+
+extern tree iter_var_list; 
+
 int
 typecheck ()
 {
@@ -253,6 +256,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 
 	    tree_list_combine (ext_vars, vars);
 
+
 	    /* a^{[i]} has different meanings depending on the context
 	      (either `i' is defined or not).  */
 	    if (TREE_CODE (index) == IDENTIFIER
@@ -288,7 +292,6 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 
 	    tmp_ret = typecheck_expression (TREE_OPERAND (lhs, 0),
 					    ext_vars, new_scope);
-
 	    if (tmp_ret)
 	      {
 		ret += 1;
@@ -296,11 +299,29 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	      }
 
 	    if (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER)
-	      id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
-
+	      {
+		tree var;
+		id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
+		if ((var = is_var_in_list (id, ext_vars)) != NULL)
+		  {
+		    free_tree (id);
+		    TREE_OPERAND_SET (TREE_OPERAND (lhs, 0), 0, var);
+		    id = var;
+		  }
+	      }
+	      
 	    else if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
-	      id = TREE_OPERAND (lhs, 0);
-
+	      {
+		tree var;
+		id = TREE_OPERAND (lhs, 0);
+		if ((var = is_var_in_list (id, ext_vars)) != NULL)
+		  {
+		    free_tree (id);
+		    TREE_OPERAND_SET (lhs, 0, var);
+		    id = var;
+		  }
+	      }
+  
 	    TREE_ID_DEFINED (id) = true;
 	    /* left operand identifier is not allowed to be the same as the
 	       identifier in the upper index.  */
@@ -367,6 +388,18 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	      }
 	  }
 
+
+	/* Assign index information to identifier.  */
+	if (TREE_CODE (lhs) == CIRCUMFLEX)
+	  {
+	    if (TREE_ID_ITER (id) == NULL)
+	      {
+		TREE_ID_ITER (id) = make_tree_list ();
+		tree_list_append (iter_var_list, id);
+	      }
+	    tree_list_append (TREE_ID_ITER (id),
+	  	make_binary_op (ITER_PAIR, TREE_OPERAND (lhs, 1), rhs));
+	  }
 finalize_assign:
 	if (new_scope != NULL)
 	  {
@@ -681,7 +714,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
   if (ret)
     return ret;
 
-  /* Indexes is possible to use only with vector types.  */
+  /* it is possible to use indexes only with vector types.  */
   if  (TYPE_DIM (TREE_TYPE (lhs)) == NULL)
     {
       error_loc (TREE_LOCATION (lhs), "index operations are valid "

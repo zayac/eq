@@ -134,6 +134,7 @@ struct tree_identifier_node
 {
   struct tree_type_base typed;
   tree name;
+  tree iter_desc;
   unsigned defined:1;
 };
 
@@ -246,6 +247,7 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
 #define TREE_ID_DEFINED(node) ((node)->identifier_node.defined)
+#define TREE_ID_ITER(node) ((node)->identifier_node.iter_desc)
 
 #define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])

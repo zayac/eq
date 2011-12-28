@@ -29,6 +29,8 @@
 static int level;
 static int codegen_genar_function (FILE*);
 
+extern tree iter_var_list;
+
 int
 codegen ()
 {
@@ -49,6 +51,13 @@ codegen ()
   fprintf (f, "import itertools\n\n");
 
   codegen_genar_function (f);
+
+  DL_FOREACH (TREE_LIST (iter_var_list), tl)
+    {
+      level = 0;
+      codegen_iterative (f, tl->entry);
+    }
+
   DL_FOREACH (TREE_LIST (function_list), tl)
     {
       level = 0;
@@ -87,8 +96,6 @@ codegen_function (FILE* f, tree func)
   int error = 0;
   char *  func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0)));
 
-  /* Here we store variables which have recurrent dependencies.  */
-  tree iter_list;
 
   assert (TREE_CODE (func) == FUNCTION, "function tree expected");
 
@@ -108,23 +115,15 @@ codegen_function (FILE* f, tree func)
   fprintf (f, "):\n");
 
   level++;
-  iter_list = make_tree_list ();
-  error = codegen_stmt_list (f, TREE_OPERAND (func, 4), func_name, iter_list);
+  error = codegen_stmt_list (f, TREE_OPERAND (func, 4), func_name);
 
-  /* FIXME: Why the tree is being freed here?  */
-  DL_FOREACH (TREE_LIST (iter_list), el)
-    {
-      DL_DELETE (TREE_LIST (iter_list), el);
-      free (el);
-    }
-  free_tree (iter_list);
   level--;
   indent (f, level);
   return error;
 }
 
 int
-codegen_stmt_list (FILE* f, tree stmt_list, char* func_name, tree iter_list)
+codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
 {
   struct tree_list_element *tle;
   int error = 0;
@@ -136,23 +135,48 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name, tree iter_list)
       level = 1;
       /* We skip declare statements.  */
       if (TREE_CODE (tle->entry) != DECLARE_STMT)
-	error += codegen_stmt (f, tle->entry, func_name, iter_list);
+	error += codegen_stmt (f, tle->entry, func_name);
     }
   return error;
 }
 
-/* TODO Iterative process on the upper index is to be implemented here.  */
-/*  Python code examples:
-    N = lambda i: 1 if (i == 1 or i == 2) else N(i-1) + N(i-2)
-    L = lambda i: n if i == 0 else [L(i-1)[j]+1 for j in range(len(n))].  */
+/* FIXME Local variables can't be used in the assignment at the moment. This is
+   due to iterative expression is calculated in separate function and local
+   variables aren't passed to this function. */
 int
-codegen_iterative (FILE* f, tree stmt, tree iter_list)
+codegen_iterative (FILE* f, tree var)
 {
-  return 0;
+  int error = 0;
+  struct tree_list_element *el; 
+  fprintf (f, "def __recur_%s(i):\n", TREE_STRING_CST (TREE_ID_NAME (var)));
+  fprintf (f, "\tif i in __recur_%s.value:\n",
+    TREE_STRING_CST (TREE_ID_NAME (var)));
+  fprintf (f, "\t\treturn (__recur_%s.value[i])\n", 
+    TREE_STRING_CST (TREE_ID_NAME (var)));
+  DL_FOREACH (TREE_LIST (TREE_ID_ITER (var)), el)
+    {
+      fprintf (f, "\t__recur_%s.value[", TREE_STRING_CST (TREE_ID_NAME (var)));
+      error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
+      fprintf (f, "]=");
+      error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
+      fprintf (f, "\n");
+      if (TREE_CODE (TREE_OPERAND (el->entry, 0)) == INTEGER_CST)
+	{
+	  fprintf (f, "\tif i == ");
+	  error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
+	  fprintf (f, ":\n");
+	  fprintf (f, "\t\treturn (__recur_%s.value[i])\n", 
+	    TREE_STRING_CST (TREE_ID_NAME (var)));
+	} 
+    }
+  fprintf (f, "\treturn (__recur_%s.value[i])\n", 
+    TREE_STRING_CST (TREE_ID_NAME (var)));
+  fprintf (f, "__recur_%s.value={}\n", TREE_STRING_CST (TREE_ID_NAME (var)));
+  return error;
 }
 
 int
-codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
+codegen_stmt (FILE* f, tree stmt, char* func_name)
 {
   int error = 0;
   indent (f, level);
@@ -162,7 +186,15 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
       {
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == CIRCUMFLEX
 	    && TREE_CIRCUMFLEX_INDEX_STATUS (stmt))
-	  codegen_iterative (f, stmt, iter_list);
+	  {
+	    tree id;
+	    if (TREE_CODE (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0))
+	      == IDENTIFIER)
+	      id = TREE_OPERAND (TREE_OPERAND (stmt, 0), 0);
+	    else
+	      id = TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0), 0);
+	    //codegen_iterative (f, id);
+	  }
 	else
 	  {
 	    codegen_expression (f, TREE_OPERAND (stmt, 0));
@@ -305,15 +337,14 @@ codegen_stmt (FILE* f, tree stmt, char* func_name, tree iter_list)
 	error += codegen_expression (f, TREE_OPERAND (stmt, 0));
 	fprintf (f, ":\n");
 	level++;
-	error += codegen_stmt_list (f, TREE_OPERAND (stmt, 1), func_name, iter_list);
+	error += codegen_stmt_list (f, TREE_OPERAND (stmt, 1), func_name);
 	level--;
 	indent (f, level);
 	if (TREE_OPERAND (stmt, 2) != NULL)
 	  {
 	    fprintf (f, "else:\n");
 	    level++;
-	    error += codegen_stmt_list (f, TREE_OPERAND (stmt, 2),
-				        func_name, iter_list);
+	    error += codegen_stmt_list (f, TREE_OPERAND (stmt, 2), func_name);
 	    level--;
 	  }
       }
@@ -489,14 +520,21 @@ codegen_expression (FILE* f, tree expr)
 
     case CIRCUMFLEX:
       {
-	assert (!TREE_CIRCUMFLEX_INDEX_STATUS (expr), "circumflex as index "
-		"is not supported by now");
+	//assert (!TREE_CIRCUMFLEX_INDEX_STATUS (expr), "circumflex as index "
+	//	"is not supported by now");
 
 	if (!TREE_CIRCUMFLEX_INDEX_STATUS (expr))
 	  {
 	    fprintf (f, "(");
 	    error += codegen_expression (f, TREE_OPERAND (expr, 0));
 	    fprintf (f, "**");
+	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
+	    fprintf (f, ")");
+	  }
+	else
+	  {
+	    fprintf (f, "__recur_%s(", 
+	      TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0))));
 	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
 	    fprintf (f, ")");
 	  }

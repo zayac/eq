@@ -902,8 +902,11 @@ handle_indexes (struct parser * parser, tree prefix)
 	}
     }
   else
-    TREE_OPERAND_SET (up, 0, low);
-
+    {
+      if (up == error_mark_node)
+	return error_mark_node;
+      TREE_OPERAND_SET (up, 0, low);
+    }
   if (low != NULL && up == NULL)
     return low;
   else if (low == NULL && up == NULL)
@@ -920,9 +923,7 @@ handle_indexes (struct parser * parser, tree prefix)
 tree
 handle_idx (struct parser * parser)
 {
-  tree id = NULL;
-  id = handle_id (parser);
-  return handle_indexes (parser, id);
+  return handle_indexes (parser, handle_id (parser));
 }
 
 
@@ -1372,7 +1373,7 @@ handle_upper (struct parser * parser)
   tree t = error_mark_node;
   struct token *tok;
   circumflex = make_tree (CIRCUMFLEX);
-  TREE_OPERAND_SET (circumflex, 0, NULL);
+  TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
 
   if (!parser_forward_tval (parser, tv_circumflex))
     {

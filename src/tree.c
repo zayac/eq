@@ -225,6 +225,7 @@ free_tree (tree node)
     case tcl_misc:
       if (code == IDENTIFIER)
 	{
+	  free_tree (TREE_ID_ITER (node));
 	  free_tree (TREE_ID_NAME (node));
 	}
       else if (code == LIST)
@@ -377,6 +378,7 @@ make_identifier_tok (struct token * tok)
   t = make_tree (IDENTIFIER);
   TREE_ID_NAME (t) = make_string_cst_tok (tok);
   TREE_ID_DEFINED (t) = false;
+  TREE_ID_ITER (t) = NULL;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
@@ -522,6 +524,7 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
   tree t;
   assert ((TREE_CODE_CLASS (code) == tcl_expression && code != UMINUS_EXPR
 	  && code != NOT_EXPR)
+	  || code == ITER_PAIR
 	  || code == DECLARE_STMT
 	  || code == ASSIGN_STMT
 	  , "%s called with %s tree code", __func__,

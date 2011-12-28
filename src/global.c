@@ -37,6 +37,9 @@ tree function_list = NULL;
 /* Trees that are to be deleted.  */
 tree delete_list = NULL;
 
+/* A list of iterable variables.  */
+tree iter_var_list = NULL;
+
 /* Allocate all the global structures that are going to be used
    during the compilation.  */
 void
@@ -45,6 +48,7 @@ init_global ()
   assert (function_list == NULL, "function list is already allocated");
 
   function_list = make_tree_list ();
+  iter_var_list = make_tree_list ();
   delete_list = make_tree_list ();
 
   error_count = 0;
@@ -55,6 +59,7 @@ void
 finalize_global ()
 {
   free_tree (delete_list);
+  free_tree (iter_var_list);
   free_tree (function_list);
 }
 
