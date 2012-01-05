@@ -132,7 +132,6 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     {
-      level = 1;
       /* We skip declare statements.  */
       if (TREE_CODE (tle->entry) != DECLARE_STMT)
 	error += codegen_stmt (f, tle->entry, func_name);

@@ -251,9 +251,11 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
-#define TREE_FUNC_ARGS_TYPES(node) ((node)->base_op.operands[2])
+#define TREE_FUNC_ARG_TYPES(node) ((node)->base_op.operands[2])
 #define TREE_FUNC_RET_TYPE(node) ((node)->base_op.operands[3])
 #define TREE_FUNC_INSTRS(node) ((node)->base_op.operands[4])
+
+#define TREE_IS_FUNCTION_PROTO (TREE_FUNC_INSTRS(node) == NULL)
 
 #define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
 static inline bool

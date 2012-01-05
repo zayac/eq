@@ -319,13 +319,13 @@ free_tree_type (tree node, bool hard)
 }
 
 tree
-make_function (tree name, tree args, tree args_types, tree ret, tree instrs,
+make_function (tree name, tree args, tree arg_types, tree ret, tree instrs,
 	       struct location loc)
 {
   tree t = make_tree (FUNCTION);
   TREE_OPERAND_SET (t, 0, name);
   TREE_OPERAND_SET (t, 1, args);
-  TREE_OPERAND_SET (t, 2, args_types);
+  TREE_OPERAND_SET (t, 2, arg_types);
   TREE_OPERAND_SET (t, 3, ret);
   TREE_OPERAND_SET (t, 4, instrs);
   TREE_LOCATION (t) = loc;

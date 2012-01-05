@@ -23,6 +23,9 @@
    FIXME it should be a hash-table!  */
 extern tree function_list;
 
+/* function prototypes.  */
+extern tree function_proto_list;
+
 /* Trees we are to remove in the end.  */
 extern tree delete_list;
 
@@ -39,6 +42,7 @@ tree type_defined (const char *name);
 tree add_user_type (tree type);
 tree function_exists (const char *);
 tree constant_exists (const char *);
+tree function_proto_exists (const char *);
 bool type_lists_eq (tree, tree);
 tree is_var_in_list (tree, tree);
 

@@ -34,6 +34,11 @@ int warning_count = 0;
 /* A global list to store functions.  */
 tree function_list = NULL;
 
+/* A global list to store function prototypes.
+   Function prototype is a function name, a list of argument types and the
+   return value type.  */
+tree function_proto_list = NULL;
+
 /* Trees that are to be deleted.  */
 tree delete_list = NULL;
 
@@ -48,6 +53,7 @@ init_global ()
   assert (function_list == NULL, "function list is already allocated");
 
   function_list = make_tree_list ();
+  function_proto_list = make_tree_list ();
   iter_var_list = make_tree_list ();
   delete_list = make_tree_list ();
 
@@ -60,6 +66,7 @@ finalize_global ()
 {
   free_tree (delete_list);
   free_tree (iter_var_list);
+  free_tree (function_proto_list);
   free_tree (function_list);
 }
 
@@ -127,15 +134,14 @@ type_lists_eq (tree tal, tree tar)
 */
   return true;
 }
-
-tree
-function_exists (const char *str)
+static inline tree
+function_or_proto_exists (tree list, const char *str)
 {
   struct tree_list_element *tl;
 
-  assert (function_list != NULL, "function-list is not initialized");
+  assert (list != NULL, "function-list or proto-list is not initialized");
 
-  DL_FOREACH (TREE_LIST (function_list), tl)
+  DL_FOREACH (TREE_LIST (list), tl)
     {
       if (strcmp (TREE_STRING_CST (TREE_ID_NAME ((TREE_OPERAND (tl->entry, 0)))),
 		str) == 0)
@@ -143,6 +149,18 @@ function_exists (const char *str)
     }
 
   return NULL;
+}
+
+tree
+function_exists (const char *str)
+{
+  return function_or_proto_exists (function_list, str);
+}
+
+tree
+function_proto_exists (const char *str)
+{
+  return function_or_proto_exists (function_proto_list, str);
 }
 
 inline tree

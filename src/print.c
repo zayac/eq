@@ -130,8 +130,8 @@ print_expression (xfile *  xf, tree exp)
 	if (TREE_FUNC_ARGS (exp) != NULL)
 	  print_expression (xf, TREE_FUNC_ARGS (exp));
 	xfile_fprintf (xf, "}{");
-	if (TREE_FUNC_ARGS_TYPES (exp) != NULL)
-	  print_expression (xf, TREE_FUNC_ARGS_TYPES (exp));
+	if (TREE_FUNC_ARG_TYPES (exp) != NULL)
+	  print_expression (xf, TREE_FUNC_ARG_TYPES (exp));
 	xfile_fprintf (xf, "}{");
 	print_expression (xf, TREE_FUNC_RET_TYPE (exp));
 	xfile_fprintf (xf, "}\n");

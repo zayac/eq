@@ -967,16 +967,19 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	char *  fname = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0)));
 
 	/* check if function is declared.  */
-	if (NULL == (t = function_exists (fname)))
+	if (!(t = function_exists (fname)))
 	  {
-	    error_loc (TREE_LOCATION (expr),
-		       "function `%s' is not defined", fname);
-	    return 1;
-	  }
+	    if (!(t = function_proto_exists (fname)))
+	      {
+		error_loc (TREE_LOCATION (expr),
+			  "function `%s' is not defined", fname);
+		return 1;
+	      }
+	  } 
 
 	/* argument list can be empty.  */
-	if (TREE_OPERAND (t, 2) != NULL)
-	  func_el = TREE_LIST (TREE_OPERAND (t, 2));
+	if (TREE_FUNC_ARG_TYPES (t) != NULL)
+	  func_el = TREE_LIST (TREE_FUNC_ARG_TYPES (t));
 	else
 	  func_el = NULL;
 
@@ -1005,7 +1008,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		      (TREE_LOCATION (expr),
 		       "invalid number of arguments in function `%s' call: "
 		       "%u expected, %u found",
-		       TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (t, 0))),
+		       TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
 		       func_counter, expr_counter);
 		    return 1;
 		  }
@@ -1052,12 +1055,12 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    error_loc (TREE_LOCATION (expr),
 		       "invalid number of arguments in function '%s' call: "
 		       "%u expected, %u found",
-		       TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (t, 0))),
+		       TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
 		       func_counter, expr_counter);
 	    return 1;
 	  }
 
-	TREE_TYPE (expr) = TREE_OPERAND (t, 3);
+	TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (t);
 	/* We suppose that function calls aren't constant expressions.
 	   so we can't predict the return value statically.  */
 	TREE_CONSTANT (expr) = false;

@@ -111,7 +111,7 @@ tree handle_index_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
 bool handle_match (struct parser *);
-
+tree handle_proto (struct parser *);
 
 #define PARSER_MATCH_EXPR_ALLOWED(parser) ((parser)->match_expr_allowed)
 __END_DECLS

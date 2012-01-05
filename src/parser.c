@@ -508,6 +508,98 @@ error:
   return error_mark_node;
 }
 
+/* Handle function prototype (declaration). Prototypes are used to instruct
+   typechecker not to look for a function definition. In this case, we assume
+   that the function is provided by a backend language or it is linked
+   dynamically.  
+   
+   proto:
+   \proto { <id> } { [ ext_type ]* } { ext_type } */
+tree
+handle_proto (struct parser * parser)
+{
+  struct token * tok;
+  tree name = NULL, arg_types = NULL, ret = NULL;
+  struct location loc;
+
+  if (!(tok = parser_forward_tval (parser, tv_proto)))
+    return false;
+
+  loc = token_location (tok);
+
+  /* function name.  */
+  if (!parser_forward_tval (parser, tv_lbrace))
+    {
+      parser_get_until_tval (parser, tv_rbrace);
+      parser_forward_tval (parser, tv_lbrace);
+      parser_get_until_tval (parser, tv_rbrace);
+      parser_forward_tval (parser, tv_lbrace);
+      parser_get_until_tval (parser, tv_rbrace);
+      return false;
+    }
+  if (!is_id (tok = parser_get_token (parser), true))
+    {
+      parser_get_until_tval (parser, tv_rbrace);
+      parser_forward_tval (parser, tv_lbrace);
+      parser_get_until_tval (parser, tv_rbrace);
+      return false;
+    }
+  else
+    name = make_identifier_tok (tok);
+
+  if (!parser_forward_tval (parser, tv_rbrace))
+    {
+      parser_forward_tval (parser, tv_lbrace);
+      parser_get_until_tval (parser, tv_rbrace);
+      goto error;
+    }
+  /* argument type list.  */
+  if (!parser_forward_tval (parser, tv_lbrace))
+    goto error;
+
+  if (!token_is_operator (parser_get_token (parser), tv_rbrace))
+    {
+      parser_unget (parser);
+      arg_types = handle_ext_type_or_ext_type_list (parser);
+      if (arg_types == error_mark_node)
+	goto error;
+    }
+  else
+    {
+      parser_unget (parser);
+      arg_types = NULL;
+    }
+
+  if (!parser_forward_tval (parser, tv_rbrace))
+    {
+      parser_forward_tval (parser, tv_lbrace);
+      parser_get_until_tval (parser, tv_rbrace);
+      goto error;
+    }
+  /* return type.  */
+  if (!parser_forward_tval (parser, tv_lbrace))
+    goto error;
+    
+  ret = handle_ext_type (parser);
+
+  if (ret == NULL || ret == error_mark_node)
+    {
+      parser_get_until_tval (parser, tv_rbrace);
+      goto error;
+    }
+
+  if (!parser_forward_tval (parser, tv_rbrace))
+    goto error;
+
+  return make_function (name, NULL, arg_types, ret, NULL, loc);
+  
+error:
+  free_tree (name);
+  free_tree (arg_types);
+  free_tree (ret);
+  return error_mark_node;
+}
+
 /*
    This function handles \match expressions, however in this case we don't need
    to build a tree.
@@ -2227,10 +2319,7 @@ handle_if_cond (struct parser * parser)
 	  iftree = t;
 	}
       else
-	{
-	  TREE_OPERAND_SET (iftree, 2, make_tree_list ());
-	  tree_list_append (TREE_OPERAND (iftree, 2), instrs);
-	}
+	TREE_OPERAND_SET (iftree, 2, instrs);
 
       tok = parser_get_token (parser);
 
@@ -2900,13 +2989,46 @@ parse (struct parser *parser)
 	  handle_match (parser);
 	  parser->lex->error_notifications = false;
 	}
+      else if (token_is_keyword (tok, tv_proto))
+	{
+	  tree t = handle_proto (parser);
+	  if (t != NULL && t != error_mark_node)
+	    {
+	      if (function_exists (
+		TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t)))))
+		{
+		  error_loc (TREE_LOCATION (t), 
+			"function `%s' is defined already",
+			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+		}
+	      else if (function_proto_exists (
+		TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t)))))
+		{
+		  error_loc (TREE_LOCATION (t), 
+			"prototype `%s' is defined already",
+			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+		}
+	      else
+		tree_list_append (function_proto_list, t);
+	    }
+	}
       else
 	{
 	  /* Enable lexer error handling inside functions.  */
 	  parser->lex->error_notifications = true;
 	  tree t = handle_function (parser);
 	  if (t != NULL && t != error_mark_node)
-	    tree_list_append (function_list, t);
+	    {
+	      if (!function_exists (
+		TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t)))))
+		tree_list_append (function_list, t);
+	      else
+		{
+		  error_loc (TREE_LOCATION (t), 
+			"function `%s' is defined already",
+			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+		}
+	    }
 	  parser->lex->error_notifications = false;
 	}
     }

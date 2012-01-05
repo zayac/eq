@@ -1,0 +1,11 @@
+\begin{eqcode}{gcd}{m, n}{\type{Z}, \type{Z}}{\type{Z}}
+  \qif {m = 0}
+    \return {n} \lend
+  \qelse
+    \return {\call{gcd}{n \mod m, m}} \lend
+  \qendif
+\end{eqcode}
+
+\begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
+  \return {\call{gcd}{24, 64}} \lend
+\end{eqcode}
