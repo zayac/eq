@@ -1,0 +1,10 @@
+\begin{eqcode}{encode}{m, e, n}{\type{Z}, \type{Z}, \type{Z}}{\type{Z}}
+  c \in \type{Z} \lend
+  c^{[0]} \gets 1 \lend
+  c^{[i]} \gets (c^{[i-1]} \cdot m) \mod n \lend
+  \return {c^{[e]}} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
+  \return {\call{encode}{1322, 3, 2491}} \lend
+\end{eqcode}

@@ -29,7 +29,27 @@
 static int level;
 static int codegen_genar_function (FILE*);
 
+/* These parameters specify options for code generating.  */
+struct 
+codegen_options
+{
+  /* in a function for recurrent expression variables are stored in a
+     dictionary which is passed as an argument.  */
+  bool is_var_in_arg;
+  /* inside a recurrency function we are to pass `__local_vars' variable
+     recursivly. However in *caller* function we pass `locals()' as a
+     __local_vars argument.  */
+  bool pass_local_vars;
+} codegen_options;
+
 extern tree iter_var_list;
+
+void
+init_codegen_options ()
+{
+  codegen_options.is_var_in_arg = false;
+  codegen_options.pass_local_vars = false;
+}
 
 int
 codegen ()
@@ -39,6 +59,8 @@ codegen ()
   const char* filename = "out.py";
   FILE* f;
   level = 0;
+
+  init_codegen_options ();
 
   /* File to write files to.  */
   if ((f = fopen (filename, "w")) == NULL)
@@ -147,7 +169,7 @@ codegen_iterative (FILE* f, tree var)
 {
   int error = 0;
   struct tree_list_element *el; 
-  fprintf (f, "def __recur_%s(i):\n", TREE_STRING_CST (TREE_ID_NAME (var)));
+  fprintf (f, "def __recur_%s(i, __local_vars):\n", TREE_STRING_CST (TREE_ID_NAME (var)));
   fprintf (f, "\tif i in __recur_%s.value:\n",
     TREE_STRING_CST (TREE_ID_NAME (var)));
   fprintf (f, "\t\treturn (__recur_%s.value[i])\n", 
@@ -157,7 +179,11 @@ codegen_iterative (FILE* f, tree var)
       fprintf (f, "\t__recur_%s.value[", TREE_STRING_CST (TREE_ID_NAME (var)));
       error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
       fprintf (f, "]=");
+      codegen_options.is_var_in_arg = true;
+      codegen_options.pass_local_vars = true;
       error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
+      codegen_options.is_var_in_arg = false;
+      codegen_options.pass_local_vars = false;
       fprintf (f, "\n");
       if (TREE_CODE (TREE_OPERAND (el->entry, 0)) == INTEGER_CST)
 	{
@@ -430,6 +456,11 @@ codegen_expression (FILE* f, tree expr)
     case IDENTIFIER:
       {
 	char* c = TREE_STRING_CST (TREE_ID_NAME (expr));
+	/* in functions related to recurrent expressions local variables are
+	   passed in `vars' list variable. However, variable `i' has to be
+	   accessed in a usual way.  */
+	if (codegen_options.is_var_in_arg && strcmp (c, "i"))
+	  fprintf (f, "__local_vars['");
 	if (*c == '\\')
 	  {
 	    fprintf (f, "_");
@@ -440,6 +471,9 @@ codegen_expression (FILE* f, tree expr)
 	  }
 	else
 	  fprintf (f, "%s", c);
+      
+      	if (codegen_options.is_var_in_arg && strcmp (c, "i"))
+	  fprintf (f, "']");
       }
       break;
 
@@ -535,6 +569,10 @@ codegen_expression (FILE* f, tree expr)
 	    fprintf (f, "__recur_%s(", 
 	      TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0))));
 	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
+	    if (codegen_options.pass_local_vars)
+	      fprintf (f, ", __local_vars");
+	    else
+	      fprintf (f, ", locals()");
 	    fprintf (f, ")");
 	  }
       }
