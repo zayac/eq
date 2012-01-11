@@ -157,6 +157,7 @@ enum tree_global_code
 {
   TG_ERROR_MARK,
   TG_UNKNOWN_MARK,
+  TG_ITER_VAR,
   TG_B_TYPE,
   TG_N_TYPE,
   TG_Z_TYPE,
@@ -166,6 +167,7 @@ enum tree_global_code
 
 #define error_mark_node     global_tree[TG_ERROR_MARK]
 #define unknown_mark_node   global_tree[TG_UNKNOWN_MARK]
+#define iter_var_node	    global_tree[TG_ITER_VAR]
 #define b_type_node         global_tree[TG_B_TYPE]
 #define n_type_node         global_tree[TG_N_TYPE]
 #define z_type_node         global_tree[TG_Z_TYPE]

@@ -29,13 +29,13 @@ exceed four million, find the sum of the even-valued terms.}
   a^{[0]} \gets 1,
   b^{[0]} \gets 2,
   x^{[0]} \gets 0 \lend
-  c^{[i]} \gets a^{[i-1]} + b^{[i-1]},
-  a^{[i]} \gets b^{[i-1]},
-  b^{[i]} \gets c^{[i-1]} \lend
-  \qif {a^{[i]} \mod 2 = 0}
-    x^{[i]} \gets x^{[i-1]} + a^{[i]} \lend
+  c^{[\iter]} \gets a^{[\iter-1]} + b^{[\iter-1]},
+  a^{[\iter]} \gets b^{[\iter-1]},
+  b^{[\iter]} \gets c^{[\iter-1]} \lend
+  \qif {a^{[\iter]} \mod 2 = 0}
+    x^{[\iter]} \gets x^{[\iter-1]} + a^{[\iter]} \lend
   \qendif
-  \return {\filter {x^{[i]} | a : a^{[i]} > 4 \cdot 10^6 }} \lend
+  \return {\filter {x^{[\iter]} | a : a^{[\iter]} > 4 \cdot 10^6 }} \lend
 
 \end{eqcode}
 

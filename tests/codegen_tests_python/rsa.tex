@@ -1,7 +1,7 @@
 \begin{eqcode}{encode}{m, e, n}{\type{Z}, \type{Z}, \type{Z}}{\type{Z}}
   c \in \type{Z} \lend
   c^{[0]} \gets 1 \lend
-  c^{[i]} \gets (c^{[i-1]} \cdot m) \mod n \lend
+  c^{[\iter]} \gets (c^{[\iter-1]} \cdot m) \mod n \lend
   \return {c^{[e]}} \lend
 \end{eqcode}
 

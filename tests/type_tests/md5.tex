@@ -41,8 +41,8 @@
     r_i\  |\  i : 0 \leq i \leq 7 \gets 0 \lend
     n \gets 256^{\lfloor \log_{256} \left ( a \right ) \rfloor } \lend
     n^{[0]} \gets n \lend
-    r^{[i]}_i \gets \call{real2int}{\dfrac{a}{n^{[i]}}} \lend
-    n^{[i]} \gets \dfrac{n^{[i-1]}}{256} \lend
+%    r^{[\iter]} \gets \call{real2int}{\dfrac{a}{n^{[\iter]}}} \lend
+    n^{[\iter]} \gets \dfrac{n^{[\iter-1]}}{256} \lend
     \return{\filter { r^{[i]}\  |\  i : i = {\call{shape}{a}}_0}} \lend
 \end{eqcode}
 

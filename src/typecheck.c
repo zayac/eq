@@ -24,11 +24,26 @@ static int associate_variables (tree, tree, tree);
 
 extern tree iter_var_list; 
 
+static struct
+typecheck_options
+{
+  bool iter_index;
+} typecheck_options;
+
+static void 
+init_typecheck_options ()
+{
+  /* indicate that recurrent expressions is being typechecked now.  */
+  typecheck_options.iter_index = false;
+}
+
 int
 typecheck ()
 {
   struct tree_list_element *tl;
   int function_check = 0;
+
+  init_typecheck_options ();
 
   DL_FOREACH (TREE_LIST (function_list), tl)
     function_check += typecheck_function (tl->entry);
@@ -156,6 +171,33 @@ shape_fail:
   return ret + 1;
 }
 
+int
+typecheck_recurrent (tree expr)
+{
+  if (TREE_CODE (expr) == PLUS_EXPR
+   || TREE_CODE (expr) == MINUS_EXPR)
+    {
+      if (TREE_OPERAND (expr, 0) != iter_var_node
+       || TREE_CODE (TREE_OPERAND (expr, 1)) != INTEGER_CST)
+	goto error;
+      /* `\iter' node is global. Therfore the type is assigned globally.  */
+      TREE_TYPE (TREE_OPERAND (expr, 1)) = z_type_node;
+    }
+  else if (TREE_CODE (expr) != INTEGER_CST
+	&& expr != iter_var_node)
+    goto error;
+
+  TREE_TYPE (expr) = z_type_node;
+  return 0;
+
+error:
+  error_loc (TREE_LOCATION (expr), "the index of recurrent expression must"
+    " be either a constant or a linear expression with "
+    "`%s' and a constant", token_kind_name[tv_iter]);
+  return 1;
+}
+
+#if 0
 /* Typecheck assign statement if the left operand is an identifier.  */
 int
 typecheck_assign_identifier (tree stmt, tree ext_vars, tree vars)
@@ -207,6 +249,7 @@ typecheck_assign_identifier (tree stmt, tree ext_vars, tree vars)
     }
   return 0;
 }
+#endif
 
 int
 typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
@@ -241,128 +284,67 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	  }
 	else if (TREE_CODE (lhs) == CIRCUMFLEX)
 	  {
-	    tree index;
+	    tree index = TREE_OPERAND (lhs, 1), var;
 
 	    if (!TREE_CIRCUMFLEX_INDEX_STATUS (lhs))
 	      {
 		error_loc (TREE_LOCATION (lhs),
-			   "only recurrent relation is allowed here");
+			   "only recurrent expression is allowed here");
 		ret += 1;
 	      }
 
-	    /* prepare a new scope.  */
-	    new_scope = make_tree_list ();
-	    index = TREE_OPERAND (lhs, 1);
-
-	    tree_list_combine (ext_vars, vars);
-
-
-	    /* a^{[i]} has different meanings depending on the context
-	      (either `i' is defined or not).  */
-	    if (TREE_CODE (index) == IDENTIFIER
-	     && !is_var_in_list (index, new_scope))
-	      {
-		TREE_TYPE (index) = z_type_node;
-		tree_list_append (new_scope, index);
-	      }
-	    else
-	      {
-		tmp_ret = typecheck_expression (index, ext_vars,
-						new_scope);
-		if (tmp_ret)
-		  {
-		    ret += tmp_ret;
-		    goto finalize_assign;
-		  }
-		if (TREE_TYPE (index) != z_type_node)
-		  {
-		    char* z_type = tree_to_str (z_type_node);
-		    char* index_type = tree_to_str (TREE_TYPE (index));
-
-		    error_loc (TREE_LOCATION (index),
-			       "in case of recurrence, upper index is to be "
-			       "of type `%s', not `%s'",
-			       z_type, index_type);
-		    ret += 1;
-		    free (z_type);
-		    free (index_type);
-		    goto finalize_assign;
-		  }
-	      }
-
-	    tmp_ret = typecheck_expression (TREE_OPERAND (lhs, 0),
-					    ext_vars, new_scope);
-	    if (tmp_ret)
-	      {
-		ret += 1;
-		goto finalize_assign;
-	      }
-
-	    if (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER)
-	      {
-		tree var;
-		id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
-		if ((var = is_var_in_list (id, ext_vars)) != NULL)
-		  {
-		    free_tree (id);
-		    TREE_OPERAND_SET (TREE_OPERAND (lhs, 0), 0, var);
-		    id = var;
-		  }
-	      }
-	      
-	    else if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
-	      {
-		tree var;
-		id = TREE_OPERAND (lhs, 0);
-		if ((var = is_var_in_list (id, ext_vars)) != NULL)
-		  {
-		    free_tree (id);
-		    TREE_OPERAND_SET (lhs, 0, var);
-		    id = var;
-		  }
-	      }
-  
-	    TREE_ID_DEFINED (id) = true;
-	    /* left operand identifier is not allowed to be the same as the
-	       identifier in the upper index.  */
-	    if (id != NULL && is_var_in_list (id, new_scope))
-	      {
-		error_loc (TREE_LOCATION (id),
-			   "array identifier `%s' is not allowed to be "
-			   "the same as upper index identifier",
-			   TREE_STRING_CST (TREE_ID_NAME (id)));
-		ret += 1;
-
-	      }
-
-	    TREE_TYPE (lhs) = TREE_TYPE (TREE_OPERAND (lhs, 0));
-	    /* check the right operand at last.  */
-	    /*tmp_ret = typecheck_expression (rhs, ext_vars, new_scope);
+	    typecheck_options.iter_index = true;
+	   
+	    /* typecheck index.  */
+	    tmp_ret = typecheck_recurrent (index);
 	    if (tmp_ret)
 	      {
 		ret += tmp_ret;
 		goto finalize_assign;
-	      }*/
-	  }
-	else
-	  {
-	    /* It must be a LOWER node.
-	       Otherwise, a parser made a bad job.  */
-	    assert (TREE_CODE (lhs) == LOWER,
-		    "invalid node type `%s'. "
-		    "A `lower node' has to be at this place.",
-		    TREE_CODE_NAME (TREE_CODE (lhs)));
+	      }
+	    if (TREE_TYPE (index) != z_type_node)
+	      {
+		char* z_type = tree_to_str (z_type_node);
+		char* index_type = tree_to_str (TREE_TYPE (index));
 
-	    ret += typecheck_expression (TREE_OPERAND (lhs, 0),
-					 ext_vars, vars);
+		error_loc (TREE_LOCATION (index),
+			   "in case of recurrence, upper index is to be "
+			   "of type `%s', not `%s'",
+			   z_type, index_type);
+		ret += 1;
+		free (z_type);
+		free (index_type);
+		goto finalize_assign;
+	      }
+
+	    tmp_ret = typecheck_expression (TREE_OPERAND (lhs, 0), ext_vars,
+					    vars);
+	    if (tmp_ret)
+	      {
+		ret += 1;
+		goto finalize_assign;
+	      }
+	    
+	    assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER,
+		    "identifier expected");
+	    id = TREE_OPERAND (lhs, 0);
+
+	    if ((var = is_var_in_list (id, vars)) != NULL
+	     || (var = is_var_in_list (id, ext_vars)) != NULL)
+	      {
+		free_tree (id);
+		TREE_OPERAND_SET (lhs, 0, var);
+		id = var;
+	      }
+	    TREE_ID_DEFINED (id) = true;
+	    
+	    TREE_TYPE (lhs) = TREE_TYPE (TREE_OPERAND (lhs, 0));
 	  }
 
 	/* check the right operand at last.  */
-	if (TREE_CODE (lhs) == CIRCUMFLEX)
-	  tmp_ret = typecheck_expression (rhs, ext_vars, new_scope);
-	else
-	  tmp_ret = typecheck_expression (rhs, ext_vars, vars);
-
+	tmp_ret = typecheck_expression (rhs, ext_vars, vars);
+	
+	typecheck_options.iter_index = false;
 	if (tmp_ret)
 	  {
 	    ret += tmp_ret;
@@ -388,7 +370,8 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	      }
 	  }
 
-
+	typecheck_options.iter_index = false;
+	
 	/* Assign index information to identifier.  */
 	if (TREE_CODE (lhs) == CIRCUMFLEX)
 	  {
@@ -939,6 +922,14 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       {
 	tree var;
 
+	if (expr == iter_var_node)
+	  {
+	    error_loc (TREE_LOCATION (expr), "`%s' is allowed only in the "
+	      "definition of recurrent process",
+	      token_kind_name[tv_iter]);
+	    return 1;
+	  }
+
 	/* The order of checking *is* important.  */
 	if ((var = is_var_in_list (expr, vars)) != NULL
 	    || (var = is_var_in_list (expr, ext_vars)) != NULL)
@@ -1217,7 +1208,11 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	tree rhs = TREE_OPERAND (expr, 1);
 
 	ret += typecheck_expression (lhs, ext_vars, vars);
-	ret += typecheck_expression (rhs, ext_vars, vars);
+	if (TREE_CIRCUMFLEX_INDEX_STATUS (expr)
+	 && typecheck_options.iter_index)
+	  ret += typecheck_recurrent (rhs);
+	else
+	  ret += typecheck_expression (rhs, ext_vars, vars);
 
 	if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
 	  return 1;

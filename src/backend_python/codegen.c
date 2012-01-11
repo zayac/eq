@@ -30,7 +30,7 @@ static int level;
 static int codegen_genar_function (FILE*);
 
 /* These parameters specify options for code generating.  */
-struct 
+static struct 
 codegen_options
 {
   /* in a function for recurrent expression variables are stored in a
@@ -44,7 +44,7 @@ codegen_options
 
 extern tree iter_var_list;
 
-void
+static void
 init_codegen_options ()
 {
   codegen_options.is_var_in_arg = false;
@@ -169,10 +169,11 @@ codegen_iterative (FILE* f, tree var)
 {
   int error = 0;
   struct tree_list_element *el; 
-  fprintf (f, "def __recur_%s(i, __local_vars):\n", TREE_STRING_CST (TREE_ID_NAME (var)));
-  fprintf (f, "\tif i in __recur_%s.value:\n",
+  fprintf (f, "def __recur_%s(_iter, __local_vars):\n", 
     TREE_STRING_CST (TREE_ID_NAME (var)));
-  fprintf (f, "\t\treturn (__recur_%s.value[i])\n", 
+  fprintf (f, "\tif _iter in __recur_%s.value:\n",
+    TREE_STRING_CST (TREE_ID_NAME (var)));
+  fprintf (f, "\t\treturn (__recur_%s.value[_iter])\n", 
     TREE_STRING_CST (TREE_ID_NAME (var)));
   DL_FOREACH (TREE_LIST (TREE_ID_ITER (var)), el)
     {
@@ -187,14 +188,14 @@ codegen_iterative (FILE* f, tree var)
       fprintf (f, "\n");
       if (TREE_CODE (TREE_OPERAND (el->entry, 0)) == INTEGER_CST)
 	{
-	  fprintf (f, "\tif i == ");
+	  fprintf (f, "\tif _iter == ");
 	  error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
 	  fprintf (f, ":\n");
-	  fprintf (f, "\t\treturn (__recur_%s.value[i])\n", 
+	  fprintf (f, "\t\treturn (__recur_%s.value[_iter])\n", 
 	    TREE_STRING_CST (TREE_ID_NAME (var)));
 	} 
     }
-  fprintf (f, "\treturn (__recur_%s.value[i])\n", 
+  fprintf (f, "\treturn (__recur_%s.value[_iter])\n",
     TREE_STRING_CST (TREE_ID_NAME (var)));
   fprintf (f, "__recur_%s.value={}\n", TREE_STRING_CST (TREE_ID_NAME (var)));
   return error;
@@ -457,9 +458,9 @@ codegen_expression (FILE* f, tree expr)
       {
 	char* c = TREE_STRING_CST (TREE_ID_NAME (expr));
 	/* in functions related to recurrent expressions local variables are
-	   passed in `vars' list variable. However, variable `i' has to be
+	   passed in `vars' list variable. However, variable `\iter' has to be
 	   accessed in a usual way.  */
-	if (codegen_options.is_var_in_arg && strcmp (c, "i"))
+	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "__local_vars['");
 	if (*c == '\\')
 	  {
@@ -472,7 +473,7 @@ codegen_expression (FILE* f, tree expr)
 	else
 	  fprintf (f, "%s", c);
       
-      	if (codegen_options.is_var_in_arg && strcmp (c, "i"))
+      	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "']");
       }
       break;

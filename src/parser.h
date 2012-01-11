@@ -93,7 +93,7 @@ tree handle_lower (struct parser *);
 tree handle_upper (struct parser *);
 tree handle_function (struct parser *);
 tree handle_function_call (struct parser *);
-tree handle_linear (struct parser *);
+tree handle_linear (struct parser *, tree);
 tree handle_divide (struct parser *);
 tree handle_sexpr (struct parser *);
 tree handle_sexpr_op (struct parser *);

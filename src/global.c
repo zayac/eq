@@ -75,8 +75,17 @@ init_global_tree ()
 {
   global_tree[TG_ERROR_MARK] = (tree) malloc (sizeof (struct tree_base));
   global_tree[TG_UNKNOWN_MARK] = (tree) malloc (sizeof (struct tree_base));
+  global_tree[TG_ITER_VAR] = (tree) malloc (sizeof (struct tree_identifier_node));
+  
+  TREE_ID_NAME (global_tree[TG_ITER_VAR])
+      = make_string_cst_str (token_kind_name[tv_iter]);
+  TREE_ID_DEFINED (global_tree[TG_ITER_VAR]) = true;
+  TREE_ID_ITER (global_tree[TG_ITER_VAR]) = NULL;
+  TREE_TYPE (global_tree[TG_ITER_VAR]) = NULL;
+
   TREE_CODE_SET (global_tree[TG_ERROR_MARK], ERROR_MARK);
   TREE_CODE_SET (global_tree[TG_UNKNOWN_MARK], UNKNOWN_MARK);
+  TREE_CODE_SET (global_tree[TG_ITER_VAR], IDENTIFIER);
   types_init ();
 }
 
@@ -88,6 +97,12 @@ finalize_global_tree ()
   for (i = 0; i < TG_MAX; i++)
     if (global_tree[i] == error_mark_node)
       free (global_tree[i]);
+    else if (global_tree[i] == iter_var_node)
+      {
+	free_tree (TREE_ID_ITER (global_tree[i]));
+	free_tree (TREE_ID_NAME (global_tree[i]));
+	free (global_tree[i]);
+      }
     else
       free_tree (global_tree[i]);
 }

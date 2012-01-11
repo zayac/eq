@@ -56,7 +56,7 @@
 
 \newcommand{\BnfUpper}{
 \bHead{upper}
-  \bSymb{\^} \bSymb{\{} \bAlt{\bSymb{[} expr \bSymb{]}}{expr} \bSymb{\}}
+  \bSymb{\^} \bSymb{\{} \bAlt{\bSymb{[} \bAlt{linear}{expr} \bSymb{]}}{expr} \bSymb{\}}
   \bOr
   \bSymb{\^} \bAlt {\bSpecial{id} } {\bSpecial{num}}
 \bEnd
@@ -64,8 +64,8 @@
 
 \newcommand{\BnfLinear}{
 \bHead{linear}
- \bSpecial{id} \bOpt{\bAlt{\bSymb{+}}{\bSymb{-}} \bSpecial{num}} \bOr
- \bSpecial{num}
+ \bAlt{\bToken{\textbackslash iter} \bOpt{\bAlt{\bSymb{+}}{\bSymb{-}}
+ \bSpecial{num}}}{\bSpecial{num}}
 \bEnd
 }
 

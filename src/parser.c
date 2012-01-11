@@ -950,6 +950,7 @@ upper_wrapper (struct parser *parser, tree t)
 /*
    indexes:
     ( [ upper ] [ lower ] | [ lower ] [ upper ] )
+    | ^ linear
 */
 tree
 handle_indexes (struct parser * parser, tree prefix)
@@ -961,50 +962,105 @@ handle_indexes (struct parser * parser, tree prefix)
 
   if (token_is_operator (parser_get_token (parser), tv_circumflex))
     {
-      parser_unget (parser);
-      up = upper_wrapper (parser, NULL);
-    }
-  else
-    parser_unget (parser);
-
-  if (token_is_operator (parser_get_token (parser), tv_lower_index))
-    {
-      parser_unget (parser);
-      low = handle_lower (parser);
-      if (low != NULL && low != error_mark_node)
-	TREE_OPERAND_SET (low, 0, prefix);
-      else
-	return error_mark_node;
-    }
-  else
-    parser_unget (parser);
-
-  /* In case we not encountered 'upper' production before the 'lower',
-     we have to check now - may be 'upper' is after the 'lower' one */
-  if (!up)
-    {
-      if (token_is_operator (parser_get_token (parser), tv_circumflex))
+      if (token_is_operator (parser_get_token (parser), tv_lbrace))
 	{
+	  if (token_is_operator (parser_get_token (parser), tv_lsquare))
+	    {
+	      if (token_is_keyword (parser_get_token (parser), tv_iter))
+		{
+		  parser_unget (parser);
+		  parser_unget (parser);
+		  parser_unget (parser);
+		  up = handle_linear (parser, prefix);
+		}
+	      else
+		{
+		  parser_unget (parser);
+		  up = make_tree (CIRCUMFLEX);
+		  TREE_OPERAND_SET (up, 0, prefix);
+		  TREE_OPERAND_SET (up, 1, handle_sexpr (parser)); 
+		  TREE_CIRCUMFLEX_INDEX_STATUS (up) = true;
+		  parser_forward_tval (parser, tv_rsquare);
+		  parser_forward_tval (parser, tv_rbrace);
+		}
+	    }
+	  else
+	    {
+	      parser_unget (parser);
+	      parser_unget (parser);
+	      parser_unget (parser);
+	      up = upper_wrapper (parser, low);
+	    }
+	}
+      else
+	{
+	  parser_unget (parser);
 	  parser_unget (parser);
 	  up = upper_wrapper (parser, low);
 	}
-      else
-	{
-	  parser_unget (parser);
-	}
     }
   else
+    parser_unget (parser);
+  
+  if (!up || !TREE_CIRCUMFLEX_INDEX_STATUS (up))
     {
-      if (up == error_mark_node)
-	return error_mark_node;
-      TREE_OPERAND_SET (up, 0, low);
+      if (token_is_operator (parser_get_token (parser), tv_lower_index))
+	{
+	  parser_unget (parser);
+	  low = handle_lower (parser);
+	  if (low != NULL && low != error_mark_node)
+	    TREE_OPERAND_SET (low, 0, prefix);
+	  else
+	    return error_mark_node;
+	}
+      else
+	parser_unget (parser);
+
+      /* In case we not encountered 'upper' production before the 'lower',
+	 we have to check now - may be 'upper' is after the 'lower' one */
+      if (!up)
+	{
+	  if (token_is_operator (parser_get_token (parser), tv_circumflex))
+	    {
+	      if (token_is_operator (parser_get_token (parser), tv_lbrace))
+		{
+		  if (token_is_operator (parser_get_token (parser), tv_lsquare))
+		    {
+		      parser_unget (parser);
+		      parser_unget (parser);
+		      up = handle_linear (parser, prefix);
+		    }
+		  else
+		    {
+		      parser_unget (parser);
+		      parser_unget (parser);
+		      parser_unget (parser);
+		      up = upper_wrapper (parser, low);
+		    }
+		}
+	      else
+		{
+		  parser_unget (parser);
+		  parser_unget (parser);
+		  up = upper_wrapper (parser, low);
+		}
+	    }
+	  else
+	    parser_unget (parser);
+	}
+      else
+	{
+	  if (up == error_mark_node)
+	    return error_mark_node;
+	  TREE_OPERAND_SET (up, 0, low);
+	}
+      if (low != NULL && up == NULL)
+	return low;
+      else if (low == NULL && up == NULL)
+	return prefix;
+      else if (low == NULL && up != NULL)
+	TREE_OPERAND_SET (up, 0, prefix);
     }
-  if (low != NULL && up == NULL)
-    return low;
-  else if (low == NULL && up == NULL)
-    return prefix;
-  else if (low == NULL && up != NULL)
-    TREE_OPERAND_SET (up, 0, prefix);
   return up;
 }
 
@@ -1455,8 +1511,7 @@ error:
 
 /*
    upper:
-   ^ { [ ( [ expr ] | expr ) ] }
-   | ^ ( <id> | numx )
+   ^ ( <id> | numx )
  */
 tree
 handle_upper (struct parser * parser)
@@ -1477,7 +1532,6 @@ handle_upper (struct parser * parser)
   if (is_id (tok, false))
     {
       t = make_identifier_tok (tok);
-      TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
       TREE_OPERAND_SET (circumflex, 1, t);
     }
   else if (token_class (tok) == tok_intnum
@@ -1487,35 +1541,22 @@ handle_upper (struct parser * parser)
 	t = make_integer_tok (tok);
       else
 	t = make_real_tok (tok);
-      TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
       TREE_OPERAND_SET (circumflex, 1, t);
     }
   else if (token_is_keyword (tok, tv_frac)
 	   || token_is_keyword (tok, tv_dfrac))
     {
       t = handle_divide (parser);
-      TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
       TREE_OPERAND_SET (circumflex, 1, t);
     }
   else if (token_is_operator (tok, tv_lbrace))
     {
-      if (!token_is_operator (parser_get_token (parser), tv_lsquare))
-	{
-	  parser_unget (parser);
-	  TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = false;
-	}
-      else
-	TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = true;
-
       t = handle_expr (parser);
+
       if (t == NULL || t == error_mark_node)
 	goto error_shift;
       else
 	TREE_OPERAND_SET (circumflex, 1, t);
-
-      if (TREE_CIRCUMFLEX_INDEX_STATUS (circumflex))
-	if (!parser_forward_tval (parser, tv_rsquare))
-	  goto error_shift;
 
       if (!parser_forward_tval (parser, tv_rbrace))
 	{
@@ -1541,49 +1582,84 @@ error:
   return error_mark_node;
 }
 
-#if 0
 /* linear:
-   (<num> | <id> [ ( + | - ) <num> ] )
+   { [ ( \iter [ ( + | - ) <num> ] ) | ( <num> ) ] }
  */
 tree
-handle_linear (struct parser * parser)
+handle_linear (struct parser * parser, tree prefix)
 {
-  tree id = error_mark_node;
   struct token *tok;
+  tree t, circumflex;
+  
+  circumflex = make_tree (CIRCUMFLEX);
+  TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = true;
+  TREE_OPERAND_SET (circumflex, 0, prefix);
+  TREE_OPERAND_SET (circumflex, 1, NULL);
 
-  if (!is_id (tok = parser_get_token (parser), false))
-    {
-      if (token_class (tok) != tok_number)
-	return error_mark_node;
-      else
-	return make_integer_tok (tok);
-    }
-  else
-    id = make_identifier_tok (tok);
+  if (!parser_forward_tval (parser, tv_lbrace))
+    goto error;
 
-  if ((tok =
-       parser_token_alternative_tval (parser, tv_plus, tv_minus)) != NULL)
+  if (!parser_forward_tval (parser, tv_lsquare))
+    goto error;
+
+  if (is_id (tok = parser_get_token (parser), false))
     {
-      enum token_kind op = token_value (tok);
-      tok = parser_get_token (parser);
-      if (token_class (tok) != tok_number)
+      tree id;
+      if (token_class (tok) != tok_keyword 
+	  || token_value (tok) != tv_iter)
 	{
-	  parser_unget (parser);
-	  parser_unget (parser);
-	  return id;
+	  error_loc (token_location (tok), "only `%s' identifier can be "
+		     "occured in recurrent expression, `%s' found",
+		     token_kind_name[tv_iter],
+		     token_as_string (tok));
+	  
+	  goto error;
 	}
-      else
+      id = make_identifier_tok (tok);
+      if ((tok =
+	parser_token_alternative_tval (parser, tv_plus, tv_minus)) != NULL)
 	{
-	  if (op == tv_plus)
-	    return make_binary_op (PLUS_EXPR, id, make_integer_tok (tok));
+	  enum token_kind op = token_value (tok);
+	  tok = parser_get_token (parser);
+	  if (!token_is_number (tok))
+	    {
+	      parser_unget (parser);
+	      parser_unget (parser);
+	      t = id;
+	    }
 	  else
-	    return make_binary_op (MINUS_EXPR, id, make_integer_tok (tok));
+	    {
+	      if (op == tv_plus)
+		t =  make_binary_op (PLUS_EXPR, id, make_integer_tok (tok));
+	      else
+		t = make_binary_op (MINUS_EXPR, id, make_integer_tok (tok));
+	    }
 	}
+      else
+	TREE_OPERAND_SET (circumflex, 1, id);
+    }
+  else if (token_is_number (tok))
+    t = make_integer_tok (tok);
+  else
+    {
+      error_loc (token_location (tok), "unexpected token `%s'in the recurrent "
+		 "expression", token_as_string (tok));
+      goto error;
     }
 
-  return id;
+  if (!parser_forward_tval (parser, tv_rsquare))
+    goto error;
+  
+  if (!parser_forward_tval (parser, tv_rbrace))
+    return error_mark_node;
+
+  if (TREE_OPERAND (circumflex, 1) == NULL)
+    TREE_OPERAND_SET (circumflex, 1, t);
+  return circumflex;
+error:
+  parser_get_until_tval (parser, tv_rbrace);
+  return error_mark_node;
 }
-#endif
 
 /*
    ( \frac | \dfrac) { expr } { expr }

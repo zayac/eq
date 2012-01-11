@@ -214,8 +214,9 @@ free_tree (tree node)
 
   if (node == NULL
       /* Types are removed separetely.  */
-      || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type
-      || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK)
+      || node == iter_var_node
+      || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK
+      || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type)
     return;
 
   code = TREE_CODE (node);
@@ -374,6 +375,9 @@ make_identifier_tok (struct token * tok)
   tree t;
   assert (is_id (tok, false), "attempt to build identifier from %s",
 	  token_class_as_string (token_class (tok)));
+
+  if (token_value (tok) == tv_iter)
+    return iter_var_node;
 
   t = make_tree (IDENTIFIER);
   TREE_ID_NAME (t) = make_string_cst_tok (tok);
