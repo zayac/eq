@@ -82,6 +82,7 @@ recurrence_check_window (tree var)
   int i;
   int ret = 0;
   memset (window, 0, window_size);
+  bool init = false;
   DL_FOREACH (TREE_LIST (t), el)
     {
       tree lhs = TREE_OPERAND (el->entry, 0);
@@ -90,13 +91,14 @@ recurrence_check_window (tree var)
 	  if (TREE_CODE (lhs) == MINUS_EXPR)
 	    window[-min - TREE_INTEGER_CST (TREE_OPERAND (lhs, 1))] = true; 
 	  else if (TREE_CODE (lhs) == PLUS_EXPR)
-	    window[-min - TREE_INTEGER_CST (TREE_OPERAND (lhs, 1))] = true;
+	    window[-min + TREE_INTEGER_CST (TREE_OPERAND (lhs, 1))] = true; 
 	  else
 	    /* [\iter] case. */
-	    window[max - min] = true;
+	    window[-min] = true;
+	  init = true;
 	}
     }
-  for (i = 0; i < window_size; i++)
+  for (i = 0; i < window_size && init; i++)
     {
       if (!window[i])
 	{

@@ -6,7 +6,7 @@
   a \gets \genar \limits ^{\begin{tmatrix} 10 \lend 10 \lend \end{tmatrix}} (0) \lend
   a_{i,j} | i,j : i < 5 \cap j < 5 \gets 5 \lend
 
-  a_{i,j} | j,j : i \geq 5 \cap j < 10 \gets % eq-error: variable `j' occurs more than once in the list
+  a_{i,j} | j,j : i \geq 5 \cap j < 10 \gets % eq-error-loc: variable `j' occurs more than once in the list
   \begin{cases}
     i \cdot j & j: j < 5 \lend
     a_{i-1, j-1} & \otherwise \lend

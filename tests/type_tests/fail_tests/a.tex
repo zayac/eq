@@ -2,7 +2,7 @@
   a \in \type{Z} \lend
   a^{[0]} \gets 0 \lend
   a^{[1]} \gets 1 \lend
-  a^{[\iter-2]} \gets a^{[\iter-3]} + a^{[i-4]} \lend % eq-error: the index of recurrent expression must be either a constant or a linear expression with `\iter' and a constant
+  a^{[\iter-2]} \gets a^{[\iter-3]} + a^{[i-4]} \lend % eq-error-loc: the index of recurrent expression must be either a constant or a linear expression with `\iter' and a constant
   a^{[\iter]} \gets a^{[\iter-2]} + a^{[\iter-3]} \lend
   a^{[\iter-1]} \gets a^{[\iter-2]} + a^{[\iter]} \lend 
   \return {a^{[5]}} \lend
