@@ -1,5 +1,6 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
 		      Pavel Zaichenkov <zaichenkov@gmail.com>
+
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
    copyright notice and this permission notice appear in all copies.
@@ -19,6 +20,7 @@
 #include "typecheck.h"
 #include "print.h"
 #include "types.h"
+#include "recurrence.h"
 
 static int associate_variables (tree, tree, tree);
 
@@ -47,6 +49,10 @@ typecheck ()
 
   DL_FOREACH (TREE_LIST (function_list), tl)
     function_check += typecheck_function (tl->entry);
+
+  /* validate recurrent expressions.  */
+  DL_FOREACH (TREE_LIST (iter_var_list), tl)
+    recurrence_check_window (tl->entry);
 
   if (function_check || error_count > 0)
     printf ("note: finished typechecking, %i error(s) found.\n",
