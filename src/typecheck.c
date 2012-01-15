@@ -52,7 +52,10 @@ typecheck ()
 
   /* validate recurrent expressions.  */
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
-    recurrence_check_window (tl->entry);
+    {
+      recurrence_check_window (tl->entry);
+      recurrence_check_precedence (tl->entry);
+    }
 
   if (function_check || error_count > 0)
     printf ("note: finished typechecking, %i error(s) found.\n",

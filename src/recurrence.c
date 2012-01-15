@@ -66,7 +66,7 @@ recurrence_find (tree t, bool p)
   return ret;
 }
 
-/* given the block of recurrent expression we are to check
+/* Given the block of recurrent expression we are to check
    that all variables in relevant range are listed,
    i.e. if a^{[\iter - 5]} and a^{[\iter + 3]} are defined,
    make sure that all variables in range 
@@ -106,6 +106,79 @@ recurrence_check_window (tree var)
 	  min + i,
 	  TREE_STRING_CST (TREE_ID_NAME (var)));
 	  ret++;
+	}
+    }
+  return ret;
+}
+
+/* this one is used for comparing indexes in both situations:
+   either index is a constant ([5]) 
+   or a recurrent expression ([\iter + 5]).  */
+static int
+check_recurrent_expression (tree t, int left_index, bool is_const)
+{
+  int i, ret = 0;
+  if (TREE_CODE (t) == CIRCUMFLEX && TREE_CIRCUMFLEX_INDEX_STATUS (t))
+    {
+      tree index = TREE_OPERAND (t, 1);
+      int right_index;
+      if (!is_const && TREE_CODE (index) == MINUS_EXPR)
+	right_index = -TREE_INTEGER_CST (TREE_OPERAND (index, 1));
+      else if (!is_const && TREE_CODE (index) == PLUS_EXPR)
+	right_index = TREE_INTEGER_CST (TREE_OPERAND (index, 1));
+      else if (!is_const && TREE_CODE (index) == IDENTIFIER)
+	right_index = 0;
+      else if (is_const && TREE_CODE (index) == INTEGER_CST)
+	right_index = TREE_INTEGER_CST (TREE_OPERAND (index, 1));
+      else
+	assert (0, "unexprected tree node `%s'", 
+		  TREE_CODE_NAME (TREE_CODE (index)));
+
+      if (left_index <= right_index)
+	{
+	  error_loc (TREE_LOCATION (TREE_OPERAND (t, 0)), "index in the right part "
+	    "of the assignment must be lower than one in the left part");
+	}
+      ret += 1;
+    }
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
+    ret += check_recurrent_expression (TREE_OPERAND (t, i), 
+	      left_index, is_const);
+  return ret;
+}
+
+/* All indexes in the right part of assignment must precede the index in the
+   left part of assignment. 
+   NOTE May be this validation is needless.  */
+int
+recurrence_check_precedence (tree var)
+{
+  struct tree_list_element *el;
+  tree t = TREE_ID_ITER  (var);
+  int ret = 0;
+  DL_FOREACH (TREE_LIST (t), el)
+    {
+      int left_index;
+      tree lhs = TREE_OPERAND (el->entry, 0);
+      if (TREE_CODE (lhs) == INTEGER_CST)
+	{
+	  left_index = TREE_INTEGER_CST (lhs);
+	  ret += check_recurrent_expression (TREE_OPERAND (el->entry, 1),
+		    left_index, true);
+	}
+      else
+	{
+	  if (TREE_CODE (lhs) == MINUS_EXPR)
+	    left_index = -TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
+	  else if (TREE_CODE (lhs) == PLUS_EXPR)
+	    left_index = TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
+	  else if (TREE_CODE (lhs) == IDENTIFIER)
+	    left_index = 0;
+	  else
+	    assert (0, "unexprected tree node `%s'", 
+		TREE_CODE_NAME (TREE_CODE (lhs)));
+	  ret += check_recurrent_expression (TREE_OPERAND (el->entry, 1),
+		    left_index, false);
 	}
     }
   return ret;
