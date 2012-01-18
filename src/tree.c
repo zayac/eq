@@ -654,10 +654,12 @@ tree_copy (tree t)
   switch (TREE_CODE (t))
     {
     case (STRING_CST):
-      tmp->string_cst_node.value = strdup (t->string_cst_node.value);
+      TREE_STRING_CST (tmp) = strdup (TREE_STRING_CST (t));
       break;
     case (IDENTIFIER):
-      tmp->identifier_node.name = tree_copy (t->identifier_node.name);
+      TREE_ID_NAME (tmp) = tree_copy (TREE_ID_NAME (t));
+      if (TREE_ID_ITER (t) != NULL)
+	TREE_ID_ITER (tmp) = tree_copy (TREE_ID_ITER (t));
       break;
     default:
       break;

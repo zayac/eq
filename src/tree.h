@@ -247,6 +247,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_STRING_CST(node) ((node)->string_cst_node.value)
 #define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
 
+#define TREE_ID(node) (&((node)->identifier_node))
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
 #define TREE_ID_DEFINED(node) ((node)->identifier_node.defined)
 #define TREE_ID_ITER(node) ((node)->identifier_node.iter_desc)

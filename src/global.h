@@ -45,5 +45,6 @@ tree constant_exists (const char *);
 tree function_proto_exists (const char *);
 bool type_lists_eq (tree, tree);
 tree is_var_in_list (tree, tree);
+tree is_int_in_list (tree, tree);
 
 #endif /* __GLOBAL_H__  */

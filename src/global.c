@@ -56,7 +56,6 @@ init_global ()
   function_proto_list = make_tree_list ();
   iter_var_list = make_tree_list ();
   delete_list = make_tree_list ();
-
   error_count = 0;
   warning_count = 0;
 }
@@ -199,6 +198,31 @@ is_var_in_list (tree var, tree lst)
     if (strcmp
 	(TREE_STRING_CST (TREE_ID_NAME (var)),
 	 TREE_STRING_CST (TREE_ID_NAME (tle->entry))) == 0)
+      ret = tle->entry;
+  }
+
+  return ret;
+}
+
+inline tree
+is_int_in_list (tree var, tree lst)
+{
+  struct tree_list_element *tle;
+  tree ret = NULL;
+
+
+  assert (TREE_CODE (lst) == LIST, "Integer list expected");
+  assert (TREE_CODE (var) == INTEGER_CST, "Integer expected");
+
+  if (lst == NULL)
+    return NULL;
+
+  /* NOTE we *must* return the last match value  at this point
+     because the list could be concatenation of two variable
+     lists of nested blocks. */
+  DL_FOREACH (TREE_LIST (lst), tle)
+  {
+    if (TREE_INTEGER_CST (var) == TREE_INTEGER_CST (tle->entry))
       ret = tle->entry;
   }
 

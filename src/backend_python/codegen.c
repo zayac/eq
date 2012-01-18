@@ -73,11 +73,10 @@ codegen ()
   fprintf (f, "import itertools\n\n");
 
   codegen_genar_function (f);
-
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     {
       level = 0;
-      codegen_iterative (f, tl->entry);
+      codegen_iterative (f, (tree) tl->entry);
     }
 
   DL_FOREACH (TREE_LIST (function_list), tl)

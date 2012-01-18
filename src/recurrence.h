@@ -21,5 +21,6 @@
 int recurrence_find (tree, bool);
 int recurrence_check_window (tree);
 int recurrence_check_precedence (tree);
+int recurrence_check_initial (tree);
 
 #endif /* __RECURRENCE_H__ */

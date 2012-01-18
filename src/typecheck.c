@@ -24,7 +24,7 @@
 
 static int associate_variables (tree, tree, tree);
 
-extern tree iter_var_list; 
+extern tree iter_var_list;
 
 static struct
 typecheck_options
@@ -44,7 +44,6 @@ typecheck ()
 {
   struct tree_list_element *tl;
   int function_check = 0;
-
   init_typecheck_options ();
 
   DL_FOREACH (TREE_LIST (function_list), tl)
@@ -55,6 +54,7 @@ typecheck ()
     {
       recurrence_check_window (tl->entry);
       recurrence_check_precedence (tl->entry);
+      recurrence_check_initial (tl->entry);
     }
 
   if (function_check || error_count > 0)
