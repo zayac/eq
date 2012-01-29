@@ -21,251 +21,211 @@
 #include "types.h"
 #include "recurrence.h"
 
-/* find the biggest or the least shif from current iterator in recurrence
-   block.
-   p == 0 -- find the least;
-   p == 1 -- find the biggest.  */
+/* this function is used to sort definitions of a recurrent expressions.
+   Passed as an argument to DL_SORT macros.  */
 int
-recurrence_find (tree t, bool p)
+recurrence_sort (struct tree_list_element *l, struct tree_list_element *r)
 {
-  struct tree_list_element *el;
-  int ret;
-  bool init = false;
-  DL_FOREACH (TREE_LIST (t), el)
+  tree lel = TREE_OPERAND (l->entry, 0);
+  tree rel = TREE_OPERAND (r->entry, 0);
+
+  assert ((lel == iter_var_node
+       || TREE_CODE (lel) == INTEGER_CST)
+       && (rel == iter_var_node
+       || TREE_CODE (rel) == INTEGER_CST),
+       "unexpected type");
+
+  if (lel == iter_var_node && rel == iter_var_node)
+    return 0;
+  if (lel == iter_var_node)
+    return 1;
+  if (rel == iter_var_node)
+    return -1;
+  /* both are integers.  */
+  else
     {
-      tree lhs = TREE_OPERAND (el->entry, 0);
-      if (!p)
-	{
-	  if (TREE_CODE (lhs) == MINUS_EXPR
-	   && (!init || -TREE_INTEGER_CST (TREE_OPERAND (lhs, 1)) < ret))
-	    ret = -TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
-	  else if (TREE_CODE (lhs) == PLUS_EXPR
-	   && (!init || TREE_INTEGER_CST (TREE_OPERAND (lhs, 1)) < ret))
-	    ret = TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
-	  else if (TREE_CODE (lhs) == IDENTIFIER
-	   && (!init || 0 < ret))
-	    ret = 0;
-	}
-      else
-	{
-	  if (TREE_CODE (lhs) == MINUS_EXPR
-	   && (!init || -TREE_INTEGER_CST (TREE_OPERAND (lhs, 1)) > ret))
-	    ret = -TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
-	  else if (TREE_CODE (lhs) == PLUS_EXPR
-	   && (!init || TREE_INTEGER_CST (TREE_OPERAND (lhs, 1)) > ret))
-	    ret = TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
-	  else if (TREE_CODE (lhs) == IDENTIFIER
-	   && (!init || 0 > ret))
-	    ret = 0;
-	}
-      if (TREE_CODE (lhs) == MINUS_EXPR 
-	|| TREE_CODE (lhs) == PLUS_EXPR
-	|| TREE_CODE (lhs) == IDENTIFIER)
-	init = true;
+      int lnum = TREE_INTEGER_CST (lel);
+      int rnum = TREE_INTEGER_CST (rel);
+      if (lnum < rnum)
+	return -1;
+      if (lnum == rnum)
+	return 0;
+      return 1;
     }
-  return ret;
 }
 
-/* Given the block of recurrent expression we are to check
-   that all variables in relevant range are listed,
-   i.e. if a^{[\iter - 5]} and a^{[\iter + 3]} are defined,
-   make sure that all variables in range 
-   [\iter - 5, ... \iter + 3] are listed.  */
+/* check the right part or the expression, which has to have indexes that
+   are lower than index in the left part.  */
 int
-recurrence_check_window (tree var)
-{
-  struct tree_list_element *el;
-  tree t = TREE_ID_ITER (var);
-  int min = recurrence_find_min (t), max = recurrence_find_max (t);
-  size_t window_size = max - min + 1;
-  bool window[window_size];
-  int i;
-  int ret = 0;
-  memset (window, 0, window_size);
-  bool init = false;
-  DL_FOREACH (TREE_LIST (t), el)
-    {
-      tree lhs = TREE_OPERAND (el->entry, 0);
-      if (TREE_CODE (lhs) != INTEGER_CST)
-	{
-	  if (TREE_CODE (lhs) == MINUS_EXPR)
-	    window[-min - TREE_INTEGER_CST (TREE_OPERAND (lhs, 1))] = true; 
-	  else if (TREE_CODE (lhs) == PLUS_EXPR)
-	    window[-min + TREE_INTEGER_CST (TREE_OPERAND (lhs, 1))] = true; 
-	  else
-	    /* [\iter] case. */
-	    window[-min] = true;
-	  init = true;
-	}
-    }
-  for (i = 0; i < window_size && init; i++)
-    {
-      if (!window[i])
-	{
-	  error ("value `\\iter + %d' is not set for variable `%s'",
-	  min + i,
-	  TREE_STRING_CST (TREE_ID_NAME (var)));
-	  ret++;
-	}
-    }
-  return ret;
-}
-
-/* this one is used for comparing indexes in both situations:
-   either index is a constant ([5]) 
-   or a recurrent expression ([\iter + 5]).  */
-static int
-check_recurrent_expression (tree t, int left_index, bool is_const)
+recurrence_check_relation (tree t, tree left)
 {
   int i, ret = 0;
   if (TREE_CODE (t) == CIRCUMFLEX && TREE_CIRCUMFLEX_INDEX_STATUS (t))
     {
-      tree index = TREE_OPERAND (t, 1);
-      int right_index;
-      bool index_init = true;
-      if (!is_const && TREE_CODE (index) == MINUS_EXPR)
-	right_index = -TREE_INTEGER_CST (TREE_OPERAND (index, 1));
-      else if (!is_const && TREE_CODE (index) == PLUS_EXPR)
-	right_index = TREE_INTEGER_CST (TREE_OPERAND (index, 1));
-      else if (!is_const && TREE_CODE (index) == IDENTIFIER)
-	right_index = 0;
-      else if (is_const && TREE_CODE (index) == INTEGER_CST)
-	right_index = TREE_INTEGER_CST (TREE_OPERAND (index, 1));
-      else
-	index_init = false;
-
-      if (index_init && left_index <= right_index)
+      if (TREE_CODE (left) == INTEGER_CST)
 	{
-	  error_loc (TREE_LOCATION (TREE_OPERAND (t, 0)), "index in the right part "
-	    "of the assignment must be lower than one in the left part");
+	  tree index = TREE_OPERAND (t, 1);
+	  if (TREE_CODE (index) == INTEGER_CST)
+	    {
+	      if (TREE_INTEGER_CST (left) <= TREE_INTEGER_CST (index))
+		{
+		  error_loc (TREE_LOCATION (index),
+		  "index `%d' in the right part of recurrent expression is "
+		  "greater or equal than index `%d' in the left part",
+		  TREE_INTEGER_CST (index),
+		  TREE_INTEGER_CST (left));
+		  ret += 1;
+		}
+	    }
+	  else 
+	    {
+	      char* s = tree_to_str (index);
+	      error_loc (TREE_LOCATION (index), 
+		"constant expression is expected"
+		" in the right part of recurrent expression, `%s' found",
+		s);
+		ret += 1;
+	      free (s);
+	    }
 	}
-      ret += 1;
     }
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
-    ret += check_recurrent_expression (TREE_OPERAND (t, i), 
-	      left_index, is_const);
+    ret += recurrence_check_relation (TREE_OPERAND (t, i), left); 
   return ret;
+
 }
 
-/* All indexes in the right part of assignment must precede the index in the
-   left part of assignment. 
-   NOTE May be this validation is needless.  */
-int
-recurrence_check_precedence (tree var)
+int 
+recurrence_find_max_shift (tree t)
 {
-  struct tree_list_element *el;
-  tree t = TREE_ID_ITER  (var);
-  int ret = 0;
-  DL_FOREACH (TREE_LIST (t), el)
-    {
-      int left_index;
-      tree lhs = TREE_OPERAND (el->entry, 0);
-      if (TREE_CODE (lhs) == INTEGER_CST)
-	{
-	  left_index = TREE_INTEGER_CST (lhs);
-	  ret += check_recurrent_expression (TREE_OPERAND (el->entry, 1),
-		    left_index, true);
-	}
-      else
-	{
-	  if (TREE_CODE (lhs) == MINUS_EXPR)
-	    left_index = -TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
-	  else if (TREE_CODE (lhs) == PLUS_EXPR)
-	    left_index = TREE_INTEGER_CST (TREE_OPERAND (lhs, 1));
-	  else if (TREE_CODE (lhs) == IDENTIFIER)
-	    left_index = 0;
-	  else
-	    assert (0, "unexprected tree node `%s'", 
-		TREE_CODE_NAME (TREE_CODE (lhs)));
-	  ret += check_recurrent_expression (TREE_OPERAND (el->entry, 1),
-		    left_index, false);
-	}
-    }
-  return ret;
-}
-
-static int
-find_init_states (tree t, int min, tree list, tree consts)
-{
-  int i, ret = 0;
+  int i, max = 0;
   if (TREE_CODE (t) == CIRCUMFLEX && TREE_CIRCUMFLEX_INDEX_STATUS (t))
     {
       tree index = TREE_OPERAND (t, 1);
-      int num;
-      bool init = true;
       if (TREE_CODE (index) == MINUS_EXPR)
-	num = -TREE_INTEGER_CST (TREE_OPERAND (index, 1));
-      else if (TREE_CODE (index) == PLUS_EXPR)
-	num = TREE_INTEGER_CST (TREE_OPERAND (index, 1));
-      else if (TREE_CODE (index) == IDENTIFIER)
-	num = 0;
-      else if (TREE_CODE (index) == INTEGER_CST 
-	  && !is_int_in_list (index, consts))
 	{
-	  tree_list_append (list, index);
+	  if (TREE_INTEGER_CST (TREE_OPERAND (index, 1)) > max)
+	    max = TREE_INTEGER_CST (TREE_OPERAND (index, 1));
+	}
+    }
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
+    {
+      int tmp = recurrence_find_max_shift (TREE_OPERAND (t, i));
+      if (tmp > max)
+	max = tmp;
+    }
+  return max;
+}
+
+int
+recurrence_validate_indexes (tree t, tree left, int min, int range)
+{
+  int ret = 0, i;
+  if (TREE_CODE (t) == CIRCUMFLEX && TREE_CIRCUMFLEX_INDEX_STATUS (t))
+    {
+      tree index = TREE_OPERAND (t, 1);
+      if (TREE_CODE (index) == INTEGER_CST && left == iter_var_node)
+	{
+	  int num = TREE_INTEGER_CST (index);
+	  if (num < min || num > min + range)
+	    {
+	      char* s = tree_to_str (index);
+	      error_loc (TREE_LOCATION (index), "index %s doesn't belong "
+		"to the initial state",
+		s);
+	      free (s);
+	      ret += 1;
+	    }
+	}
+    }
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
+    ret +=  recurrence_validate_indexes (TREE_OPERAND (t, i), left, min, range);
+  return ret;
+}
+
+/* validate recurrent expression.
+   the list with definitions *must* be sorted by index.  */
+int
+recurrence_validate (tree t)
+{
+  int ret;
+  struct tree_list_element *el;
+  int max_shift = 0, min;
+
+  DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (t))), el)
+    {
+      tree lhs = TREE_OPERAND (el->entry, 0);
+      tree rhs = TREE_OPERAND (el->entry, 1);
+      
+      if (lhs == iter_var_node)
+	max_shift = recurrence_find_max_shift (rhs);
+
+      ret += recurrence_check_relation (rhs, lhs);
+    }
+  
+  if (max_shift != 0)
+    {
+      int i = 0;
+      bool min_exists = false;
+
+      if (TREE_CODE (TREE_OPERAND (TREE_LIST (
+		TREE_ITER_LIST (TREE_ID_ITER (t)))->entry, 0))
+	== INTEGER_CST)
+	{
+	  min = TREE_INTEGER_CST (TREE_OPERAND (TREE_LIST (
+		  TREE_ITER_LIST (TREE_ID_ITER (t)))->entry, 0));
+	  min_exists = true;
+	}
+
+      if (max_shift == 1 && !min_exists)
+	{
+	  error ("there has to be one initial value for variable `%s'",
+	      TREE_STRING_CST (TREE_ID_NAME (t)));
+	  ret += 1;
 	  return ret;
 	}
-      else
-	init = false;
 
-      if (init && num < min)
-	tree_list_append (list, index);
-    }
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
-    ret += find_init_states (TREE_OPERAND (t, i), min, list, consts);
-  return ret;
-
-}
-
-/* We are to check if all necessary initial values are declared.
-   For example, in case of
-   a^{[i]} \gets a^{[i-1]} + a^{[i-2]}
-   first two values are to be declared.  */
-int
-recurrence_check_initial (tree var)
-{
-  struct tree_list_element *el, *tmp;
-  tree init_list = make_tree_list ();
-  tree constants = make_tree_list ();
-  tree t = TREE_ID_ITER (var);
-  int ret = 0;
-  int min = recurrence_find_min (t);
-  /* combine constant declarations in a separate list for a fast access.  */
-  DL_FOREACH (TREE_LIST (t), el)
-    {
-      if (TREE_CODE (TREE_OPERAND (el->entry, 0)) == INTEGER_CST)
-	tree_list_append (constants, TREE_OPERAND (el->entry, 0));
-    }
-
-  DL_FOREACH (TREE_LIST (t), el)
-    {
-      ret += find_init_states (TREE_OPERAND (el->entry, 1), min, 
-			       init_list, constants);
-    }
-
-  DL_FOREACH_SAFE (TREE_LIST (init_list), el, tmp)
-    {
-      /* FIXME We handle only constants here. We are to validate iterative
-	 indexes too.  */
-      if (TREE_CODE (el->entry) == INTEGER_CST)
+      DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (t))), el)
 	{
-	  char* s = tree_to_str (el->entry);
-	  error ("recurrent expression of variable `%s' with index `%s' "
-		      "has to be defined",
-		 TREE_STRING_CST (TREE_ID_NAME (var)),
-		 s);
+	  tree lhs = TREE_OPERAND (el->entry, 0);
+	  if (TREE_CODE (lhs) == INTEGER_CST)
+	    {
+	      if (i++ >= max_shift)
+		{
+		  error ("too many initial values found for variable `%s'", 
+		    TREE_STRING_CST (TREE_ID_NAME (t)));
+		  ret += 1;
+		  return ret;
+		}
+	      else if (min_exists
+		    && ((el->next != NULL 
+		    && TREE_CODE (TREE_OPERAND (el->next->entry, 0))
+			== INTEGER_CST
+		    && TREE_INTEGER_CST (TREE_OPERAND (el->next->entry, 0))
+			!= TREE_INTEGER_CST (TREE_OPERAND (el->entry, 0)) + 1)
+		    || ((el->next == NULL
+		    || TREE_CODE (TREE_OPERAND (el->next->entry, 0)) != INTEGER_CST)
+		    && i != max_shift)))
+		{
+		  error ("there have to be %d consequent initial values for "
+		         "variable `%s'",
+			 max_shift,
+			 TREE_STRING_CST (TREE_ID_NAME (t)));
+		  ret += 1;
+		  return ret;
+		}
+	    }
 	}
-      DL_DELETE (TREE_LIST (init_list), el);
-      free (el);
     }
-  free_tree (init_list);
-
-  DL_FOREACH_SAFE (TREE_LIST (constants), el, tmp)
+  DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (t))), el)
     {
-      DL_DELETE (TREE_LIST (constants), el);
-      free (el);
+      ret += recurrence_validate_indexes (TREE_OPERAND (el->entry, 1),
+			       TREE_OPERAND (el->entry, 0),
+			       min,
+			       max_shift);
     }
-  free_tree (constants);
 
+  TREE_ITER_MIN (TREE_ID_ITER (t)) = min;
+  TREE_ITER_SIZE (TREE_ID_ITER (t)) = max_shift;
   return ret;
 }

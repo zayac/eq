@@ -38,6 +38,7 @@ void finalize_global ();
 void init_global_tree ();
 void finalize_global_tree ();
 
+int compare_ints (const void *, const void *);
 tree type_defined (const char *name);
 tree add_user_type (tree type);
 tree function_exists (const char *);

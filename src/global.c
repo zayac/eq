@@ -80,12 +80,14 @@ init_global_tree ()
       = make_string_cst_str (token_kind_name[tv_iter]);
   TREE_ID_DEFINED (global_tree[TG_ITER_VAR]) = true;
   TREE_ID_ITER (global_tree[TG_ITER_VAR]) = NULL;
-  TREE_TYPE (global_tree[TG_ITER_VAR]) = NULL;
 
   TREE_CODE_SET (global_tree[TG_ERROR_MARK], ERROR_MARK);
   TREE_CODE_SET (global_tree[TG_UNKNOWN_MARK], UNKNOWN_MARK);
   TREE_CODE_SET (global_tree[TG_ITER_VAR], IDENTIFIER);
+
   types_init ();
+  /* we can assign types only after defined types.  */
+  TREE_TYPE (global_tree[TG_ITER_VAR]) = z_type_node;
 }
 
 void
@@ -106,6 +108,13 @@ finalize_global_tree ()
       free_tree (global_tree[i]);
 }
 
+int
+compare_ints (const void *a, const void *b)
+{
+  const int *ia = (const int *) a;
+  const int *ib = (const int *) b;
+  return (*ia > *ib) - (*ia < *ib);
+}
 
 static inline bool
 is_valid_type (tree type)

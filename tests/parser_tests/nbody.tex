@@ -50,8 +50,8 @@
 \end{eqcode}
 
 \begin{eqcode}{main}{\ }{\ }{\type{Z}}
-    p \in \type{R}^2_{5,3},
-    v \in \type{R}^2_{5,3},
+    p \in \type{R}^2_{5,3};
+    v \in \type{R}^2_{5,3};
     m \in \type{R}^2_{5} \lend
     p \gets \begin{tmatrix}
             0 & 0 & 0 \lend
@@ -86,7 +86,7 @@
         \end{tmatrix} \lend
     v \gets \call{offset\_momentum}{v, m} \lend
     %\print{\call{energy}{p, v, m} } \lend
-    p^{[0]}\gets p, v^{[0]} \gets v \lend
+    p^{[0]}\gets p; v^{[0]} \gets v \lend
 %    p^{[i]}, v^{[i]} \gets \call{advance}{p^{[i-1]},
 %    v^{[i-1]}, m, 0.01} \lend
 %    p, v \gets \filter{p^{[i]}, v^{[i]}\  |\ i:   i = n} \lend

@@ -618,6 +618,9 @@ lexer_get_token (struct lexer *lex)
     case ':':
       tval_tok_init (tok, tok_operator, tv_colon);
       goto return_token;
+    case ';':
+      tval_tok_init (tok, tok_operator, tv_semicolon);
+      goto return_token;
     default:
       ;
     }

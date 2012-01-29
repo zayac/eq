@@ -121,7 +121,7 @@ struct tree_string_cst_node
 struct tree_int_cst_node
 {
   struct tree_type_base typed;
-  int value;
+  long long int value;
 };
 
 struct tree_real_cst_node
@@ -138,6 +138,14 @@ struct tree_identifier_node
   unsigned defined:1;
 };
 
+struct tree_rec_expr_node
+{
+  struct tree_base base;
+  int min_value;
+  unsigned size;
+  tree list;
+};
+
 union tree_node
 {
   struct tree_base base;
@@ -151,6 +159,7 @@ union tree_node
   struct tree_real_cst_node real_cst_node;
   struct tree_string_cst_node string_cst_node;
   struct tree_circumflex_op_node circumflex_op_node;
+  struct tree_rec_expr_node rec_expr_node;
 };
 
 enum tree_global_code
@@ -251,6 +260,10 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
 #define TREE_ID_DEFINED(node) ((node)->identifier_node.defined)
 #define TREE_ID_ITER(node) ((node)->identifier_node.iter_desc)
+
+#define TREE_ITER_MIN(node) ((node)->rec_expr_node.min_value)
+#define TREE_ITER_SIZE(node) ((node)->rec_expr_node.size)
+#define TREE_ITER_LIST(node) ((node)->rec_expr_node.list)
 
 #define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])

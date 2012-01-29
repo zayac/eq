@@ -26,11 +26,11 @@ exceed four million, find the sum of the even-valued terms.}
 
 \section{Algorithm}
 \begin{eqcode}{main}{\ }{\ }{\type{Z}}
-  a^{[0]} \gets 1,
-  b^{[0]} \gets 2,
+  a^{[0]} \gets 1;
+  b^{[0]} \gets 2;
   x^{[0]} \gets 0 \lend
-  c^{[\iter]} \gets a^{[\iter-1]} + b^{[\iter-1]},
-  a^{[\iter]} \gets b^{[\iter-1]},
+  c^{[\iter]} \gets a^{[\iter-1]} + b^{[\iter-1]};
+  a^{[\iter]} \gets b^{[\iter-1]};
   b^{[\iter]} \gets c^{[\iter-1]} \lend
   \qif {a^{[\iter]} \mod 2 = 0}
     x^{[\iter]} \gets x^{[\iter-1]} + a^{[\iter]} \lend

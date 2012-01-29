@@ -95,6 +95,8 @@ get_tree_size (enum tree_code code)
 	return ops + sizeof (struct tree_identifier_node);
       else if (code == LIST)
 	return ops + sizeof (struct tree_list_node);
+      else if (code == ITER_EXPR)
+	return ops + sizeof (struct tree_rec_expr_node);
       else if (code == ERROR_MARK)
 	return 0;
       else
@@ -238,6 +240,10 @@ free_tree (tree node)
 	    free_tree (el->entry);
 	    free (el);
 	  }
+	}
+      else if (code == ITER_EXPR)
+	{
+	  free_tree (TREE_ITER_LIST (node));
 	}
       break;
 
@@ -414,7 +420,7 @@ make_integer_tok (struct token * tok)
 	  token_class_as_string (token_class (tok)));
 
   t = make_tree (INTEGER_CST);
-  TREE_INTEGER_CST (t) = atoi (token_as_string (tok));
+  TREE_INTEGER_CST (t) = atoll (token_as_string (tok));
   TREE_CONSTANT (t) = true;
   assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
   TREE_TYPE (t) = z_type_node;

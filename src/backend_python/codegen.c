@@ -25,8 +25,30 @@
       fprintf (f, "\t");		      \
   } while (0)
 
+#define fprintf_zero_element(f, type)	      \
+  do{					      \
+    switch (code)			      \
+      {					      \
+	case Z_TYPE:			      \
+	case N_TYPE:			      \
+	  fprintf (f, "0");		      \
+	  break;			      \
+	case R_TYPE:			      \
+	  fprintf (f, "0.0");		      \
+	  break;			      \
+	case B_TYPE:	  		      \
+	  fprintf (f, "False");		      \
+	  break;			      \
+	case STRING_TYPE:		      \
+	  fprintf (f, "\"\"");		      \
+	  break;			      \
+	default:			      \
+	  assert (0, "unexpected type");      \
+      }					      \
+  }while(0)
 
 static int level;
+static int codegen_get_gen_last_value_function (FILE*);
 static int codegen_genar_function (FILE*);
 
 /* These parameters specify options for code generating.  */
@@ -40,6 +62,10 @@ codegen_options
      recursivly. However in *caller* function we pass `locals()' as a
      __local_vars argument.  */
   bool pass_local_vars;
+  /* `\iter' can be occured in the right part of recurrent expression in place
+     of index and as a regular variable as well. The implementation in code
+     generator differs in these cases.  */
+  bool iter_as_index;
 } codegen_options;
 
 extern tree iter_var_list;
@@ -49,6 +75,7 @@ init_codegen_options ()
 {
   codegen_options.is_var_in_arg = false;
   codegen_options.pass_local_vars = false;
+  codegen_options.iter_as_index = false;
 }
 
 int
@@ -70,9 +97,13 @@ codegen ()
     }
 
   fprintf (f, "import sys\n");
-  fprintf (f, "import itertools\n\n");
+  fprintf (f, "import collections\n");
+  fprintf (f, "import itertools\n");
+  fprintf (f, "from math import *\n\n");
 
+  codegen_get_gen_last_value_function (f);
   codegen_genar_function (f);
+
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     {
       level = 0;
@@ -90,6 +121,18 @@ codegen ()
   printf ("note: finished generating code.\n");
 
   return function_error;
+}
+
+static int
+codegen_get_gen_last_value_function (FILE* f)
+{
+  indent (f, 0);
+  fprintf (f, "def __get_gen_last_value (__gen):\n"
+	      "\t__ret = None\n"
+	      "\tfor __ret in __gen:\n"
+	      "\t\tpass\n"
+	      "\treturn __ret\n");
+  return 0;
 }
 
 static int
@@ -152,11 +195,7 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
-    {
-      /* We skip declare statements.  */
-      if (TREE_CODE (tle->entry) != DECLARE_STMT)
-	error += codegen_stmt (f, tle->entry, func_name);
-    }
+    error += codegen_stmt (f, tle->entry, func_name);
   return error;
 }
 
@@ -170,33 +209,61 @@ codegen_iterative (FILE* f, tree var)
   struct tree_list_element *el; 
   fprintf (f, "def __recur_%s(_iter, __local_vars):\n", 
     TREE_STRING_CST (TREE_ID_NAME (var)));
-  fprintf (f, "\tif _iter in __recur_%s.value:\n",
-    TREE_STRING_CST (TREE_ID_NAME (var)));
-  fprintf (f, "\t\treturn (__recur_%s.value[_iter])\n", 
-    TREE_STRING_CST (TREE_ID_NAME (var)));
-  DL_FOREACH (TREE_LIST (TREE_ID_ITER (var)), el)
+  fprintf (f, "\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
+  fprintf (f, "\t__i = __start\n");
+  fprintf (f, "\t__window = [");
+  DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (var))), el)
     {
-      fprintf (f, "\t__recur_%s.value[", TREE_STRING_CST (TREE_ID_NAME (var)));
-      error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
-      fprintf (f, "]=");
+	codegen_options.is_var_in_arg = true;
+	codegen_options.pass_local_vars = true;
+	error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
+      	codegen_options.is_var_in_arg = false;
+	codegen_options.pass_local_vars = false;
+      if (el->next == NULL 
+	|| TREE_CODE (TREE_OPERAND (el->next->entry, 0)) != INTEGER_CST)
+	break;
+      else
+	fprintf (f, ", ");
+    }
+  fprintf (f, "]\n");
+  fprintf (f, "\t__size = len(__window)\n");
+  fprintf (f, "\twhile __i <= _iter:\n");
+  fprintf (f, "\t\tif __i < __start + __size:\n");
+  fprintf (f, "\t\t\tyield __window[__i - __start]\n");
+  fprintf (f, "\t\telse:\n");
+  fprintf (f, "\t\t\tyield __window[__size - 1]\n");
+  if (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node)
+    {
+      fprintf (f, "\t\tif __i >= __size-1:\n");
+      fprintf (f, "\t\t\t__new = ");
       codegen_options.is_var_in_arg = true;
       codegen_options.pass_local_vars = true;
-      error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
+      if (el->next == NULL)
+	error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
+      else
+	error += codegen_expression (f, TREE_OPERAND (el->next->entry, 1));
       codegen_options.is_var_in_arg = false;
       codegen_options.pass_local_vars = false;
       fprintf (f, "\n");
-      if (TREE_CODE (TREE_OPERAND (el->entry, 0)) == INTEGER_CST)
-	{
-	  fprintf (f, "\tif _iter == ");
-	  error += codegen_expression (f, TREE_OPERAND (el->entry, 0));
-	  fprintf (f, ":\n");
-	  fprintf (f, "\t\treturn (__recur_%s.value[_iter])\n", 
-	    TREE_STRING_CST (TREE_ID_NAME (var)));
-	} 
+      fprintf (f, "\t\t\t__deq = collections.deque(__window)\n");
+      fprintf (f, "\t\t\t__deq.rotate(-1)\n");
+      fprintf (f, "\t\t\t__window = list (__deq)\n");
+      fprintf (f, "\t\t\t__window[__size - 1] = __new\n");
     }
-  fprintf (f, "\treturn (__recur_%s.value[_iter])\n",
-    TREE_STRING_CST (TREE_ID_NAME (var)));
-  fprintf (f, "__recur_%s.value={}\n", TREE_STRING_CST (TREE_ID_NAME (var)));
+  fprintf (f, "\t\t__i += 1\n");
+  return error;
+}
+
+static int 
+codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
+{
+  int error = 0;
+  fprintf (f, "[");
+  if (el->next != NULL)
+    error += codegen_zero_array (f, el->next, code);
+  else
+    fprintf_zero_element (f, code);
+  fprintf (f, " for i in range(%lli)]", TREE_INTEGER_CST (el->entry));
   return error;
 }
 
@@ -230,15 +297,42 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
       break;
     case DECLARE_STMT:
       {
-	/* We skip declare (`\in') statement in python.  */  
+	/* we generate assign *a zero value* while declaring statement because
+	   types in Eq are static, however in Python types are dynamic ones.
+	   A code for `declare' statement is generated only if the variable is
+	   not a recurrent expression.  */
+	if (TREE_ID_ITER (TREE_OPERAND (stmt, 0)) == NULL)
+	  {
+	    /* shortcuts. */
+	    tree shape = TYPE_SHAPE (TREE_TYPE (TREE_OPERAND (stmt, 0)));
+	    tree dim = TYPE_DIM (TREE_TYPE (TREE_OPERAND (stmt, 0)));
+	    enum tree_code code = TREE_CODE (TREE_TYPE (TREE_OPERAND (stmt, 0)));
+	    
+	    /* a vector type.  */
+	    if (shape != NULL)
+	      {
+		error += codegen_expression (f, TREE_OPERAND (stmt, 0));
+		fprintf (f, " = ");
+		error += codegen_zero_array (f, TREE_LIST (shape), code);
+		fprintf (f, "\n");
+	      }
+	    /* a scalar type.  */
+	    else if (dim == NULL)
+	      {
+		error += codegen_expression (f, TREE_OPERAND (stmt, 0));
+		fprintf (f, " = ");
+		fprintf_zero_element (f, code);
+		fprintf (f, "\n");
+	      }
+	  }
       }
-      return error;
+      break;
     case INDEX_LOOP_EXPR:
       {
 	tree id, gen_id_list;
 	unsigned counter = 0;
 	struct tree_list_element *el, * tel;
-
+	int old_level = level;
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == LOWER)
 	  id = TREE_OPERAND (TREE_OPERAND (stmt, 0), 0);
 	else
@@ -330,13 +424,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    if (el->next != NULL)
 	      indent (f, level);
 	  }
-	if (TREE_CODE (TREE_OPERAND (stmt, 1)) == GENERATOR)
-	  {
-	    level -= 2;
-	    if (TREE_LIST (TREE_OPERAND (stmt, 2))->next == NULL)
-	      level++;
-	    indent (f, level);
-	  }
+	level = old_level;
       }
       break;
 
@@ -348,8 +436,8 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    fprintf (f, "print(");
 	    error += codegen_expression (f, TREE_OPERAND (stmt, 0));
 	    fprintf (f, ")\n");
+	    indent (f, level);
 	  }
-	indent (f, level);
 	fprintf (f, "return(");
 	codegen_expression (f, TREE_OPERAND (stmt, 0));
 	fprintf (f, ")");
@@ -418,9 +506,9 @@ codegen_expression (FILE* f, tree expr)
     case INTEGER_CST:
       {
 	if (TREE_TYPE (expr) == z_type_node)
-	  fprintf (f, "%d", TREE_INTEGER_CST (expr));
+	  fprintf (f, "%lli", TREE_INTEGER_CST (expr));
 	else if (TREE_TYPE (expr) == n_type_node)
-	  fprintf (f, "%u", TREE_INTEGER_CST (expr));
+	  fprintf (f, "%llu", TREE_INTEGER_CST (expr));
 	else
 	  {
 	    error_loc (TREE_LOCATION (expr), "invalid integer type `%s'",
@@ -459,8 +547,19 @@ codegen_expression (FILE* f, tree expr)
 	/* in functions related to recurrent expressions local variables are
 	   passed in `vars' list variable. However, variable `\iter' has to be
 	   accessed in a usual way.  */
+	
+	if (expr == iter_var_node)
+	  {
+	    if (codegen_options.iter_as_index)
+	      {
+		fprintf (f, "__size");
+		break;
+	      }
+	  }
+	
 	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "__local_vars['");
+	
 	if (*c == '\\')
 	  {
 	    fprintf (f, "_");
@@ -471,7 +570,6 @@ codegen_expression (FILE* f, tree expr)
 	  }
 	else
 	  fprintf (f, "%s", c);
-      
       	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "']");
       }
@@ -566,14 +664,22 @@ codegen_expression (FILE* f, tree expr)
 	  }
 	else
 	  {
-	    fprintf (f, "__recur_%s(", 
-	      TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0))));
-	    error += codegen_expression (f, TREE_OPERAND (expr, 1));
 	    if (codegen_options.pass_local_vars)
-	      fprintf (f, ", __local_vars");
+	      {
+		fprintf (f, "__window[");
+		codegen_options.iter_as_index = true;
+		error += codegen_expression (f, TREE_OPERAND (expr, 1));
+		codegen_options.iter_as_index = false;
+		fprintf (f, "]");
+	      }
 	    else
-	      fprintf (f, ", locals()");
-	    fprintf (f, ")");
+	      {
+		fprintf (f, "__get_gen_last_value (__recur_%s(", 
+		  TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0))));
+		error += codegen_expression (f, TREE_OPERAND (expr, 1));
+		fprintf (f, ", locals()");
+		fprintf (f, "))");
+	      }
 	  }
       }
       break;
@@ -668,10 +774,10 @@ codegen_expression (FILE* f, tree expr)
 	      opcode = "^";
 	      break;
 	    case SRIGHT_EXPR:
-	      opcode = "<<";
+	      opcode = ">>";
 	      break;
 	    case SLEFT_EXPR:
-	      opcode = ">>";
+	      opcode = "<<";
 	      break;
 	    case PLUS_EXPR:
 	      opcode = "+";

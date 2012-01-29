@@ -1,5 +1,5 @@
 /* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
-                      Pavel Zaichenkov <zaichenkov@gmail.com>
+		      Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
@@ -36,7 +36,7 @@ transform_hex_to_dec (char *hex)
   char *ret;
   size_t size = 1;
   long long tmp = 10;
-  long long int num = strtoll (hex, NULL, 16);
+  long long unsigned num = strtoull (hex, NULL, 16);
 
   while (tmp <= num)
     {
@@ -44,7 +44,7 @@ transform_hex_to_dec (char *hex)
       size++;
     }
   ret = (char *) malloc (sizeof (char) * (size + 1));
-  sprintf (ret, "%lli", num);
+  sprintf (ret, "%llu", num);
   free (hex);
   return ret;
 }
@@ -69,8 +69,8 @@ parser_get_lexer_token (struct parser *parser)
   if (parser->unget_idx == 0)
     {
       /* Skip comments for the time being. We do not skip
-         the comments at the level of lexer, because we
-         can put them in the output program.  */
+	 the comments at the level of lexer, because we
+	 can put them in the output program.  */
       while (true)
 	{
 	  tok = lexer_get_token (parser->lex);
@@ -108,8 +108,8 @@ parser_get_lexer_token (struct parser *parser)
 	  }
 
       /* If TOKEN_BUFFER is full, we free the token pointed by BUF_START
-         and put the new token on its place, changing BUF_START and
-         BUF_END accordingly.  */
+	 and put the new token on its place, changing BUF_START and
+	 BUF_END accordingly.  */
       if ((parser->buf_end + 1) % parser->buf_size == parser->buf_start)
 	{
 	  token_free (parser->token_buffer[parser->buf_start]);
@@ -210,8 +210,8 @@ parser_get_until_tclass (struct parser *parser, enum token_class tclass)
     {
       tok = parser_get_token (parser);
       /* FIXME the following condition makes it impossible
-         to skip until some symbol if you are inside the
-         block or brackets. */
+	 to skip until some symbol if you are inside the
+	 block or brackets. */
       if ( /* parser_parens_zero (parser) && */ token_class (tok) == tclass)
 	return tok;
     }
@@ -310,7 +310,7 @@ parser_get_token (struct parser *parser)
       tok = ret;
 
       /* Substitute 4 tokens which were read
-         with just one in the token buffer  */
+	 with just one in the token buffer  */
       e = parser->buf_end;
       token_free (parser->token_buffer[buf_idx_inc (e, -4, s)]);
       token_free (parser->token_buffer[buf_idx_inc (e, -3, s)]);
@@ -651,7 +651,7 @@ handle_match (struct parser * parser)
       tok = token_copy (parser_get_token (parser));
 
       /* We need to end up when there is a right brace encountered,
-         and all inclusive braces are closed  */
+	 and all inclusive braces are closed  */
       if (token_is_operator (tok, tv_rbrace) && !braces)
 	{
 	  token_free (tok);
@@ -956,12 +956,14 @@ tree
 handle_indexes (struct parser * parser, tree prefix)
 {
   tree up = NULL, low = NULL;
-
+  struct location up_loc;
+  struct token *tok;
   if (prefix == error_mark_node)
     return error_mark_node;
 
-  if (token_is_operator (parser_get_token (parser), tv_circumflex))
+  if (token_is_operator (tok = parser_get_token (parser), tv_circumflex))
     {
+      up_loc = token_location (tok);
       if (token_is_operator (parser_get_token (parser), tv_lbrace))
 	{
 	  if (token_is_operator (parser_get_token (parser), tv_lsquare))
@@ -983,6 +985,7 @@ handle_indexes (struct parser * parser, tree prefix)
 		  parser_forward_tval (parser, tv_rsquare);
 		  parser_forward_tval (parser, tv_rbrace);
 		}
+	      TREE_LOCATION (up) = up_loc;
 	    }
 	  else
 	    {
@@ -1255,12 +1258,12 @@ handle_instr_list (struct parser * parser)
 	  break;
 	}
 
-      t = handle_list (parser, handle_instr, tv_comma);
+      /* this one allows instructions separated by comma.  */
+      t = handle_list (parser, handle_instr, tv_semicolon);
       assert (TREE_CODE (t) == LIST, "there should be an instruction list");
 
       DL_FOREACH_SAFE (TREE_LIST (t), el, tmp)
 	{
-
 	  /* There is a convention that if instruction was a \match
 	     statement, we return NULL.
 	     In this case \lend in the end could be omited.  */
@@ -1311,7 +1314,7 @@ handle_instr_list (struct parser * parser)
    \begin { eqcode } { id }
    { [ idx [ , idx ]* ] }
    { [ ext_type [ , ext_type ]* ] }
-   { ext_type }
+   { [ ext_type [ , ext_type ]*] }
    instr_list
    \end { eqcode}
  */
@@ -1393,7 +1396,8 @@ handle_function (struct parser * parser)
   /* return type.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
-
+  
+  //ret = handle_ext_type_or_ext_type_list (parser);
   ret = handle_ext_type (parser);
 
   if (ret == NULL || ret == error_mark_node)
@@ -1583,12 +1587,13 @@ error:
 }
 
 /* linear:
-   { [ ( \iter [ ( + | - ) <num> ] ) | ( <num> ) ] }
+   { [ ( \iter [ - <num> ] ) | ( <num> ) ] }
  */
 tree
 handle_linear (struct parser * parser, tree prefix)
 {
   struct token *tok;
+  struct location loc;
   tree t, circumflex;
   
   circumflex = make_tree (CIRCUMFLEX);
@@ -1605,6 +1610,7 @@ handle_linear (struct parser * parser, tree prefix)
   if (is_id (tok = parser_get_token (parser), false))
     {
       tree id;
+      loc = token_location (tok);
       if (token_class (tok) != tok_keyword 
 	  || token_value (tok) != tv_iter)
 	{
@@ -1616,10 +1622,9 @@ handle_linear (struct parser * parser, tree prefix)
 	  goto error;
 	}
       id = make_identifier_tok (tok);
-      if ((tok =
-	parser_token_alternative_tval (parser, tv_plus, tv_minus)) != NULL)
+      tok = parser_get_token (parser);
+      if (token_is_operator (tok, tv_minus))
 	{
-	  enum token_kind op = token_value (tok);
 	  tok = parser_get_token (parser);
 	  if (!token_is_number (tok))
 	    {
@@ -1629,14 +1634,19 @@ handle_linear (struct parser * parser, tree prefix)
 	    }
 	  else
 	    {
-	      if (op == tv_plus)
-		t =  make_binary_op (PLUS_EXPR, id, make_integer_tok (tok));
-	      else
-		t = make_binary_op (MINUS_EXPR, id, make_integer_tok (tok));
+	      t = make_binary_op (MINUS_EXPR, id, make_integer_tok (tok));
+	      /* 'iter_var_node' identifier has location {0, 0} as it is stored
+		 globally. Therefore we are to assign location separately for
+		 it's parent node.  */
+	      if (id == iter_var_node)
+		TREE_LOCATION (t) = loc;
 	    }
 	}
       else
-	TREE_OPERAND_SET (circumflex, 1, id);
+	{
+	  parser_unget (parser);
+	  TREE_OPERAND_SET (circumflex, 1, id);
+	}
     }
   else if (token_is_number (tok))
     t = make_integer_tok (tok);

@@ -18,9 +18,10 @@
 #define recurrence_find_min(t) recurrence_find (t, 0)
 #define recurrence_find_max(t) recurrence_find (t, 1)
 
-int recurrence_find (tree, bool);
-int recurrence_check_window (tree);
-int recurrence_check_precedence (tree);
-int recurrence_check_initial (tree);
+int recurrence_sort (struct tree_list_element*, struct tree_list_element*);
+int recurrence_check_relation (tree, tree);
+int recurrence_find_max_shift (tree);
+int recurrence_validate_indexes (tree, tree, int, int);
+int recurrence_validate (tree);
 
 #endif /* __RECURRENCE_H__ */

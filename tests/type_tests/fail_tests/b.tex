@@ -1,12 +1,9 @@
 \begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
   a \in \type{Z} \lend
-  b \gets 3 \lend
   a^{[0]} \gets 0 \lend
   a^{[1]} \gets 1 \lend
-  a^{[\iter-2]} \gets a^{[\iter-3]} + a^{[\iter+4]} \lend
   a^{[\iter]} \gets a^{[\iter-2]} + a^{[\iter-3]} \lend
-  a^{[\iter+1]} \gets a^{[\iter-2]} + a^{[\iter]} \lend 
   \return {a^{[5]}} \lend
 \end{eqcode}
 
-% eq-error: value `\iter + -1' is not set for variable `a'
+% eq-error: there have to be 3 consequent initial values for variable `a'
