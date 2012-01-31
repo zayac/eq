@@ -99,6 +99,7 @@ codegen ()
   fprintf (f, "import sys\n");
   fprintf (f, "import collections\n");
   fprintf (f, "import itertools\n");
+  fprintf (f, "import numpy\n");
   fprintf (f, "from math import *\n\n");
 
   codegen_get_gen_last_value_function (f);
@@ -263,7 +264,7 @@ codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
     error += codegen_zero_array (f, el->next, code);
   else
     fprintf_zero_element (f, code);
-  fprintf (f, " for i in range(%lli)]", TREE_INTEGER_CST (el->entry));
+  fprintf (f, " for i in range(%li)]", TREE_INTEGER_CST (el->entry));
   return error;
 }
 
@@ -506,9 +507,9 @@ codegen_expression (FILE* f, tree expr)
     case INTEGER_CST:
       {
 	if (TREE_TYPE (expr) == z_type_node)
-	  fprintf (f, "%lli", TREE_INTEGER_CST (expr));
+	  fprintf (f, "%li", TREE_INTEGER_CST (expr));
 	else if (TREE_TYPE (expr) == n_type_node)
-	  fprintf (f, "%llu", TREE_INTEGER_CST (expr));
+	  fprintf (f, "%lu", TREE_INTEGER_CST (expr));
 	else
 	  {
 	    error_loc (TREE_LOCATION (expr), "invalid integer type `%s'",
@@ -594,8 +595,8 @@ codegen_expression (FILE* f, tree expr)
     case MATRIX_EXPR:
       {
 	struct tree_list_element *eli, *elj;
-
-	fprintf (f, "[");
+	
+	fprintf (f, "numpy.array([");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), eli)
 	  {
 	    bool type_dim;
@@ -623,7 +624,7 @@ codegen_expression (FILE* f, tree expr)
 	    if (eli->next != NULL)
 	      fprintf (f, ", ");
 	  }
-	fprintf (f, "]");
+	fprintf (f, "])");
       }
       break;
 

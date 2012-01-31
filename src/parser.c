@@ -36,7 +36,7 @@ transform_hex_to_dec (char *hex)
   char *ret;
   size_t size = 1;
   long long tmp = 10;
-  long long unsigned num = strtoull (hex, NULL, 16);
+  long num = strtol (hex, NULL, 16);
 
   while (tmp <= num)
     {
@@ -44,7 +44,7 @@ transform_hex_to_dec (char *hex)
       size++;
     }
   ret = (char *) malloc (sizeof (char) * (size + 1));
-  sprintf (ret, "%llu", num);
+  sprintf (ret, "%li", num);
   free (hex);
   return ret;
 }

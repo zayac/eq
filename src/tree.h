@@ -121,7 +121,7 @@ struct tree_string_cst_node
 struct tree_int_cst_node
 {
   struct tree_type_base typed;
-  long long int value;
+  long value;
 };
 
 struct tree_real_cst_node

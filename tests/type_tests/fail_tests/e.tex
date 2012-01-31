@@ -1,0 +1,7 @@
+\begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
+  a \in \type{Z} \lend
+  a^{[0]} \gets 0 \lend
+  a^{[1]} \gets 1 \lend
+  a^{[2]} \gets a^{[\iter-1]} \lend % eq-error-loc: constant expression is expected in the right part of recurrent expression, `\iter - 1' found
+  \return {a^{[5]}} \lend
+\end{eqcode}
