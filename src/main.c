@@ -179,7 +179,7 @@ main (int argc, char *argv[])
   parser_init (parser, lex);
 
   if (parse (parser) == 0 && options.break_option != break_parser)
-    typecheck ();
+    ret += typecheck ();
 
   /* printing debug routine.  */
   if (options.print_program)
@@ -209,7 +209,7 @@ main (int argc, char *argv[])
     }
 
   if (options.break_option != break_typecheck
-      && options.break_option != break_parser)
+      && options.break_option != break_parser && !ret)
     codegen ();
   printf ("note: finished compiling.\n");
 cleanup:

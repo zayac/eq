@@ -781,3 +781,32 @@ tree_compare (tree left, tree right)
 
   return true;
 }
+
+tree eliminate_list (tree expr)
+{
+  tree tmp = expr;
+  assert (TREE_CODE (expr) == LIST, "list tree expected");
+  expr = TREE_LIST (expr)->entry;
+  free_list (tmp);
+  return expr;
+}
+
+int equal_list_sizes (tree left, tree right)
+{
+  struct tree_list_element *lel = NULL, *rel =NULL;
+  assert (TREE_CODE (left) == LIST && TREE_CODE (right) == LIST,
+    "list tree expected");
+  DL_FOREACH (TREE_LIST (left), lel)
+    {
+      if (rel == NULL)
+	rel = TREE_LIST (right);
+      
+      if (lel->next == NULL && rel->next != NULL)
+	return -1;
+      else if (lel->next != NULL && rel->next == NULL)
+	return 1;
+      
+      rel = rel->next;
+    }
+  return 0;
+}

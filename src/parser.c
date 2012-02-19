@@ -580,7 +580,7 @@ handle_proto (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
     
-  ret = handle_ext_type (parser);
+  ret = handle_list (parser, handle_ext_type, tv_comma);
 
   if (ret == NULL || ret == error_mark_node)
     {
@@ -1396,9 +1396,8 @@ handle_function (struct parser * parser)
   /* return type.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
-  
-  //ret = handle_ext_type_or_ext_type_list (parser);
-  ret = handle_ext_type (parser);
+ 
+  ret = handle_list (parser, handle_ext_type, tv_comma);
 
   if (ret == NULL || ret == error_mark_node)
     goto error;
@@ -1483,7 +1482,6 @@ handle_function_call (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
 
-  TREE_OPERAND_SET (t, 1, NULL);
   tok = parser_get_token (parser);
   if (!token_is_operator (tok, tv_rbrace))
     {
@@ -1495,7 +1493,10 @@ handle_function_call (struct parser * parser)
 	goto error;
     }
   else
-    return t;
+    {
+      TREE_OPERAND_SET (t, 1, make_tree_list ());
+      return t;
+    }
 
   if (!parser_forward_tval (parser, tv_rbrace))
     {
@@ -2753,7 +2754,9 @@ handle_return (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     goto shift;
 
-  t = handle_expr (parser);
+  t = handle_list (parser, handle_expr, tv_comma);
+  //if (TREE_LIST (t)->next == NULL)
+  //  t = eliminate_list (t);
 
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
@@ -2774,29 +2777,35 @@ tree
 handle_assign (struct parser * parser, tree prefix_id)
 {
   tree id = NULL, expr = NULL;
-  tree gen = NULL;
 
   if (prefix_id == NULL)
-    id = handle_idx (parser);
-  else
-    id = prefix_id;
-
-  if (token_is_operator (parser_get_token (parser), tv_vertical))
     {
-      gen = handle_generator (parser);
-      id = make_binary_op (VERTICAL_EXPR, id, gen);
+      id = handle_list (parser, handle_idx, tv_comma);
+      //if (TREE_LIST (id)->next == NULL)
+      //	id = eliminate_list (id);
     }
   else
-    parser_unget (parser);
-
-
+    id = prefix_id;
+ 
   if (!parser_forward_tval (parser, tv_gets))
     goto error;
 
-  expr = handle_expr (parser);
-  if (expr == error_mark_node)
-    goto error;
+  expr = handle_list (parser, handle_expr, tv_comma);
+  //if (TREE_LIST (expr)->next == NULL)
+  //  expr = eliminate_list (expr);
 
+  /*
+  if ((TREE_CODE (id) == LIST && TREE_CODE (expr) == LIST
+      && equal_list_sizes (id, expr))
+      || (TREE_CODE (id) == LIST && TREE_CODE (expr) != LIST)
+      || (TREE_CODE (id) != LIST && TREE_CODE (expr) == LIST))
+    {
+      error_loc (TREE_LOCATION (id), "the number of identifierrs in the "
+	"left part of the assignment doesn't match the number of "
+	"expressions in the right part of the assignment");
+      goto error;
+    }
+  */
   return make_binary_op (ASSIGN_STMT, id, expr);
 
 error:
@@ -2815,14 +2824,33 @@ handle_declare (struct parser * parser, tree prefix_id)
   tree id = NULL, type = NULL;
 
   if (prefix_id == NULL)
-    id = handle_idx (parser);
+    {
+      id = handle_list (parser, handle_idx, tv_comma);
+      //if (TREE_LIST (id)->next == NULL)
+	//id = eliminate_list (id);
+    }
   else
     id = prefix_id;
 
   if (!parser_forward_tval (parser, tv_in))
     goto error;
 
-  type = handle_ext_type (parser);
+  type = handle_list (parser, handle_ext_type, tv_comma);
+  //if (TREE_LIST (type)->next == NULL)
+  //  type = eliminate_list (type);
+  /*
+  if ((TREE_CODE (id) == LIST && TREE_CODE (type) == LIST
+      && equal_list_sizes (id, type))
+      || (TREE_CODE (id) == LIST && TREE_CODE (type) != LIST)
+      || (TREE_CODE (id) != LIST && TREE_CODE (type) == LIST))
+    {
+      error_loc (TREE_LOCATION (id), "the number of identifierrs in the "
+	"left part of the definition doesn't match the number of "
+	"expressions in the right part of the assignment");
+      goto error;
+    }
+  */
+
   return make_binary_op (DECLARE_STMT, id, type);
 
 error:
@@ -2869,7 +2897,9 @@ handle_instr (struct parser * parser)
   else if (is_id (tok, false))
     {
       parser_unget (parser);
-      idx = handle_idx (parser);
+      idx = handle_list (parser, handle_idx, tv_comma);
+      //if (TREE_LIST (idx)->next == NULL)
+//	idx = eliminate_list (idx);
 
       if (token_is_operator (tok = parser_get_token (parser), tv_gets))
 	{
@@ -2909,7 +2939,19 @@ handle_index_loop (struct parser * parser, tree prefix_id)
 	goto error;
     }
   else
-    idx = prefix_id;
+    {
+      if (TREE_CODE (prefix_id) == LIST)
+	{
+	  if (TREE_LIST (prefix_id)->next != NULL)
+	    {
+	      error_loc (TREE_LOCATION (TREE_LIST (prefix_id)->next->entry),
+		"only one identifier can be iterated inside one statement");
+	    }
+	  idx = eliminate_list (prefix_id);
+	}
+      else
+	idx = prefix_id;
+    }
 
   if (!parser_forward_tval (parser, tv_vertical))
     goto error;

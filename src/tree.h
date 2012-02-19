@@ -100,7 +100,7 @@ struct tree_list_element
 
 struct tree_list_node
 {
-  struct tree_type_base typed;
+  struct tree_base base;
   struct tree_list_element *list;
 };
 
@@ -274,6 +274,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_IS_FUNCTION_PROTO (TREE_FUNC_INSTRS(node) == NULL)
 
 #define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
+
 static inline bool
 is_assignment_operator (enum token_kind tk)
 {
@@ -314,6 +315,8 @@ bool tree_compare (tree, tree);
 void tree_list_combine (tree, tree);
 void tree_list_split (tree, tree);
 void free_list (tree);
+tree eliminate_list (tree);
+int  equal_list_sizes (tree, tree);
 char* tree_to_str (tree);
 
 #endif /* __TREE_H__  */
