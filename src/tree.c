@@ -213,7 +213,6 @@ free_tree (tree node)
   int i;
   enum tree_code code;
 
-
   if (node == NULL
       /* Types are removed separetely.  */
       || node == iter_var_node
@@ -222,7 +221,6 @@ free_tree (tree node)
     return;
 
   code = TREE_CODE (node);
-
   switch (TREE_CODE_CLASS (code))
     {
     case tcl_misc:

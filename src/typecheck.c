@@ -213,6 +213,20 @@ error:
   return 1;
 }
 
+bool
+typecheck_is_rec_expr_const (tree expr)
+{
+  int i;
+  if (expr == iter_var_node)
+    return false;
+  for(i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (expr)); i++)
+    {
+      if (!typecheck_is_rec_expr_const (TREE_OPERAND (expr, i)))
+	return false; 
+    }
+  return true;
+}
+
 #if 0
 /* Typecheck assign statement if the left operand is an identifier.  */
 int
@@ -361,42 +375,40 @@ int
 typecheck_assign_index (tree lhs, tree rhs, tree id) 
 {
   int ret = 0;
-  /* Assign index information to identifier.  */
-  if (TREE_CODE (lhs) == CIRCUMFLEX)
+  assert (TREE_CODE (lhs) == CIRCUMFLEX, 
+      "only circumflex expression can be checked");
+  if (TREE_ID_ITER (id) == NULL)
     {
-      if (TREE_ID_ITER (id) == NULL)
+      TREE_ID_ITER (id) = make_tree (ITER_EXPR);
+      TREE_ITER_LIST (TREE_ID_ITER (id)) = make_tree_list ();
+      tree_list_append (iter_var_list, id);
+    }
+  else
+    {
+      struct tree_list_element *el;
+      DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (id))), el)
 	{
-	  TREE_ID_ITER (id) = make_tree (ITER_EXPR);
-	  TREE_ITER_LIST (TREE_ID_ITER (id)) = make_tree_list ();
-	  tree_list_append (iter_var_list, id);
-	}
-      else
-	{
-	  struct tree_list_element *el;
-	  DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (id))), el)
+	  tree index = TREE_OPERAND (el->entry, 0);
+	  if ((TREE_OPERAND (lhs, 1) == iter_var_node
+	      && index == iter_var_node)
+	      || (TREE_CODE (TREE_OPERAND (lhs, 1)) == INTEGER_CST
+	      && TREE_CODE (index) == INTEGER_CST
+	      && TREE_INTEGER_CST (TREE_OPERAND (lhs, 1))
+		  == TREE_INTEGER_CST (index)))
 	    {
-	      tree index = TREE_OPERAND (el->entry, 0);
-	      if ((TREE_OPERAND (lhs, 1) == iter_var_node
-		  && index == iter_var_node)
-		  || (TREE_CODE (TREE_OPERAND (lhs, 1)) == INTEGER_CST
-		  && TREE_CODE (index) == INTEGER_CST
-		  && TREE_INTEGER_CST (TREE_OPERAND (lhs, 1))
-		      == TREE_INTEGER_CST (index)))
-		{
-		  char* s = tree_to_str (index);
-		  error_loc (TREE_LOCATION (TREE_OPERAND (lhs, 1)),
-			     "index `%s' is defined already for "
-			     "variable `%s'",
-			     s,
-			     TREE_STRING_CST (TREE_ID_NAME (id)));
-		  ret += 1;
-		  free (s);
-		}
+	      char* s = tree_to_str (index);
+	      error_loc (TREE_LOCATION (TREE_OPERAND (lhs, 1)),
+			 "index `%s' is defined already for "
+			 "variable `%s'",
+			 s,
+			 TREE_STRING_CST (TREE_ID_NAME (id)));
+	      ret += 1;
+	      free (s);
 	    }
 	}
-      tree_list_append (TREE_ITER_LIST (TREE_ID_ITER (id)),
-	  make_binary_op (ITER_PAIR, TREE_OPERAND (lhs, 1), rhs));
     }
+  tree_list_append (TREE_ITER_LIST (TREE_ID_ITER (id)),
+      make_binary_op (ITER_PAIR, TREE_OPERAND (lhs, 1), rhs));
   return ret;
 }
 
@@ -409,15 +421,13 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
     {
     case ASSIGN_STMT:
       {
-	tree id = NULL;
 
 	struct tree_list_element *lel = TREE_LIST (TREE_OPERAND (stmt, 0));
 	struct tree_list_element *rel = TREE_LIST (TREE_OPERAND (stmt, 1));
 
 	while (lel != NULL && rel != NULL)
 	  {
-	    tree lhs;
-	    tree rhs;
+	    tree lhs, rhs, id = NULL;
 	    ret += typecheck_stmt_assign_left (lel, ext_vars, vars, &id);
 	    ret += typecheck_stmt_assign_right (rel, ext_vars, vars);
 	    
@@ -427,7 +437,9 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 	    lhs = lel->entry;
 	    rhs = rel->entry;
 
-	    ret += typecheck_assign_index (lhs, rhs, id);
+	    /* Assign index information to identifier.  */
+	    if (TREE_CODE (lhs) == CIRCUMFLEX)
+	      ret += typecheck_assign_index (lhs, rhs, id);
 
 	    if (ret)
 	      return ret;
@@ -442,7 +454,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		      {
 			tree t = make_binary_op (CONVERT_EXPR, 
 						 rhs, TREE_TYPE (lhs));
-			rhs = t;
+			rel->entry = t;
 			//TREE_OPERAND_SET (stmt, 1, t);
 		      }
 		    else
@@ -460,6 +472,8 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		DL_FOREACH (TREE_LIST (TREE_TYPE (rhs)), el)
 		  {
 		    lhs = lel->entry;
+		    
+		    
 		    if (TREE_TYPE (lhs) == NULL)
 		      TREE_TYPE (lhs) = el->entry;
 		    else if (!tree_compare (TREE_TYPE (lhs), el->entry))
@@ -483,11 +497,11 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		      if (el->next != NULL)
 			{
 			  lel = lel->next;
+			  ret += typecheck_stmt_assign_left (lel, ext_vars, vars, &id);
 			  ret += typecheck_assign_index (lel->entry, rhs, id);
-			}
+			}	  
 		  }
 	      }
-
 	    lel = lel->next;
 	    rel = rel->next;
 	  }

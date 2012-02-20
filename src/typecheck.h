@@ -24,4 +24,5 @@ int typecheck_expression (tree, tree, tree);
 int typecheck_type (tree, tree, tree);
 int typecheck_generator (tree, tree, tree);
 int typecheck_lower (tree, tree, tree, bool);
+bool typecheck_is_rec_expr_const (tree);
 #endif /* __TYPECHECK_H__ */

@@ -16,6 +16,7 @@
 #include "eq.h"
 #include "tree.h"
 #include "global.h"
+#include "typecheck.h"
 #include "codegen.h"
 
 #define indent(f, x)			      \
@@ -25,7 +26,7 @@
       fprintf (f, "\t");		      \
   } while (0)
 
-#define fprintf_zero_element(f, type)	      \
+#define fprintf_zero_element(f, code)	      \
   do{					      \
     switch (code)			      \
       {					      \
@@ -292,40 +293,43 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
     case ASSIGN_STMT:
       {
 	struct tree_list_element *el;
+	codegen_options.circumflex_state = CIRC_TMP_VAR;
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
 	  {
-	    if (TREE_CODE (el->entry) == CIRCUMFLEX)
-	      {
-		tree var = is_var_in_list (TREE_OPERAND (el->entry, 0),
-			    iter_var_list);
-		assert (TREE_CODE (var) == IDENTIFIER, 
-			  "recurrent variable is not defined");
-		codegen_options.circumflex_state = CIRC_TMP_VAR;
-		codegen_expression (f, el->entry);
-		codegen_options.circumflex_state = CIRC_LOCAL_VAR;
-	      }
-	    else
-	      codegen_expression (f, el->entry);
+	    codegen_expression (f, el->entry);
 	    if (el->next != NULL)
 	      fprintf (f, ", ");
 	  }
 	fprintf (f, " = ");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 1)), el)
 	  {
-	    /* call copy constructor when assigning a list. Otherwise, pointer
-	       to the list will be assigned.  */
-	    bool copy_list = false;
-	    if (TREE_CODE (el->entry) == IDENTIFIER
-	     && TYPE_DIM (TREE_TYPE (el->entry)) != NULL)
-	      copy_list = true;
-	    if (copy_list)
-	      fprintf (f, " list(");
-	    codegen_expression (f, el->entry);
-	    if (copy_list)
-	      fprintf (f, ")");
+	    if (!typecheck_is_rec_expr_const (el->entry))
+	      {
+		if (TYPE_SHAPE (TREE_TYPE (el->entry)) != NULL)
+		  codegen_zero_array (f, 
+		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (el->entry))),
+		      TREE_CODE (el->entry));
+		else
+		  fprintf_zero_element (f, TREE_CODE (TREE_TYPE (el->entry)));
+	      }
+	    else
+	      {
+		/* call copy constructor when assigning a list. Otherwise, pointer
+		   to the list will be assigned.  */
+		bool copy_list = false;
+		if (TREE_CODE (el->entry) == IDENTIFIER
+		 && TYPE_DIM (TREE_TYPE (el->entry)) != NULL)
+		  copy_list = true;
+		if (copy_list)
+		  fprintf (f, " list(");
+		codegen_expression (f, el->entry);
+		if (copy_list)
+		  fprintf (f, ")");
+	      }
 	    if (el->next != NULL)
 	      fprintf (f, ", ");
 	  }
+	codegen_options.circumflex_state = CIRC_LOCAL_VAR;
       }
       break;
     case DECLARE_STMT:
