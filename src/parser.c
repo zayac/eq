@@ -30,6 +30,8 @@ parser_parens_zero (struct parser *parser)
 	 && parser->brace_count == 0;
 }
 
+/* transform string representation of hex number to string representation of
+   decimal number.  */
 char *
 transform_hex_to_dec (char *hex)
 {
@@ -219,6 +221,7 @@ parser_get_until_tclass (struct parser *parser, enum token_class tclass)
 
   return tok;
 }
+
 
 /* Get the next token and check if it's value  is what expected.
    Function doesn't unget the token in case of the success.
@@ -1595,9 +1598,8 @@ handle_linear (struct parser * parser, tree prefix)
 {
   struct token *tok;
   struct location loc;
-  tree t, circumflex;
+  tree t = NULL, circumflex = make_tree (CIRCUMFLEX);
   
-  circumflex = make_tree (CIRCUMFLEX);
   TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = true;
   TREE_OPERAND_SET (circumflex, 0, prefix);
   TREE_OPERAND_SET (circumflex, 1, NULL);
@@ -2569,7 +2571,8 @@ handle_filter (struct parser * parser)
     goto error;
 
   gen = handle_generator (parser);
-  /* FIXME What if gen is NULL or ERROR?  */
+  if (gen == error_mark_node)
+    goto error;
 
   if (!parser_forward_tval (parser, tv_rbrace))
     {
@@ -2755,8 +2758,6 @@ handle_return (struct parser * parser)
     goto shift;
 
   t = handle_list (parser, handle_expr, tv_comma);
-  //if (TREE_LIST (t)->next == NULL)
-  //  t = eliminate_list (t);
 
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
@@ -2771,7 +2772,7 @@ error:
 
 /*
    assign:
-   idx [ | generator ] \gets expr
+   idx [ , idx ]* \gets expr [ , expr ]*
  */
 tree
 handle_assign (struct parser * parser, tree prefix_id)
@@ -2779,11 +2780,7 @@ handle_assign (struct parser * parser, tree prefix_id)
   tree id = NULL, expr = NULL;
 
   if (prefix_id == NULL)
-    {
       id = handle_list (parser, handle_idx, tv_comma);
-      //if (TREE_LIST (id)->next == NULL)
-      //	id = eliminate_list (id);
-    }
   else
     id = prefix_id;
  
@@ -2791,9 +2788,7 @@ handle_assign (struct parser * parser, tree prefix_id)
     goto error;
 
   expr = handle_list (parser, handle_expr, tv_comma);
-  //if (TREE_LIST (expr)->next == NULL)
-  //  expr = eliminate_list (expr);
-
+  
   /*
   if ((TREE_CODE (id) == LIST && TREE_CODE (expr) == LIST
       && equal_list_sizes (id, expr))
@@ -2816,7 +2811,7 @@ error:
 
 /*
    declare:
-   idx \in expr
+   idx [ , idx ]* \in expr [, expr ]*
  */
 tree
 handle_declare (struct parser * parser, tree prefix_id)
@@ -2824,11 +2819,7 @@ handle_declare (struct parser * parser, tree prefix_id)
   tree id = NULL, type = NULL;
 
   if (prefix_id == NULL)
-    {
-      id = handle_list (parser, handle_idx, tv_comma);
-      //if (TREE_LIST (id)->next == NULL)
-	//id = eliminate_list (id);
-    }
+    id = handle_list (parser, handle_idx, tv_comma);
   else
     id = prefix_id;
 
@@ -2836,20 +2827,6 @@ handle_declare (struct parser * parser, tree prefix_id)
     goto error;
 
   type = handle_list (parser, handle_ext_type, tv_comma);
-  //if (TREE_LIST (type)->next == NULL)
-  //  type = eliminate_list (type);
-  /*
-  if ((TREE_CODE (id) == LIST && TREE_CODE (type) == LIST
-      && equal_list_sizes (id, type))
-      || (TREE_CODE (id) == LIST && TREE_CODE (type) != LIST)
-      || (TREE_CODE (id) != LIST && TREE_CODE (type) == LIST))
-    {
-      error_loc (TREE_LOCATION (id), "the number of identifierrs in the "
-	"left part of the definition doesn't match the number of "
-	"expressions in the right part of the assignment");
-      goto error;
-    }
-  */
 
   return make_binary_op (DECLARE_STMT, id, type);
 
@@ -2898,8 +2875,6 @@ handle_instr (struct parser * parser)
     {
       parser_unget (parser);
       idx = handle_list (parser, handle_idx, tv_comma);
-      //if (TREE_LIST (idx)->next == NULL)
-//	idx = eliminate_list (idx);
 
       if (token_is_operator (tok = parser_get_token (parser), tv_gets))
 	{

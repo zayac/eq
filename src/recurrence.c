@@ -95,6 +95,20 @@ recurrence_check_relation (tree t, tree left)
 
 }
 
+bool
+recurrence_is_constant_expression (tree expr)
+{
+  int i;
+  if (expr == iter_var_node)
+    return false;
+  for(i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (expr)); i++)
+    {
+      if (!recurrence_is_constant_expression (TREE_OPERAND (expr, i)))
+	return false; 
+    }
+  return true;
+}
+
 int 
 recurrence_find_max_shift (tree t)
 {
@@ -148,9 +162,9 @@ recurrence_validate_indexes (tree t, tree left, int min, int range)
 int
 recurrence_validate (tree t)
 {
-  int ret;
+  int ret = 0;
   struct tree_list_element *el;
-  int max_shift = 0, min;
+  int max_shift = 0, min = 0;
 
   DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (t))), el)
     {

@@ -16,7 +16,7 @@
 #include "eq.h"
 #include "tree.h"
 #include "global.h"
-#include "typecheck.h"
+#include "recurrence.h"
 #include "codegen.h"
 
 #define indent(f, x)			      \
@@ -67,8 +67,8 @@ codegen_options
      CIRC_LOCAL_VAR -- inside a recurrency function we are to pass
      `__local_vars' variable recursively (i.e. __window[0]).
 
-      CIRC_LOCALS
-
+      CIRC_LOCALS -- access to a *recurrent window* from a recurrent expression
+      generator function.
   */
 enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCAL_VAR, CIRC_LOCALS } 
 	  circumflex_state;
@@ -169,8 +169,7 @@ codegen_function (FILE* f, tree func)
 {
   struct tree_list_element *  el;
   int error = 0;
-  char *  func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0)));
-
+  char * func_name = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func, 0)));
 
   assert (TREE_CODE (func) == FUNCTION, "function tree expected");
 
@@ -210,14 +209,12 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
   return error;
 }
 
-/* FIXME Local variables can't be used in the assignment at the moment. This is
-   due to iterative expression is calculated in separate function and local
-   variables aren't passed to this function. */
+/* generate a handler for recurrent expression.  */
 int
 codegen_iterative (FILE* f, tree var)
 {
   int error = 0;
-  struct tree_list_element *el; 
+  struct tree_list_element *el = NULL;
   fprintf (f, "def __recur_%s(_iter, __local_vars):\n", 
     TREE_STRING_CST (TREE_ID_NAME (var)));
   fprintf (f, "\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
@@ -228,13 +225,6 @@ codegen_iterative (FILE* f, tree var)
       fprintf (f, "__local_vars['__%s_%li']", 
 	  TREE_STRING_CST (TREE_ID_NAME (var)),
 	  TREE_INTEGER_CST (TREE_OPERAND (el->entry, 0)));
-/*
-	codegen_options.is_var_in_arg = true;
-	codegen_options.circumflex_state = CIRC_LOCALS;
-	error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
-      	codegen_options.is_var_in_arg = false;
-	codegen_options.circumflex_state = CIRC_LOCAL_VAR;
-*/
       if (el->next == NULL 
 	|| TREE_CODE (TREE_OPERAND (el->next->entry, 0)) != INTEGER_CST)
 	break;
@@ -248,7 +238,8 @@ codegen_iterative (FILE* f, tree var)
   fprintf (f, "\t\t\tyield __window[__i - __start]\n");
   fprintf (f, "\t\telse:\n");
   fprintf (f, "\t\t\tyield __window[__size - 1]\n");
-  if (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node)
+  if (el != NULL 
+      && (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node))
     {
       fprintf (f, "\t\tif __i >= __size-1:\n");
       fprintf (f, "\t\t\t__new = ");
@@ -303,7 +294,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	fprintf (f, " = ");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 1)), el)
 	  {
-	    if (!typecheck_is_rec_expr_const (el->entry))
+	    if (!recurrence_is_constant_expression (el->entry))
 	      {
 		if (TYPE_SHAPE (TREE_TYPE (el->entry)) != NULL)
 		  codegen_zero_array (f, 
@@ -338,7 +329,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
 	  {
 	    /* we generate assign *a zero value* while declaring statement because
-	       types in Eq are static, however in Python types are dynamic ones.
+	       types in Eq are static, however in Python they are dynamic ones.
 	       A code for `declare' statement is generated only if the variable is
 	       not a recurrent expression.  */
 	    if (TREE_ID_ITER (el->entry) == NULL)
@@ -711,9 +702,6 @@ codegen_expression (FILE* f, tree expr)
 
     case CIRCUMFLEX:
       {
-	//assert (!TREE_CIRCUMFLEX_INDEX_STATUS (expr), "circumflex as index "
-	//	"is not supported by now");
-
 	if (!TREE_CIRCUMFLEX_INDEX_STATUS (expr))
 	  {
 	    fprintf (f, "(");

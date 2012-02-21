@@ -56,12 +56,7 @@ typecheck ()
 
   /* validate recurrent expressions.  */
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
-    {
-      recurrence_validate (tl->entry);
-  //    recurrence_check_window (tl->entry);
-  //    recurrence_check_precedence (tl->entry);
-  //    recurrence_check_initial (tl->entry);
-    }
+    recurrence_validate (tl->entry);
 
   if (function_check || error_count > 0)
     printf ("note: finished typechecking, %i error(s) found.\n",
@@ -118,6 +113,7 @@ conversion_possible (tree from, tree to)
   return false;
 }
 
+/* typecheck trees representing types.  */
 int
 typecheck_type (tree type, tree ext_vars, tree vars)
 {
@@ -159,6 +155,7 @@ typecheck_type (tree type, tree ext_vars, tree vars)
 	  int ret_val;
 	  tree t = el->entry;
 
+	  /* dimension doesn't fit to shape.  */
 	  if (--dim <= -1)
 	    goto shape_fail;
 
@@ -174,11 +171,10 @@ typecheck_type (tree type, tree ext_vars, tree vars)
 	      ret += 1;
 	    }
 	}
-
+      /* dimension doesn't fit to shape.  */
       if (dim != 0)
 	goto shape_fail;
     }
-
   return ret;
 
 shape_fail:
@@ -188,6 +184,9 @@ shape_fail:
   return ret + 1;
 }
 
+/* typecheck recurrent index.
+   ( <\iter> [ - <integer> ] ) | <integer> 
+ */
 int
 typecheck_recurrent (tree expr)
 {
@@ -213,100 +212,24 @@ error:
   return 1;
 }
 
-bool
-typecheck_is_rec_expr_const (tree expr)
-{
-  int i;
-  if (expr == iter_var_node)
-    return false;
-  for(i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (expr)); i++)
-    {
-      if (!typecheck_is_rec_expr_const (TREE_OPERAND (expr, i)))
-	return false; 
-    }
-  return true;
-}
-
-#if 0
-/* Typecheck assign statement if the left operand is an identifier.  */
-int
-typecheck_assign_identifier (tree stmt, tree ext_vars, tree vars)
-{
-  tree lhs, rhs, var;
-  int rhs_ret;
-
-  lhs = TREE_OPERAND (stmt, 0);
-  rhs = TREE_OPERAND (stmt, 1);
-
-  assert (TREE_CODE (lhs) == IDENTIFIER,
-	  "Left hand side of the assignment expression "
-	  "must be an identifier");
-
-  if ((rhs_ret = typecheck_expression (rhs, vars, ext_vars)) != 0)
-    return rhs_ret;
-
-
-  /* Check if the variable was defined locally. */
-  if ((var = is_var_in_list (lhs, vars)) != NULL
-      || (var = is_var_in_list (lhs, ext_vars)) != NULL)
-    {
-      /* Replace the variable with the variable from the list. */
-      TREE_OPERAND_SET (stmt, 0, var);
-      free_tree (lhs);
-      lhs = TREE_OPERAND (stmt, 0);
-    }
-  else
-    tree_list_append (ext_vars, lhs);
-
-  /* FIXME Check that these types are not NULL. */
-  if (TREE_TYPE (lhs) == NULL)
-    TREE_TYPE (lhs) = TREE_TYPE (rhs);
-  else if (!tree_compare (TREE_TYPE(lhs), TREE_TYPE(rhs)))
-    {
-      /* try to convert types. */
-      if (conversion_possible (TREE_TYPE (rhs), TREE_TYPE (lhs)))
-	{
-	  tree t = make_binary_op (CONVERT_EXPR, rhs, TREE_TYPE (lhs));
-	  TREE_OPERAND_SET (stmt, 1, t);
-	}
-      else
-	{
-	  error_loc (TREE_LOCATION (rhs),
-		     "Assignment left hand side type does not "
-		     "match right hand side type");
-	  return 1;
-	}
-    }
-  return 0;
-}
-#endif
-
+/* typecheck the right part (only one enumeration element) of the assignment.  */
 int
 typecheck_stmt_assign_right (struct tree_list_element *el, 
 				    tree ext_vars, tree vars)
 {
   int ret = 0;
-  tree rhs = el->entry;
   typecheck_options.iter_index = true;
-  ret += typecheck_expression (rhs, ext_vars, vars);
-  if (ret)
-    return ret;
-  if (TREE_CODE (rhs) == FUNCTION_CALL && TREE_CODE (TREE_TYPE (rhs)) == LIST)
-    {
-      tree list = make_tree_list ();
-      tree_list_append(list, rhs);
-      rhs = list;
-    }
+  ret += typecheck_expression (el->entry, ext_vars, vars);
   typecheck_options.iter_index = false;
   return ret;
 }
 
+/* typecheck the left part only one identifier) of the assignment.  */
 int
-typecheck_stmt_assign_left (struct tree_list_element *el, 
-				   tree ext_vars, tree vars, tree *id)
+typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars, tree vars)
 {
   int ret = 0;
-  tree lhs = el->entry;
+  tree id, lhs = el->entry;
   int tmp_ret;
 
   if (TREE_CODE (lhs) == IDENTIFIER)
@@ -339,42 +262,45 @@ typecheck_stmt_assign_left (struct tree_list_element *el,
 	  ret += 1;
 	  return ret;
 	}
-
-      if (TREE_CODE (index) == INTEGER_CST)
+      else if (TREE_CODE (index) == INTEGER_CST)
 	TREE_TYPE (index) = z_type_node;
 
       typecheck_options.iter_index = true;
 
+      /* typecheck identifier without index.  */
       tmp_ret = typecheck_expression (TREE_OPERAND (lhs, 0), ext_vars,
 				      vars);
       if (tmp_ret)
-	{
-	  ret += 1;
-	  return ret;
-	}
+	return ret + 1;
 
       assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER,
 	      "identifier expected");
-      *id = TREE_OPERAND (lhs, 0);
-
-      if ((var = is_var_in_list (*id, vars)) != NULL
-       || (var = is_var_in_list (*id, ext_vars)) != NULL)
+     
+      /* try to find identifier in the defined variable list.  */
+      id = TREE_OPERAND (lhs, 0);
+      if ((var = is_var_in_list (id, vars)) != NULL
+       || (var = is_var_in_list (id, ext_vars)) != NULL)
 	{
-	  free_tree (*id);
+	  free_tree (id);
 	  TREE_OPERAND_SET (lhs, 0, var);
-	  *id = var;
+	  id = var;
 	}
-      TREE_ID_DEFINED (*id) = true;
+
+      TREE_ID_DEFINED (id) = true;
 
       TREE_TYPE (lhs) = TREE_TYPE (TREE_OPERAND (lhs, 0));
     }
   return ret;
 }
 
+/* A recurrent variable node stores values on all iterations.
+   Here we put an expression corresponding to a current iteration into a list
+   with all states.  */
 int
-typecheck_assign_index (tree lhs, tree rhs, tree id) 
+typecheck_assign_index (tree lhs, tree rhs) 
 {
   int ret = 0;
+  tree id = TREE_OPERAND (lhs, 0);
   assert (TREE_CODE (lhs) == CIRCUMFLEX, 
       "only circumflex expression can be checked");
   if (TREE_ID_ITER (id) == NULL)
@@ -427,10 +353,10 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 
 	while (lel != NULL && rel != NULL)
 	  {
-	    tree lhs, rhs, id = NULL;
-	    ret += typecheck_stmt_assign_left (lel, ext_vars, vars, &id);
+	    tree lhs, rhs;
+	    ret += typecheck_stmt_assign_left (lel, ext_vars, vars);
 	    ret += typecheck_stmt_assign_right (rel, ext_vars, vars);
-	    
+	   
 	    if (ret)
 	      return ret;
 
@@ -439,7 +365,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 
 	    /* Assign index information to identifier.  */
 	    if (TREE_CODE (lhs) == CIRCUMFLEX)
-	      ret += typecheck_assign_index (lhs, rhs, id);
+	      ret += typecheck_assign_index (lhs, rhs);
 
 	    if (ret)
 	      return ret;
@@ -455,7 +381,6 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 			tree t = make_binary_op (CONVERT_EXPR, 
 						 rhs, TREE_TYPE (lhs));
 			rel->entry = t;
-			//TREE_OPERAND_SET (stmt, 1, t);
 		      }
 		    else
 		      {
@@ -482,8 +407,9 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 			if (conversion_possible (el->entry,
 						 TREE_TYPE (lhs)))
 			  {
-			    tree t = make_binary_op (CONVERT_EXPR, el->entry,
-			    TREE_TYPE (lhs));
+			    tree t = make_binary_op (CONVERT_EXPR, 
+						     el->entry,
+						     TREE_TYPE (lhs));
 			    el->entry = t;
 			  }
 			else
@@ -497,8 +423,9 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		      if (el->next != NULL)
 			{
 			  lel = lel->next;
-			  ret += typecheck_stmt_assign_left (lel, ext_vars, vars, &id);
-			  ret += typecheck_assign_index (lel->entry, rhs, id);
+			  ret += typecheck_stmt_assign_left (lel, ext_vars, vars);
+			  if (TREE_CODE (lel->entry) == CIRCUMFLEX)
+			    ret += typecheck_assign_index (lel->entry, rhs);
 			}	  
 		  }
 	      }
@@ -596,28 +523,12 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 
 	tree_list_combine (ext_vars, vars);
 
-	if (TREE_CODE (var) == CIRCUMFLEX)
-	  {
-	    tree index = TREE_OPERAND (var, 1);
-	    lower = TREE_OPERAND (var, 0);
-
-	    assert (TREE_CODE (index) == IDENTIFIER,
-		    "recurrent index must be identifier");
-	    assert (TREE_CODE (lower) == LOWER,
-		    "lower indexes must be mentioned");
-
-	    if (!TREE_CIRCUMFLEX_INDEX_STATUS (var))
-	      {
-		error_loc (TREE_LOCATION (var), "only recurrent relation "
-					    "is allowed here");
-		ret += 1;
-	      }
-
-	    TREE_TYPE (index) = z_type_node;
-	    tree_list_append (new_scope, index);
-	  }
+	assert (TREE_CODE (var) == LOWER, 
+	    "index loop can be performed only on lower indeces");
 	
 	ret += typecheck_lower (lower, ext_vars, new_scope, true);
+	/* variables used as a lower indeces in the identifier belong to a new
+	   scope. Therefore, they can be used in current statement.  */
 	ret += associate_variables (lower, ext_vars, new_scope);
 	if(ret)
 	  goto finalize_withloop;
@@ -702,6 +613,7 @@ finalize_withloop:
       {
 	struct tree_list_element *ret_el = TREE_LIST (TREE_OPERAND (stmt, 0));
 	struct tree_list_element *type_el = TREE_LIST (TREE_OPERAND(func, 3));
+	/* The argument of the return statement is a list.  */
 	while (ret_el != NULL && type_el != NULL)
 	  {
 	    ret += typecheck_expression (ret_el->entry, ext_vars, vars);
@@ -716,7 +628,6 @@ finalize_withloop:
 		    tree t = make_binary_op (CONVERT_EXPR, ret_el->entry,
 					     type_el->entry);
 		    ret_el->entry = t;
-		    //TREE_OPERAND_SET (stmt, 0, t);
 		  }
 		else
 		  {
@@ -743,9 +654,7 @@ finalize_withloop:
     default:
       assert (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_expression,
 	      "expression expected");
-      //return typecheck_expression (stmt, ext_vars, vars);
     }
-
   return ret;
 }
 
@@ -844,7 +753,6 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
   tree rhs = TREE_OPERAND (expr, 1);
   tree dim_t = NULL;
   int dim = 0;
-  int i;
   tree shape = NULL;
 
   /* if 'generator' is not set, it means that this function was called from
@@ -950,8 +858,6 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
 
   if (dim > 0 && TYPE_SHAPE (TREE_TYPE (lhs)) != NULL)
     {
-      i = 0;
-
       for (el = el->next; el != NULL ; el = el->next)
 	{
 	  if (shape == NULL)
@@ -979,6 +885,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
   return ret;
 }
 
+/* try to find variables in the list of already defined variables.  */
 static int 
 associate_variables (tree t, tree ext_vars, tree vars)
 {
@@ -1061,6 +968,241 @@ typecheck_generator (tree expr, tree ext_vars, tree vars)
 }
 
 int
+typecheck_function_call (tree expr, tree ext_vars, tree vars)
+{
+  int ret = 0;
+  tree t;
+  struct tree_list_element *func_el, *expr_el;
+  int func_counter = 0, expr_counter = 0;
+  char *  fname = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0)));
+
+  /* check if function is declared.  */
+  if (!(t = function_exists (fname)))
+    {
+      if (!(t = function_proto_exists (fname)))
+	{
+	  error_loc (TREE_LOCATION (expr),
+		    "function `%s' is not defined", fname);
+	  return 1;
+	}
+    } 
+
+  /* argument list can be empty.  */
+  if (TREE_FUNC_ARG_TYPES (t) != NULL)
+    func_el = TREE_LIST (TREE_FUNC_ARG_TYPES (t));
+  else
+    func_el = NULL;
+
+  /* check argument number and corresponding types.  */
+  if (TREE_OPERAND (expr, 1) != NULL)
+    {
+      DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 1)), expr_el)
+	{
+	  int ret = 0;
+
+	  if ((ret = typecheck_expression (expr_el->entry,
+					   ext_vars, vars)))
+	    return ret;
+
+	  expr_counter++;
+	  if (func_el == NULL)
+	    {
+	      /* FIXME: Write a helper function for length.  */
+	      while (expr_el->next != NULL)
+		{
+		  expr_counter++;
+		  expr_el = expr_el->next;
+		}
+
+	      error_loc
+		(TREE_LOCATION (expr),
+		 "invalid number of arguments in function `%s' call: "
+		 "%u expected, %u found",
+		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
+		 func_counter, expr_counter);
+	      return 1;
+	    }
+
+	  if (!tree_compare (func_el->entry, TREE_TYPE (expr_el->entry)))
+	      {
+		/* try to convert types.  */
+		if (conversion_possible (TREE_TYPE (expr_el->entry),
+					 func_el->entry))
+		  {
+		    tree t = make_binary_op (CONVERT_EXPR,
+					     expr_el->entry,
+					     func_el->entry);
+		    expr_el->entry = t;
+		  }
+		else
+		  {
+		    char* func_el_type = tree_to_str (func_el->entry);
+		    char* expr_el_type;
+
+		    expr_el_type = tree_to_str (TREE_TYPE (expr_el->entry));
+		    error_loc (TREE_LOCATION (expr_el->entry),
+			       "argument %u type mismatch: "
+			       "`%s' expected, `%s' found",
+			       expr_counter, func_el_type, expr_el_type);
+		    free (func_el_type);
+		    free (expr_el_type);
+		    return 1;
+		  }
+	      }
+	    func_counter++;
+	    func_el = func_el->next;
+	}
+    }
+  if (func_el != NULL)
+    {
+      /* FIXME: Write a helper function for length.  */
+      while (func_el != NULL)
+	{
+	  func_counter++;
+	  func_el = func_el->next;
+	}
+
+      error_loc (TREE_LOCATION (expr),
+		 "invalid number of arguments in function '%s' call: "
+		 "%u expected, %u found",
+		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
+		 func_counter, expr_counter);
+      return 1;
+    }
+  if (TREE_LIST (TREE_FUNC_RET_TYPE (t))->next == NULL)
+    TREE_TYPE (expr) = TREE_LIST (TREE_FUNC_RET_TYPE (t))->entry;
+  else
+    TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (t);
+  /* We suppose that function calls aren't constant expressions.
+     so we can't predict the return value statically.  */
+  TREE_CONSTANT (expr) = false;
+  return ret;
+}
+
+int
+typecheck_genarray (tree expr, tree ext_vars, tree vars)
+{
+  int ret = 0;
+  tree lim = TREE_OPERAND (expr, 0);
+  tree exp = TREE_OPERAND (expr, 1);
+  enum tree_code code;
+  size_t size;
+  tree dim = NULL;
+  tree shape = NULL;
+  ret += typecheck_expression (lim, ext_vars, vars);
+  ret += typecheck_expression (exp, ext_vars, vars);
+
+  if (ret)
+    return ret;
+  code = TREE_CODE (TREE_TYPE (exp));
+  size = TYPE_SIZE (TREE_TYPE (exp));
+
+  if ((TREE_CODE (TREE_TYPE (lim)) != Z_TYPE
+       && TREE_CODE (TREE_TYPE (lim)) != N_TYPE)
+      || (TYPE_DIM (TREE_TYPE (lim)) != NULL
+	  && TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (lim))) != 1))
+    {
+      error_loc (TREE_LOCATION (expr),
+		 "boundary for 'genar' expression must be either "
+		 "integer or vector");
+      ret += 1;
+    }
+  if (TYPE_DIM (TREE_TYPE (lim)) == NULL)
+    {
+      if (TYPE_DIM (TREE_TYPE (exp)) == NULL)
+	{
+	  dim = make_integer_cst (1);
+	  if (TREE_CODE (lim) == INTEGER_CST)
+	    {
+	      shape = make_tree_list ();
+	      tree_list_append (shape,
+				make_integer_cst (TREE_INTEGER_CST (lim)));
+	    }
+	  else
+	    /* there is lack of information to draw
+	       conclusions about the shape.  */
+	    shape = unknown_mark_node;
+	}
+      else
+	{
+	  dim = make_integer_cst (1
+	    + TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (exp))));
+	  if (TYPE_SHAPE (TREE_TYPE (exp)) != NULL)
+	    {
+	      struct tree_list_element *el;
+	      shape = make_tree_list ();
+	      tree_list_append (shape,
+		  make_integer_cst (TREE_INTEGER_CST (lim)));
+	      DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (exp))),
+						      el)
+		{
+		  tree_list_append (shape, make_integer_cst
+		      (TREE_INTEGER_CST (el->entry)));
+		}
+	    }
+	}
+    }
+  else
+    {
+      if (TYPE_DIM (TREE_TYPE (exp)) == NULL)
+	  dim = make_integer_cst ( TREE_INTEGER_CST (
+		TREE_LIST (TYPE_SHAPE (TREE_TYPE (lim)))->entry));
+      else
+	{
+	  dim = make_integer_cst (TREE_INTEGER_CST (
+		TREE_LIST (TYPE_SHAPE (TREE_TYPE (lim)))->entry)
+		+ TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (exp))));
+
+	}
+      if (TREE_CODE (lim) == MATRIX_EXPR)
+	{
+	  struct tree_list_element *el, *tel;
+	  shape = make_tree_list ();
+
+	  DL_FOREACH (TREE_LIST (TREE_OPERAND (lim, 0)), tel)
+	    {
+	      DL_FOREACH (TREE_LIST (tel->entry), el)
+		{
+		  if (TREE_CODE (el->entry) == INTEGER_CST)
+		    tree_list_append (shape, tree_copy (el->entry));
+		  else
+		    {
+		      free_tree (shape);
+		      shape = unknown_mark_node;
+		      break;
+		    }
+		}
+	    }
+	  if (TYPE_SHAPE (TREE_TYPE (exp)) != NULL
+	   && shape != unknown_mark_node)
+	    {
+	      DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (exp))), el)
+		{
+		  if (TREE_CODE (el->entry) == INTEGER_CST)
+		    tree_list_append (shape, tree_copy (el->entry));
+		  else
+		    {
+		      free_tree (shape);
+		      shape = unknown_mark_node;
+		      break;
+		    }
+		}
+	    }
+	}
+      else
+	shape = unknown_mark_node;
+    }
+
+  TREE_TYPE (expr) = types_assign_type (code, size, dim, shape);
+
+  if (dim != TYPE_DIM (TREE_TYPE (expr)))
+    free_tree (dim);
+  if (shape != TYPE_SHAPE (TREE_TYPE (expr)))
+    free_tree (shape);
+  return ret;
+}
+
+int
 typecheck_expression (tree expr, tree ext_vars, tree vars)
 {
   int ret = 0;
@@ -1115,115 +1257,11 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       }
       break;
 
-    /* FIXME: All the code under this case should go to
-       a separate function.  */
     case FUNCTION_CALL:
       {
-	tree t;
-	struct tree_list_element *func_el, *expr_el;
-	int func_counter = 0, expr_counter = 0;
-	char *  fname = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0)));
-
-	/* check if function is declared.  */
-	if (!(t = function_exists (fname)))
-	  {
-	    if (!(t = function_proto_exists (fname)))
-	      {
-		error_loc (TREE_LOCATION (expr),
-			  "function `%s' is not defined", fname);
-		return 1;
-	      }
-	  } 
-
-	/* argument list can be empty.  */
-	if (TREE_FUNC_ARG_TYPES (t) != NULL)
-	  func_el = TREE_LIST (TREE_FUNC_ARG_TYPES (t));
-	else
-	  func_el = NULL;
-
-	/* check argument number and corresponding types.  */
-	if (TREE_OPERAND (expr, 1) != NULL)
-	  {
-	    DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 1)), expr_el)
-	      {
-		int ret = 0;
-
-		if ((ret = typecheck_expression (expr_el->entry,
-					         ext_vars, vars)))
-		  return ret;
-
-		expr_counter++;
-		if (func_el == NULL)
-		  {
-		    /* FIXME: Write a helper function for length.  */
-		    while (expr_el->next != NULL)
-		      {
-			expr_counter++;
-			expr_el = expr_el->next;
-		      }
-
-		    error_loc
-		      (TREE_LOCATION (expr),
-		       "invalid number of arguments in function `%s' call: "
-		       "%u expected, %u found",
-		       TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
-		       func_counter, expr_counter);
-		    return 1;
-		  }
-
-		if (!tree_compare (func_el->entry, TREE_TYPE (expr_el->entry)))
-		    {
-		      /* try to convert types.  */
-		      if (conversion_possible (TREE_TYPE (expr_el->entry),
-					       func_el->entry))
-			{
-			  tree t = make_binary_op (CONVERT_EXPR,
-						   expr_el->entry,
-						   func_el->entry);
-			  expr_el->entry = t;
-			}
-		      else
-			{
-			  char* func_el_type = tree_to_str (func_el->entry);
-			  char* expr_el_type;
-
-			  expr_el_type = tree_to_str (TREE_TYPE (expr_el->entry));
-			  error_loc (TREE_LOCATION (expr_el->entry),
-				     "argument %u type mismatch: "
-				     "`%s' expected, `%s' found",
-				     expr_counter, func_el_type, expr_el_type);
-			  free (func_el_type);
-			  free (expr_el_type);
-			  return 1;
-			}
-		    }
-		  func_counter++;
-		  func_el = func_el->next;
-	      }
-	  }
-	if (func_el != NULL)
-          {
-	    /* FIXME: Write a helper function for length.  */
-	    while (func_el != NULL)
-	      {
-	        func_counter++;
-	        func_el = func_el->next;
-	      }
-
-	    error_loc (TREE_LOCATION (expr),
-		       "invalid number of arguments in function '%s' call: "
-		       "%u expected, %u found",
-		       TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
-		       func_counter, expr_counter);
-	    return 1;
-	  }
-	if (TREE_LIST (TREE_FUNC_RET_TYPE (t))->next == NULL)
-	  TREE_TYPE (expr) = TREE_LIST (TREE_FUNC_RET_TYPE (t))->entry;
-	else
-	  TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (t);
-	/* We suppose that function calls aren't constant expressions.
-	   so we can't predict the return value statically.  */
-	TREE_CONSTANT (expr) = false;
+	ret += typecheck_function_call (expr, ext_vars, vars);
+	if (ret)
+	  return ret;
       }
       break;
     case EQ_EXPR:
@@ -1320,8 +1358,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	if (ret != 0 || TREE_TYPE (lhs) == NULL || TREE_TYPE (rhs) == NULL)
 	  return 1;
 
-
-	/* division's result is always real number.  */
+	/* result of division is always a real number.  */
 	if (TREE_CODE (expr) != DIV_EXPR)
 	  {
 	    if (!tree_compare (TREE_TYPE (lhs), TREE_TYPE (rhs)))
@@ -1512,125 +1549,11 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
      }
       break;
 
-    /* FIXME: Put the code under this case in a separate function.  */
     case GENAR_EXPR:
       {
-	tree lim = TREE_OPERAND (expr, 0);
-	tree exp = TREE_OPERAND (expr, 1);
-	enum tree_code code;
-	size_t size;
-	tree dim = NULL;
-	tree shape = NULL;
-	ret += typecheck_expression (lim, ext_vars, vars);
-	ret += typecheck_expression (exp, ext_vars, vars);
-
+	ret += typecheck_genarray (expr, ext_vars, vars);
 	if (ret)
 	  return ret;
-	code = TREE_CODE (TREE_TYPE (exp));
-	size = TYPE_SIZE (TREE_TYPE (exp));
-
-	if ((TREE_CODE (TREE_TYPE (lim)) != Z_TYPE
-	     && TREE_CODE (TREE_TYPE (lim)) != N_TYPE)
-	    || (TYPE_DIM (TREE_TYPE (lim)) != NULL
-		&& TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (lim))) != 1))
-	  {
-	    error_loc (TREE_LOCATION (expr),
-		       "boundary for 'genar' expression must be either "
-		       "integer or vector");
-	    ret += 1;
-	  }
-	if (TYPE_DIM (TREE_TYPE (lim)) == NULL)
-	  {
-	    if (TYPE_DIM (TREE_TYPE (exp)) == NULL)
-	      {
-		dim = make_integer_cst (1);
-		if (TREE_CODE (lim) == INTEGER_CST)
-		  {
-		    shape = make_tree_list ();
-		    tree_list_append (shape,
-				      make_integer_cst (TREE_INTEGER_CST (lim)));
-		  }
-		else
-		  /* there is lack of information to draw
-		     conclusions about the shape.  */
-		  shape = unknown_mark_node;
-	      }
-	    else
-	      {
-		dim = make_integer_cst (1
-		  + TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (exp))));
-		if (TYPE_SHAPE (TREE_TYPE (exp)) != NULL)
-		  {
-		    struct tree_list_element *el;
-		    shape = make_tree_list ();
-		    tree_list_append (shape,
-			make_integer_cst (TREE_INTEGER_CST (lim)));
-		    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (exp))),
-							    el)
-		      {
-			tree_list_append (shape, make_integer_cst
-			    (TREE_INTEGER_CST (el->entry)));
-		      }
-		  }
-	      }
-	  }
-	else
-	  {
-	    if (TYPE_DIM (TREE_TYPE (exp)) == NULL)
-		dim = make_integer_cst ( TREE_INTEGER_CST (
-		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (lim)))->entry));
-	    else
-	      {
-		dim = make_integer_cst (TREE_INTEGER_CST (
-		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (lim)))->entry)
-		      + TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (exp))));
-
-	      }
-	    if (TREE_CODE (lim) == MATRIX_EXPR)
-	      {
-		struct tree_list_element *el, *tel;
-		shape = make_tree_list ();
-
-		DL_FOREACH (TREE_LIST (TREE_OPERAND (lim, 0)), tel)
-		  {
-		    DL_FOREACH (TREE_LIST (tel->entry), el)
-		      {
-			if (TREE_CODE (el->entry) == INTEGER_CST)
-			  tree_list_append (shape, tree_copy (el->entry));
-			else
-			  {
-			    free_tree (shape);
-			    shape = unknown_mark_node;
-			    break;
-			  }
-		      }
-		  }
-		if (TYPE_SHAPE (TREE_TYPE (exp)) != NULL
-		 && shape != unknown_mark_node)
-		  {
-		    DL_FOREACH (TREE_LIST (TYPE_SHAPE (TREE_TYPE (exp))), el)
-		      {
-			if (TREE_CODE (el->entry) == INTEGER_CST)
-			  tree_list_append (shape, tree_copy (el->entry));
-			else
-			  {
-			    free_tree (shape);
-			    shape = unknown_mark_node;
-			    break;
-			  }
-		      }
-		  }
-	      }
-	    else
-	      shape = unknown_mark_node;
-	  }
-
-	TREE_TYPE (expr) = types_assign_type (code, size, dim, shape);
-
-	if (dim != TYPE_DIM (TREE_TYPE (expr)))
-	  free_tree (dim);
-	if (shape != TYPE_SHAPE (TREE_TYPE (expr)))
-	  free_tree (shape);
       }
       break;
 
@@ -1638,7 +1561,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       {
 	tree el_list = TREE_OPERAND (expr, 0);
 	struct tree_list_element *l, *el;
-	unsigned shape_x, shape_y = 0;
+	unsigned shape_x = 0, shape_y = 0;
 	enum tree_code code = 0;
 	size_t size = 0;
 	bool const_matrix = true;

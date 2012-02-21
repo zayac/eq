@@ -23,5 +23,6 @@ int recurrence_check_relation (tree, tree);
 int recurrence_find_max_shift (tree);
 int recurrence_validate_indexes (tree, tree, int, int);
 int recurrence_validate (tree);
+bool recurrence_is_constant_expression (tree);
 
 #endif /* __RECURRENCE_H__ */

@@ -153,8 +153,6 @@ main (int argc, char *argv[])
     fprintf (stderr, "warning: 'types' flag is useless without either "
 	     "'program' flag or 'matches' flag\n");
 
-
-  argc -= optind;
   argv += optind;
 
   /* FIXME: What if we have multiple files?  */
