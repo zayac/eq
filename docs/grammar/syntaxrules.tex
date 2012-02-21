@@ -111,13 +111,13 @@
 
 \newcommand{\BnfAssign}{
 \bHead{assign}
-  idx \bOpt { generator } \bToken{\bs gets} expr
+  idx \bStar{\bSymb{,}  idx} \bToken{\bs gets} expr \bStar{\bSymb{,} expr}
 \bEnd
 }
 
 \newcommand{\BnfDeclare}{
 \bHead{declare}
-  idx \bToken{\bs in} ext\_type
+  idx \bStar{\bSymb{,} idx} \bToken{\bs in} ext\_type \bStar{\bSymb{,} ext\_type}
 \bEnd
 }
 
