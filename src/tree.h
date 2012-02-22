@@ -309,6 +309,7 @@ tree make_genar (tree, tree, struct location);
 tree make_index_loop (tree, tree, tree, bool);
 tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
+tree make_convert (tree, tree);
 tree tree_list_copy (tree);
 tree tree_copy (tree);
 bool tree_compare (tree, tree);

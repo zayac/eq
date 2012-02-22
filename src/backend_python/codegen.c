@@ -174,14 +174,17 @@ codegen_function (FILE* f, tree func)
   assert (TREE_CODE (func) == FUNCTION, "function tree expected");
 
   if (strcmp(func_name, "\\mu"))
-    fprintf(f, "def %s(", func_name);
+    {
+      fprintf(f, "def ");
+      codegen_expression (f, TREE_OPERAND (func, 0));
+      fprintf (f, "(");
+    }
   else
     fprintf(f, "def __main(");
 
   DL_FOREACH (TREE_LIST (TREE_OPERAND (func, 1)), el)
     {
-      fprintf (f, "%s",
-	       TREE_STRING_CST (TREE_ID_NAME (el->entry)));
+      codegen_expression (f, el->entry);
       if (el->next != NULL)
 	fprintf (f, ", ");
     }
@@ -215,16 +218,17 @@ codegen_iterative (FILE* f, tree var)
 {
   int error = 0;
   struct tree_list_element *el = NULL;
-  fprintf (f, "def __recur_%s(_iter, __local_vars):\n", 
-    TREE_STRING_CST (TREE_ID_NAME (var)));
+  fprintf (f, "def __recur_");
+  codegen_expression (f, var);
+  fprintf (f, "(_iter, __local_vars):\n"); 
   fprintf (f, "\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
   fprintf (f, "\t__i = __start\n");
   fprintf (f, "\t__window = [");
   DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (var))), el)
     {
-      fprintf (f, "__local_vars['__%s_%li']", 
-	  TREE_STRING_CST (TREE_ID_NAME (var)),
-	  TREE_INTEGER_CST (TREE_OPERAND (el->entry, 0)));
+      fprintf (f, "__local_vars['__");
+      codegen_expression (f, var);
+      fprintf (f, "_%li']", TREE_INTEGER_CST (TREE_OPERAND (el->entry, 0)));
       if (el->next == NULL 
 	|| TREE_CODE (TREE_OPERAND (el->next->entry, 0)) != INTEGER_CST)
 	break;
@@ -283,42 +287,60 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
     {
     case ASSIGN_STMT:
       {
-	struct tree_list_element *el;
+	struct tree_list_element *lel, *rel, *el;
+	lel = TREE_LIST (TREE_OPERAND (stmt, 0));
 	codegen_options.circumflex_state = CIRC_TMP_VAR;
-	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
+	/* we split a list of variable declarations into a list of detached
+	   atomic declarations, as Python doesn't support the assignment that
+	   is valid in Eq.  */
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 1)), rel)
 	  {
-	    codegen_expression (f, el->entry);
-	    if (el->next != NULL)
-	      fprintf (f, ", ");
-	  }
-	fprintf (f, " = ");
-	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 1)), el)
-	  {
-	    if (!recurrence_is_constant_expression (el->entry))
+	    /* codegen left part of the declaration.  */
+	    if (TREE_CODE (TREE_TYPE (rel->entry)) != LIST)
 	      {
-		if (TYPE_SHAPE (TREE_TYPE (el->entry)) != NULL)
+		codegen_expression (f, lel->entry);
+		lel = lel->next;
+	      }
+	    else
+	      {
+		DL_FOREACH (TREE_LIST (TREE_TYPE (rel->entry)), el)
+		  {
+		    codegen_expression (f, lel->entry);
+		    if (el->next != NULL)
+		      fprintf (f, ", ");
+		    lel = lel->next;
+		  }
+	      }
+	    fprintf (f, " = ");
+
+	    if (!recurrence_is_constant_expression (rel->entry))
+	      {
+		if (TYPE_SHAPE (TREE_TYPE (rel->entry)) != NULL)
 		  codegen_zero_array (f, 
-		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (el->entry))),
-		      TREE_CODE (el->entry));
+		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (rel->entry))),
+		      TREE_CODE (rel->entry));
 		else
-		  fprintf_zero_element (f, TREE_CODE (TREE_TYPE (el->entry)));
+		  fprintf_zero_element (f, TREE_CODE (TREE_TYPE (rel->entry)));
 	      }
 	    else
 	      {
 		/* call copy constructor when assigning a list. Otherwise, pointer
 		   to the list will be assigned.  */
 		bool copy_list = false;
-		if (TREE_CODE (el->entry) == IDENTIFIER
-		 && TYPE_DIM (TREE_TYPE (el->entry)) != NULL)
+		if (TREE_CODE (rel->entry) == IDENTIFIER
+		 && TYPE_DIM (TREE_TYPE (rel->entry)) != NULL)
 		  copy_list = true;
 		if (copy_list)
 		  fprintf (f, " list(");
-		codegen_expression (f, el->entry);
+		codegen_expression (f, rel->entry);
 		if (copy_list)
 		  fprintf (f, ")");
 	      }
-	    if (el->next != NULL)
-	      fprintf (f, ", ");
+	    if (rel->next != NULL)
+	      {
+		fprintf (f, "\n");
+		indent (f, level);
+	      }
 	  }
 	codegen_options.circumflex_state = CIRC_LOCAL_VAR;
       }
@@ -398,8 +420,8 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	DL_FOREACH (TREE_LIST (gen_id_list), el)
 	  {
 	    int i = 0;
-	    fprintf (f, "range(len(%s",
-		  TREE_STRING_CST (TREE_ID_NAME (id)));
+	    fprintf (f, "range(len(");
+	    codegen_expression (f, id);
 	    DL_FOREACH (TREE_LIST (gen_id_list), tel)
 	      {
 		if (i++ == counter)
@@ -629,9 +651,8 @@ codegen_expression (FILE* f, tree expr)
     case FUNCTION_CALL:
       {
 	struct tree_list_element *el;
-
-	fprintf(f, "%s(",
-		TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0))));
+	codegen_expression (f, TREE_OPERAND (expr, 0));
+	fprintf(f, "(");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 1)), el)
 	  {
 	    codegen_expression (f, el->entry);
@@ -722,8 +743,9 @@ codegen_expression (FILE* f, tree expr)
 	      }
 	    else if (codegen_options.circumflex_state == CIRC_LOCAL_VAR)
 	      {
-		fprintf (f, "__get_gen_last_value (__recur_%s(", 
-		  TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0))));
+		fprintf (f, "__get_gen_last_value (__recur_");
+		codegen_expression (f, TREE_OPERAND (expr, 0));
+		fprintf (f, "("); 
 		error += codegen_expression (f, TREE_OPERAND (expr, 1));
 		fprintf (f, ", locals()");
 		fprintf (f, "))");

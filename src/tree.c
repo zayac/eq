@@ -226,6 +226,7 @@ free_tree (tree node)
     case tcl_misc:
       if (code == IDENTIFIER)
 	{
+	  //tree_list_append (delete_list, TREE_ID_NAME (node));
 	  free_tree (TREE_ID_ITER (node));
 	  free_tree (TREE_ID_NAME (node));
 	}
@@ -620,6 +621,14 @@ make_assign (enum token_kind tk, tree lhs, tree rhs)
     }
 
   return error_mark_node;
+}
+
+tree
+make_convert (tree from, tree to)
+{
+  tree t = make_binary_op (CONVERT_EXPR, from, to);
+  TREE_TYPE (t) = to;
+  return t;
 }
 
 tree

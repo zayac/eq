@@ -224,7 +224,7 @@ typecheck_stmt_assign_right (struct tree_list_element *el,
   return ret;
 }
 
-/* typecheck the left part only one identifier) of the assignment.  */
+/* typecheck the left part( only one identifier) of the assignment.  */
 int
 typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars, tree vars)
 {
@@ -240,7 +240,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars, tree va
       if ((var = is_var_in_list (lhs, vars)) != NULL
 	  || (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	{
-	  /* Replace the variable with the variable from the list. */
+	  /* Replace the variable with a variable from the list. */
 	  free_tree (lhs);
 	  el->entry = var;
 	  lhs = var;
@@ -378,8 +378,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		    /* try to convert types. */
 		    if (conversion_possible (TREE_TYPE (rhs), TREE_TYPE (lhs)))
 		      {
-			tree t = make_binary_op (CONVERT_EXPR, 
-						 rhs, TREE_TYPE (lhs));
+			tree t = make_convert (rhs, TREE_TYPE (lhs));
 			rel->entry = t;
 		      }
 		    else
@@ -398,7 +397,6 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		  {
 		    lhs = lel->entry;
 		    
-		    
 		    if (TREE_TYPE (lhs) == NULL)
 		      TREE_TYPE (lhs) = el->entry;
 		    else if (!tree_compare (TREE_TYPE (lhs), el->entry))
@@ -407,9 +405,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 			if (conversion_possible (el->entry,
 						 TREE_TYPE (lhs)))
 			  {
-			    tree t = make_binary_op (CONVERT_EXPR, 
-						     el->entry,
-						     TREE_TYPE (lhs));
+			    tree t = make_convert (el->entry, TREE_TYPE (lhs));
 			    el->entry = t;
 			  }
 			else
@@ -625,8 +621,7 @@ finalize_withloop:
 		if (conversion_possible (TREE_TYPE (ret_el->entry),
 					 type_el->entry))
 		  {
-		    tree t = make_binary_op (CONVERT_EXPR, ret_el->entry,
-					     type_el->entry);
+		    tree t = make_convert (ret_el->entry, type_el->entry);
 		    ret_el->entry = t;
 		  }
 		else
@@ -1029,9 +1024,7 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars)
 		if (conversion_possible (TREE_TYPE (expr_el->entry),
 					 func_el->entry))
 		  {
-		    tree t = make_binary_op (CONVERT_EXPR,
-					     expr_el->entry,
-					     func_el->entry);
+		    tree t = make_convert (expr_el->entry, func_el->entry);
 		    expr_el->entry = t;
 		  }
 		else
@@ -1244,6 +1237,8 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    || (var = is_var_in_list (expr, ext_vars)) != NULL)
 	  {
 	    assert (TREE_TYPE (var) != NULL, 0);
+	    /* we don't assign iterative expressions here, as we are to do this
+	       in parent node.  */
 	    TREE_TYPE (expr) = TREE_TYPE (var);
 	    TREE_CONSTANT (expr) = TREE_CONSTANT (var);
 	  }
@@ -1256,7 +1251,6 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	  }
       }
       break;
-
     case FUNCTION_CALL:
       {
 	ret += typecheck_function_call (expr, ext_vars, vars);
@@ -1285,9 +1279,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	    /* try to convert types.  */
 	    if (conversion_possible (TREE_TYPE (rhs), TREE_TYPE (lhs)))
 	      {
-		tree t;
-
-		t = make_binary_op (CONVERT_EXPR, rhs, TREE_TYPE (lhs));
+		tree t = make_convert (rhs, TREE_TYPE (lhs));
 		TREE_OPERAND_SET (expr, 1, t);
 	      }
 	    else
@@ -1366,8 +1358,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 		/* try to convert types.  */
 		if (conversion_possible (TREE_TYPE (rhs), TREE_TYPE (lhs)))
 		  {
-		    tree t;
-		    t = make_binary_op (CONVERT_EXPR, rhs, TREE_TYPE (lhs));
+		    tree t = make_convert (rhs, TREE_TYPE (lhs));
 		    TREE_OPERAND_SET (expr, 1, t);
 		  }
 		/* we allow to multiply matrix by a constant (constant has to
@@ -1408,7 +1399,6 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	TREE_CONSTANT (expr) = TREE_CONSTANT (lhs) && TREE_CONSTANT (rhs);
       }
       break;
-
     /* unary operations.  */
     case UMINUS_EXPR:
     case NOT_EXPR:
@@ -1429,7 +1419,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	tree rhs = TREE_OPERAND (expr, 1);
 
 	ret += typecheck_expression (lhs, ext_vars, vars);
-	if (TREE_CIRCUMFLEX_INDEX_STATUS (expr) &&typecheck_options.iter_index)
+	if (TREE_CIRCUMFLEX_INDEX_STATUS (expr) && typecheck_options.iter_index)
 	  ret += typecheck_recurrent (rhs);
 	else
 	  ret += typecheck_expression (rhs, ext_vars, vars);
@@ -1469,7 +1459,6 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	return ret;
       }
       break;
-
     case LOWER:
       {
 	ret += typecheck_lower (expr, ext_vars, vars, false);
