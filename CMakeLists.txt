@@ -26,16 +26,33 @@ option (BUILD_LEXER "compiling lexer")
 option (DEBUG_ENABLE "set debugging flag")
 
 # Set BUILD_LEXER variable value to ON if you want to compile the lexer only
-set (BUILD_LEXER OFF)
+if (BUILD_LEXER-NOTFOUND)
+  set (BUILD_LEXER OFF)
+endif()
 
 # A list of available backends
 set (BACKENDS python haskell)
 
 # Select one of backends
-list(GET BACKENDS 0 BACKEND_LANG)
+if (NOT BACKEND_LANG)
+  list(GET BACKENDS 0 BACKEND_LANG)
+else()
+  list(FIND BACKENDS ${BACKEND_LANG} contains)
+  if (${contains} LESS 0)
+    message("-- Error: `${BACKEND_LANG}' backend is not supported.")
+  endif()
+endif()
 
 set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
 	    " -D_GNU_SOURCE -pedantic")
+
+# Custom messages
+if (BUILD_LEXER)
+  message("-- Only lexer is being built")
+else()
+  message("-- The compiler is being built")
+endif()
+message("-- `${BACKEND_LANG}' as a backend is used")
 
 include (cmake/version.cmake)
 
@@ -57,7 +74,6 @@ else()
   add_executable (eq src/main.c)
   target_link_libraries (eq eqlib)
 endif()
-
 
 # Testing routines
 enable_testing ()
@@ -102,7 +118,7 @@ endmacro(fail_test)
 
 macro (exec_test arg opt)
   add_test (exec_test_${arg} ${PROJECT_SOURCE_DIR}/tests/eq-exec.sh ${arg}
-  python)
+  ${BACKEND_LANG})
   set_tests_properties (exec_test_${arg}
   PROPERTIES
     PASS_REGULAR_EXPRESSION ".*${arg} passed.*")
