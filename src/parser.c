@@ -726,6 +726,39 @@ handle_match (struct parser * parser)
 }
 
 /*
+    print:
+    \print { expr [ , expr]* }
+ */
+tree
+handle_print (struct parser * parser)
+{
+  tree t, ret;
+  struct token *tok = parser_get_token (parser);
+  if (!token_is_keyword (tok, tv_print))
+    {
+      parser_unget (parser);
+      return error_mark_node;
+    }
+
+  if (!parser_forward_tval (parser, tv_lbrace))
+    return error_mark_node;
+
+  t = handle_list (parser, handle_expr, tv_comma);
+  if (t == error_mark_node)
+    return error_mark_node;
+
+  ret = make_tree (PRINT_MARK);
+  TREE_OPERAND_SET (ret, 0, t);
+  TREE_LOCATION (ret) = token_location (tok);
+  if (!parser_forward_tval (parser, tv_rbrace))
+    {
+      free_tree (ret);
+      return error_mark_node;
+    }
+  return ret;
+}
+
+/*
    type:
    \type { (Z | R | N | B) }
  */
@@ -1251,7 +1284,8 @@ handle_instr_list (struct parser * parser)
       if (!(is_id (tok, false) || token_is_keyword (tok, tv_return)
 	    || token_is_keyword (tok, tv_qif)
 	    || token_is_keyword (tok, tv_match)
-	    || token_is_keyword (tok, tv_comment)))
+	    || token_is_keyword (tok, tv_comment)
+	    || token_is_keyword (tok, tv_print)))
 	break;
 
       /* end of file check,  */
@@ -2863,6 +2897,11 @@ handle_instr (struct parser * parser)
     {
       parser_unget (parser);
       return handle_comment (parser);
+    }
+  else if (token_is_keyword (tok, tv_print))
+    {
+      parser_unget (parser);
+      return handle_print (parser);
     }
   else if (token_is_keyword (tok, tv_qif))
     {

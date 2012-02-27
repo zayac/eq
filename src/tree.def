@@ -40,6 +40,8 @@ DEF_TREE_CODE (ITER_PAIR, "iter_pair", tcl_misc, 2, false)
 
 DEF_TREE_CODE (ITER_EXPR, "iter_expr", tcl_misc, 0, false)
 
+DEF_TREE_CODE (PRINT_MARK, "print_mark", tcl_misc, 1, false)
+
 /* List of trees, used to represent list of statements
    or list of arguments in the function call.  */
 DEF_TREE_CODE (LIST, "tree_list", tcl_misc, 0, false)

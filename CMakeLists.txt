@@ -100,6 +100,14 @@ macro (fail_test arg opt)
     PASS_REGULAR_EXPRESSION ${out})
 endmacro(fail_test)
 
+macro (exec_test arg opt)
+  add_test (exec_test_${arg} ${PROJECT_SOURCE_DIR}/tests/eq-exec.sh ${arg}
+  python)
+  set_tests_properties (exec_test_${arg}
+  PROPERTIES
+    PASS_REGULAR_EXPRESSION ".*${arg} passed.*")
+endmacro(exec_test)
+
 # include files for parser testing
 file (GLOB run_tests "tests/parser_tests/*.tex")
 set (opt "-Bparser")
@@ -132,4 +140,10 @@ endforeach ()
 file (GLOB run_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex")
 foreach (test ${run_tests})
   run_test (${test} "")
+endforeach ()
+
+# include files for codegen testing
+file (GLOB exec_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex")
+foreach (test ${exec_tests})
+  exec_test (${test} "")
 endforeach ()

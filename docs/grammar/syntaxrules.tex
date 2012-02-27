@@ -238,6 +238,12 @@
 \bEnd
 }
 
+\newcommand{\BnfPrint}{
+\bHead{print}
+  \bToken{\bs print} \bSymb{\{} expr \bSymb{\}}
+\bEnd
+}
+
 \newcommand{\BnfGenerator}{
 \bHead{generator}
   \bToken{\bs forall} \bSpecial{id} \bStar{ \bSymb{,} \bSpecial{id} } \bOr

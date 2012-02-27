@@ -6,6 +6,8 @@
   10 \lend
   10 \lend
   \end{tmatrix} \lend
+  \print {c} \lend
+% eq-exec: [10 10]
   a \gets \genar \limits ^ {5}(c) \lend
   b \gets \genar \limits ^ {  \begin{tmatrix}
   2 \lend
@@ -14,6 +16,10 @@
   2 \lend
   3 \lend
   \end{tmatrix})  \lend
+  \print {a, b} \lend
+% eq-exec: [array([10, 10]), array([10, 10]), array([10, 10]), array([10, 10]), array([10, 10])] [[array([2, 3]), array([2, 3]), array([2, 3])], [array([2, 3]), array([2, 3]), array([2, 3])]]
   b_{1,2} \gets  c \lend
+  \print {b} \lend
+% eq-exec: [[array([2, 3]), array([2, 3]), array([2, 3])], [array([2, 3]), array([2, 3]), [10, 10]]]
   \return {b} \lend
 \end{eqcode}

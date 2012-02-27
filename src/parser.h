@@ -110,6 +110,7 @@ tree handle_index_loop (struct parser *, tree);
 tree handle_index_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
+tree handle_print (struct parser *);
 bool handle_match (struct parser *);
 tree handle_proto (struct parser *);
 
