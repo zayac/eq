@@ -85,10 +85,16 @@
 
 \newcommand{\BnfExtType}{
 \bHead{ext\_type}
-  type \bOpt{\bSymb{\^} \bAltBegin \bSymb{\{} sexpr \bSymb{\}} \bDAlt
-  \bSpecial{num} \bDAlt \bSpecial{id} \bAltEnd \bSkip \bOpt{\bSymb{\_}
-  \bAltBegin \bSymb{\{} sexpr \bStar{\bSymb{,}
-  sexpr} \bSymb{\}}}} \bDAlt \bSpecial{id} \bDAlt \bSpecial{num} \bAltEnd
+  \bAlt{type}{arraytype}
+\bEnd
+}
+
+\newcommand{\BnfArraytype}{
+\bHead{arraytype}
+  \bToken{\bs arraytype} \bSymb{\{} \bAlt{sexpr}{\bToken{\bs ldots}} \bOpt{\bSymb{,}
+  \bAlt{sexpr}{\bToken{\bs ldots}}} \bSymb{\}} \bSkip \bSymb{\{} \bAltBegin
+  \bToken{Z} \bDAlt \bToken{R} \bDAlt
+  \bToken{N} \bDAlt \bToken{B} \bAltEnd \bSymb{\}} 
 \bEnd
 }
 

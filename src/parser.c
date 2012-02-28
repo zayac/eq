@@ -563,7 +563,7 @@ handle_proto (struct parser * parser)
   if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     {
       parser_unget (parser);
-      arg_types = handle_ext_type_or_ext_type_list (parser);
+      arg_types = handle_list (parser, handle_ext_type, tv_comma);
       if (arg_types == error_mark_node)
 	goto error;
     }
@@ -765,9 +765,9 @@ handle_print (struct parser * parser)
 tree
 handle_type (struct parser * parser)
 {
-  tree t;
+  tree t, ret;
   struct token *tok;
-
+  
   if (!parser_forward_tval (parser, tv_type))
     return error_mark_node;
 
@@ -796,7 +796,9 @@ handle_type (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     return error_mark_node;
 
-  return t;
+  ret = types_assign_type (TREE_CODE (t), TYPE_SIZE (t), NULL, NULL);
+  free_tree_type (t, true);
+  return ret;
 error:
   parser_get_until_tval (parser, tv_rbrace);
   return error_mark_node;
@@ -836,112 +838,121 @@ upper_type_wrapper (struct parser *parser)
     return dim;
 }
 
+tree
+handle_sexpr_or_ldots (struct parser *parser)
+{
+  struct token *tok = parser_get_token (parser);
+  tree t;
+  if (token_is_keyword (tok, tv_ldots))
+    {
+      t = make_tree (LDOTS_EXPR);
+      TREE_LOCATION (t) = token_location (tok);
+      return t;
+    }
+  else
+    {
+      parser_unget (parser);
+      return handle_sexpr (parser);  
+    }
+}
+
+/* 
+   arraytype:
+   \arraytype { sexpr | \ldots [ , sexpr | \ldots ]* }{Z|N|R|N}
+ */
+tree
+handle_arraytype (struct parser * parser)
+{
+  struct token *tok = parser_get_token (parser);
+  tree ret, t, shape;
+  struct tree_list_element *el;
+  int dim = 0;
+  bool shape_undef = false;
+  if (!token_is_keyword (tok, tv_arraytype))
+    return error_mark_node;
+
+  if (!parser_forward_tval (parser, tv_lbrace))
+    return error_mark_node;
+  
+  shape = handle_list (parser, handle_sexpr_or_ldots, tv_comma);
+
+  if (shape == error_mark_node)
+    return shape;
+  
+  if (!parser_forward_tval (parser, tv_rbrace))
+    goto error;
+
+  if (!parser_forward_tval (parser, tv_lbrace))
+    goto error;
+
+  tok = parser_get_token (parser);
+  if (token_uses_buf (tok))
+    goto error;
+
+  if (token_value (tok) == tv_boolean)
+    t = make_type (B_TYPE);
+  else if (token_value (tok) == tv_natural)
+    t = make_type (N_TYPE);
+  else if (token_value (tok) == tv_integer)
+    t = make_type (Z_TYPE);
+  else if (token_value (tok) == tv_real)
+    t = make_type (R_TYPE);
+  else
+    goto error;
+
+  if (!parser_forward_tval (parser, tv_rbrace))
+    goto error;
+
+  DL_FOREACH (TREE_LIST (shape), el)
+    {
+      if ((TREE_CODE (el->entry) == LDOTS_EXPR && !shape_undef && dim > 0)
+       || (TREE_CODE (el->entry) != LDOTS_EXPR && shape_undef && dim > 0))
+	{
+	  error_loc (TREE_LOCATION (t), "at the moment it's possible either to "
+			    "fully define the shape or not defining it at all");
+	  goto error;
+	}
+      if (TREE_CODE (el->entry) == LDOTS_EXPR)
+	shape_undef = true;
+      dim++;
+    }
+  
+  
+  if (shape_undef)
+    {
+      free_tree (shape);
+      shape = NULL;
+    }
+  ret = types_assign_type (TREE_CODE (t), TYPE_SIZE (t), make_integer_cst (dim), shape);
+  free_tree_type (t, true);
+
+  return ret;
+error:
+  free_tree (shape);
+  free_tree (t);
+  return error_mark_node;
+}
+
 /*
-   ext_type:
-      type [ ^ { sexpr } [ _ { sexpr [ , sexpr ]* } ] ]
-   |  type  _ { sexpr [ , sexpr ]* }  ^ { sexpr }
-*/
+  ext_type:
+  type | arraytype
+ */
 tree
 handle_ext_type (struct parser * parser)
 {
-  struct token *tok;
-  bool circumflex_first = true;
-  enum tree_code code;
-  size_t size = 0;
-
-  tree t = handle_type (parser);
-  if (t == error_mark_node)
+  struct token * tok = parser_get_token (parser);
+  if (token_is_keyword (tok, tv_type))
+    {
+      parser_unget (parser);
+      return handle_type (parser);
+    }
+  else if (token_is_keyword (tok, tv_arraytype))
+    {
+      parser_unget (parser);
+      return handle_arraytype (parser);
+    }
+  else
     return error_mark_node;
-
-  code = TREE_CODE (t);
-  size = TYPE_SIZE (t);
-
-  /* There is no difference in the second argument value.
-     Dim and shape are set to NULL anyway.  */
-  if (TREE_CODE_CLASS (code) == tcl_type)
-    free_tree_type (t, true);
-  else
-    free_tree (t);
-  tree dim = NULL;
-  tree shape = NULL;
-
-  if (!token_is_operator (parser_get_token (parser), tv_circumflex))
-    {
-      circumflex_first = false;
-      parser_unget (parser);
-    }
-  else
-    {
-      dim = upper_type_wrapper (parser);
-      if (dim == error_mark_node)
-	goto error_shift;
-
-    }
-
-  tok = parser_get_token (parser);
-
-  if (!token_is_operator (tok, tv_lower_index))
-    {
-      parser_unget (parser);
-      return types_assign_type (code, size, dim, shape);
-    }
-
-  tok = parser_get_token (parser);
-  if (token_is_operator (tok, tv_lbrace))
-    {
-      shape = handle_sexpr_or_sexpr_list (parser);
-      if (shape && shape != error_mark_node)
-	if (!parser_forward_tval (parser, tv_rbrace))
-	  /* FIXME Why we don't we unget? What is about error-recovery
-	     here?  */
-	  goto error;
-    }
-  else if (token_class (tok) == tok_intnum)
-    {
-      shape = make_tree_list ();
-      tree_list_append (shape, make_integer_tok (tok));
-    }
-  else if (token_class (tok) == tok_realnum)
-    {
-      shape = make_tree_list ();
-      tree_list_append (shape, make_real_tok (tok));
-    }
-  else if (is_id (tok, false))
-    {
-      shape = make_tree_list ();
-      tree_list_append (shape, make_identifier_tok (tok));
-    }
-  else
-    goto error_shift;
-
-  if (shape == NULL || shape == error_mark_node)
-    goto error;
-
-  if (!circumflex_first)
-    {
-      if (token_is_operator (tok = parser_get_token (parser), tv_circumflex))
-	{
-	  dim = upper_type_wrapper (parser);
-	  if (dim == error_mark_node)
-	    goto error_shift;
-	}
-      else
-	{
-	  error_loc (token_location (tok),
-		     "upper index must be also part of type if lower "
-		     "index is included", token_as_string (tok));
-	  parser_unget (parser);
-	}
-    }
-
-
-  return types_assign_type (code, size, dim, shape);
-error_shift:
-  parser_get_until_tval (parser, tv_rbrace);
-error:
-  free_tree (dim);
-  free_tree (shape);
-  return error_mark_node;
 }
 
 tree
@@ -1149,36 +1160,6 @@ handle_list (struct parser * parser, tree (*handler) (struct parser *),
   parser_unget (parser);
 
   return ret;
-}
-
-/*
-   Read ext_type or ext_type
-   ext_type [ , ext_type ]*
- */
-tree
-handle_ext_type_or_ext_type_list (struct parser * parser)
-{
-  return handle_list (parser, handle_ext_type, tv_comma);
-}
-
-/*
-   Read sexp or sexpr list
-   sexpr [ , sexpr ]*
- */
-tree
-handle_sexpr_or_sexpr_list (struct parser * parser)
-{
-  return handle_list (parser, handle_sexpr, tv_comma);
-}
-
-/*
-   Read idx or idx list
-   idx  [ , idx ]*
- */
-tree
-handle_idx_or_idx_list (struct parser * parser)
-{
-  return handle_list (parser, handle_idx, tv_comma);
 }
 
 /*
@@ -1417,7 +1398,7 @@ handle_function (struct parser * parser)
   if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     {
       parser_unget (parser);
-      arg_types = handle_ext_type_or_ext_type_list (parser);
+      arg_types = handle_list (parser, handle_ext_type, tv_comma);
       if (arg_types == error_mark_node)
 	goto error;
     }
@@ -2823,18 +2804,6 @@ handle_assign (struct parser * parser, tree prefix_id)
 
   expr = handle_list (parser, handle_expr, tv_comma);
   
-  /*
-  if ((TREE_CODE (id) == LIST && TREE_CODE (expr) == LIST
-      && equal_list_sizes (id, expr))
-      || (TREE_CODE (id) == LIST && TREE_CODE (expr) != LIST)
-      || (TREE_CODE (id) != LIST && TREE_CODE (expr) == LIST))
-    {
-      error_loc (TREE_LOCATION (id), "the number of identifierrs in the "
-	"left part of the assignment doesn't match the number of "
-	"expressions in the right part of the assignment");
-      goto error;
-    }
-  */
   return make_binary_op (ASSIGN_STMT, id, expr);
 
 error:

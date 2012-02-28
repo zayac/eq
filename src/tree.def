@@ -53,6 +53,9 @@ DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 0, false)
 DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 0, false)
 DEF_TREE_CODE (STRING_TYPE, "string type", tcl_type, 0, false)
 
+/* ldots can be used in arraytype definition.  */
+DEF_TREE_CODE (LDOTS_EXPR, "ldots_expr", tcl_expression, 0, false)
+
 /* Constant nodes.  */
 
 /* Integer constant.  */

@@ -49,8 +49,6 @@ set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
 # Custom messages
 if (BUILD_LEXER)
   message("-- Only lexer is being built")
-else()
-  message("-- The compiler is being built")
 endif()
 message("-- `${BACKEND_LANG}' as a backend is used")
 
