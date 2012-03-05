@@ -10,5 +10,9 @@ In order to build the compiler do the following:
   $cmake ..
   $make
 
+CMake cache variables can be defined:
+  -DBUILD_LEXER=[ON|OFF]	  = Select either to build the lexer only.
+  -DBACKEND_LANG=[python|haskell] = Select compiler's backend.
+
 In case you want to test the binary run:
   $make test

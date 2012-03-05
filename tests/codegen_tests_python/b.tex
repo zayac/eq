@@ -1,38 +1,51 @@
-\begin{eqcode}{\mu}{\ }{\ }{\type{Z}^1}
+\begin{eqcode}{\mu}{\ }{\ }{\arraytype{\ldots}{Z}}
   b \gets 3^2 \lend
-  a \in \type{Z}^1 \lend
-  c \in \type{Z}^2 \lend
+  a \in \arraytype{\ldots}{Z} \lend
+  c \in \arraytype{\ldots,\ldots}{Z} \lend
   c \gets \begin{tmatrix}
     1 & 2 & 3 \lend
     4 & 5 & 6 \lend
     7 & 8 & 9 \lend
   \end{tmatrix} \lend
+  \print {c} \lend
+% eq-exec: [[1 2 3]
+% eq-exec:  [4 5 6]
+% eq-exec:  [7 8 9]]
   a \gets 
   \begin{tmatrix}
     1 \lend
     2 \lend
     3 \lend
-\end{tmatrix} \lend
+  \end{tmatrix} \lend
+  \print {a} \lend
+% eq-exec: [1 2 3]
   a_i | \forall i \gets 
   \begin{cases}
     1000 & i: i < 1 \lend
     1 & i: i < 6 \lend
     1000 & \otherwise \lend
   \end{cases}\lend
-
+  \print {a} \lend
+% eq-exec: [1000    1    1]
   a_i | i : i \leq 1 \gets
   \begin{cases}
     1000 & i: i < 1 \lend
     1 & i: i < 6 \lend
     1000 & \otherwise \lend
   \end{cases}\lend
-
+  \print {a} \lend
+% eq-exec: [1000    1    1]
   a_i | \forall i \gets a_i \cdot 5 + i \lend
+  \print {a} \lend
+% eq-exec: [5000    6    7]
   c_{i,j} | i, j: i < 5 \cap j > 1 \gets 
   \begin{cases}
     i + j & i, j: i < 1 \cap j > 1 \lend
     0 & \otherwise \lend
   \end{cases} \lend
+  \print {c} \lend
+% eq-exec: [[1 2 2]
+% eq-exec:  [4 5 0]
+% eq-exec:  [7 8 0]]
   \return {a} \lend
 \end{eqcode}
-% eq-test: [0, 0, 0, 1, 1, 1, 36, 49]

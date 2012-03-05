@@ -18,7 +18,8 @@
 \match{\rho (\expr, \expr)}{\call{\rho}{\expr{1}, \expr{2}}}
 
 \begin{document}
-\begin{eqcode}{advance}{p, v, m, dt}{\type{R}^2_{5,3}, \type{R}^2_{5,3}, \type{R}^1_5, \type{R}}{\type{R}^3}
+\begin{eqcode}{advance}{p, v, m, dt}{\arraytype{5,3}{R}, \arraytype{5,3}{R},
+\arraytype{5}{R}, \type{R}}{\arraytype{\ldots,\ldots,\ldots}{R}}
     accs_{i,j}\  |\  i, j : 0 \leq i \leq 4 \cap 0 \leq j \leq 4 \gets
         \begin{cases}
             \dfrac{(p_j-p_i) \cdot m_j}{\rho (p_i,p_j)^3} & j:  j < i \lend
@@ -31,8 +32,8 @@
 %    \return {p, v} \lend
 \end{eqcode}
 
-\begin{eqcode}{energy}{p, v, m}{\type{R}^2_{5,3},
-    \type{R}^2_{5,3}, \type{R}^1_5}{\type{R}}
+\begin{eqcode}{energy}{p, v, m}{\arraytype{5,3}{R},
+    \arraytype{5,3}{R}, \arraytype{5}{R}}{\type{R}}
     e \in \type{R} \lend
 %    e \gets \sum\limits_{i=0}^{4} \dfrac{m_i \cdot \sum\limits_{j} v_j^2}{2} \lend
 %    e \gets e - \sum\limits_{i=0, j=0}^{i<5,j<5}
@@ -43,16 +44,17 @@
     \return{e} \lend
 \end{eqcode}
 
-\begin{eqcode}{offset\_momentum}{v, m}{\type{R}^2_{5,3}, \type{R}^1_5}{\type{R}^2_{5,3}}
+\begin{eqcode}{offset\_momentum}{v, m}{\arraytype{5,3}{R},
+\arraytype{1}{R}}{\arraytype{5,3}{R}}
 %    v_{0,j}\  |\ j:   0 \leq j \leq 2 \gets \dfrac{-\sum\limits_{i} v_{i,j}
 %    \cdot m_i}{4 \cdot \pi^2} \lend
     \return{v} \lend
 \end{eqcode}
 
 \begin{eqcode}{main}{\ }{\ }{\type{Z}}
-    p \in \type{R}^2_{5,3};
-    v \in \type{R}^2_{5,3};
-    m \in \type{R}^2_{5} \lend
+    p \in \arraytype{5,3}{R};
+    v \in \arraytype{5,3}{R};
+    m \in \arraytype{5}{R} \lend
     p \gets \begin{tmatrix}
             0 & 0 & 0 \lend
             4.84143144246472090e+00 & -1.16032004402742839e+00 &

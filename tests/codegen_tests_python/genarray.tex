@@ -1,11 +1,13 @@
-\begin{eqcode}{\mu}{}{}{\type{Z}^3}
-  a \in \type{Z}^2_{5,2} \lend
-  b \in \type{Z}^3_{2,3,2} \lend
+\begin{eqcode}{\mu}{}{}{\arraytype{\ldots,\ldots,\ldots}{Z}}
+  a \in \arraytype{5,2}{Z} \lend
+  b \in \arraytype{2,3,2}{Z} \lend
   c \gets
   \begin{tmatrix}
   10 \lend
   10 \lend
   \end{tmatrix} \lend
+  \print {c} \lend
+% eq-exec: [10 10]
   a \gets \genar \limits ^ {5}(c) \lend
   b \gets \genar \limits ^ {  \begin{tmatrix}
   2 \lend
@@ -14,6 +16,10 @@
   2 \lend
   3 \lend
   \end{tmatrix})  \lend
+  \print {a, b} \lend
+% eq-exec: [array([10, 10]), array([10, 10]), array([10, 10]), array([10, 10]), array([10, 10])] [[array([2, 3]), array([2, 3]), array([2, 3])], [array([2, 3]), array([2, 3]), array([2, 3])]]
   b_{1,2} \gets  c \lend
+  \print {b} \lend
+% eq-exec: [[array([2, 3]), array([2, 3]), array([2, 3])], [array([2, 3]), array([2, 3]), [10, 10]]]
   \return {b} \lend
 \end{eqcode}

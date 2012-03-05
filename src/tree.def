@@ -40,6 +40,8 @@ DEF_TREE_CODE (ITER_PAIR, "iter_pair", tcl_misc, 2, false)
 
 DEF_TREE_CODE (ITER_EXPR, "iter_expr", tcl_misc, 0, false)
 
+DEF_TREE_CODE (PRINT_MARK, "print_mark", tcl_misc, 1, false)
+
 /* List of trees, used to represent list of statements
    or list of arguments in the function call.  */
 DEF_TREE_CODE (LIST, "tree_list", tcl_misc, 0, false)
@@ -50,6 +52,9 @@ DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 0, false)
 DEF_TREE_CODE (Z_TYPE, "integer_type", tcl_type, 0, false)
 DEF_TREE_CODE (R_TYPE, "real_type",    tcl_type, 0, false)
 DEF_TREE_CODE (STRING_TYPE, "string type", tcl_type, 0, false)
+
+/* ldots can be used in arraytype definition.  */
+DEF_TREE_CODE (LDOTS_EXPR, "ldots_expr", tcl_expression, 0, false)
 
 /* Constant nodes.  */
 

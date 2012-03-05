@@ -646,6 +646,17 @@ finalize_withloop:
 	  }
       }
       break;
+    case PRINT_MARK:
+      {
+	struct tree_list_element *el;
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
+	  {
+	    int tmp_ret = typecheck_expression (el->entry, ext_vars, vars);
+	    if (tmp_ret > 0)
+	      ret += tmp_ret;
+	  }
+      }
+      break;
     default:
       assert (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_expression,
 	      "expression expected");

@@ -493,19 +493,6 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
     case RETURN_STMT:
       {
 	struct tree_list_element *el;
-	/* print return value of main `\mu' function.  */
-	if (!strcmp(func_name, "\\mu"))
-	  {
-	    fprintf (f, "print(");
-	    DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
-	      {
-		error += codegen_expression (f, el->entry);
-		if (el->next != NULL)
-		  fprintf (f, ", ");
-	      }
-	    fprintf (f, ")\n");
-	    indent (f, level);
-	  }
 	fprintf (f, "return(");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
 	  {
@@ -517,6 +504,19 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
       }
       break;
 
+    case PRINT_MARK:
+      {
+	struct tree_list_element *el;
+	fprintf (f, "print(");
+	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
+	  {
+	    error += codegen_expression (f, el->entry);
+	    if (el->next != NULL)
+	      fprintf (f, ", ");
+	  }
+	fprintf (f, ")\n");
+      }
+      break;
     case IF_STMT:
       {
 	fprintf (f, "if ");

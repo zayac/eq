@@ -5,10 +5,10 @@
 \begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
   a \in \type{Z} \lend
   c, a^{[0]}, b \gets \call{\alpha}{\ }, 3 \lend
-  \print {c, a^{[0]}, b} \lend
-% eq-exec: 1 2 3
   d, e, f, g \gets \call{\alpha}{\ }, \call{\alpha}{\ } \lend
-  \print {d, e, f, g} \lend
-% eq-exec: 1 2 1 2
+  a \gets 3 \lend
+  \print {} \lend % eq-error: unexpected token `}' found
+  \print {a^{[0]}, d, e, f} \lend
+  \print {\call{\alpha}{\ }, \genar \limits ^ {10} ( 4 )} \lend
   \return {a^{[0]}} \lend
 \end{eqcode}

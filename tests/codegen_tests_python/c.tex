@@ -1,17 +1,25 @@
-\begin{eqcode}{\mu}{\ }{\ }{\type{Z}^2}
+\begin{eqcode}{\mu}{\ }{\ }{\arraytype{\ldots,\ldots}{Z}}
   s \gets \begin {tmatrix}
   100 \lend
   100 \lend
   \end{tmatrix} \lend
-  a \gets \genar \limits ^{\begin{tmatrix} 10 \lend 10 \lend \end{tmatrix}} (0) \lend
+  \print {s} \lend
+% eq-exec: [100 100]
+  a \gets \genar \limits ^{\begin{tmatrix} 2 \lend 2 \lend \end{tmatrix}} (0) \lend
+  \print {a} \lend
+% eq-exec: [[0, 0], [0, 0]]
   a_{i,j} | i,j : i < 5 \cap j < 5 \gets 5 \lend
-
+  \print {a} \lend
+% eq-exec: [[5, 5], [5, 5]]
   a_{i,j} | i,j : i \geq 5 \cap j < 10 \gets
   \begin{cases}
     i \cdot j & j: j < 5 \lend
     a_{i-1, j-1} & \otherwise \lend
   \end{cases} \lend
-
-  a_{2,7} \gets 42 \lend
+  \print {a} \lend
+% eq-exec: [[5, 5], [5, 5]]
+  a_{1,1} \gets 42 \lend
+  \print {a} \lend
+% eq-exec: [[5, 5], [5, 42]]
   \return {a} \lend
 \end{eqcode}

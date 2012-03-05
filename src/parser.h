@@ -80,15 +80,13 @@ struct token *parser_token_alternative_tclass (struct parser *,
 bool parser_expect_tval (struct parser *, enum token_kind);
 bool parser_expect_tclass (struct parser *, enum token_class);
 tree handle_type (struct parser *);
+tree handle_arraytype (struct parser *);
 tree handle_ext_type (struct parser *);
 tree handle_list (struct parser *, tree (*)(struct parser *),
 		  enum token_kind);
-tree handle_ext_type_or_ext_type_list (struct parser *);
-tree handle_sexpr_or_sexpr_list (struct parser *);
 tree handle_id (struct parser *);
 tree handle_indexes (struct parser *, tree);
 tree handle_idx (struct parser *);
-tree handle_idx_or_idx_list (struct parser *);
 tree handle_lower (struct parser *);
 tree handle_upper (struct parser *);
 tree handle_function (struct parser *);
@@ -110,6 +108,7 @@ tree handle_index_loop (struct parser *, tree);
 tree handle_index_loop_cases (struct parser *);
 tree handle_numx (struct parser *);
 tree handle_idx_numx (struct parser *);
+tree handle_print (struct parser *);
 bool handle_match (struct parser *);
 tree handle_proto (struct parser *);
 
