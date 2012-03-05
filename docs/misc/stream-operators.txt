@@ -1,0 +1,162 @@
+Из Пашиного письма.
+
+1. filter :: {a} -> (a -> Bool) -> {a}
+2. head :: {a} -> a
+3. tail :: {a} -> {a}
+
+Для "конечных" потоков.
+4. last :: {a} -> a
+
+5. map :: {a} -> (a -> b) -> {b}
+6. zip :: {a} -> {b} -> [a, b]
+
+Потоки с внутренним состоянием.
+7. next :: {a} -> a
+
+8. as_soon_as :: {a} -> (a -> Bool) -> {a}
+Есть такая штука в Lucid - аналог loop и схожая с filter. "Получать
+элементы из потока до тех пор, пока элемент удовлетворяет предикату".
+В отличии от фильтра, заканчивает возвращать в поток, как только
+встретился элемент, который неудовлетворяет условию. Должен
+реализовываться просто как библиотечная функция.
+
+9. merge :: {a} -> {a} -> (a-> Bool) -> {a}
+
+#############################################################################
+
+
+Итого получается, что нужно разделять потоки на 2 класса:
+а) Потоки с произвольным доступом.    (type (s) == STREAM_RANDOM_ACCESS)
+б) Потоки с внутренним состоянием.    (type (s) == STREAM_GENERATOR)
+
+При этом каждый любой из потоков может быть конечным.  (finite (s) == true)
+
+
+Определим функцию индексации потока:
+eltype
+index (stream s, int i)
+{
+  if (finite (s) and i > last_index (s))
+    error ("out of bound acces to stream %s at pos %i\n", s, i);
+
+  if (type (s) == STREAM_RANDOM_ACCESS)
+    return get_index (s, i);
+  else if (type (s) == STREAM_GENERATOR)
+    {
+      if (i in indexes_available (s))
+	return get_index (s, i);
+      else
+	{
+	  s1 = copy (s);
+	  restart (s1);
+	  for (j = 0; j < i; j++)
+	    next (s1);
+	  return get_index (s1, i);
+	}
+    }
+  else
+    error ("unknwon stream type");
+}
+
+
+
+# Helper function
+filter_element (stream s, predicate f)
+{
+  if (type (stream) != STREAM_GENERATOR)
+    error ();
+
+  el = next (s);
+  if (f (el))
+    return el;
+  else
+    return filter_element (s, f);
+}
+
+
+stream
+filter (stream s, predicate f)
+{
+  stream ret;
+
+  p  = add (ret.predicates, f);
+  s1 = add (ret.depend_streams, make_generator (copy (s)));
+
+  ret[i] = filter_element (s1, p);
+  return ret;
+}
+
+
+element
+head (stream s)
+{
+  # Что такое голова потка-генератора
+  # Первый элемент, или next()?
+
+  # Пусть будет первый элемент, тогда:
+  return s[0];
+}
+
+stream
+tail (stream s)
+{
+  s1[i] = s[i+1];
+  return s1;
+}
+
+element
+last (stream s)
+{
+  if (is_finite (s))
+    error ("cannot take the last element");
+
+  return s[get_last_index (s)];
+}
+
+
+stream
+map (stream s, function f)
+{
+  s1[i] = f (s[i]);
+  return s1;
+}
+
+stream
+zip (stream s, stream t)
+{
+  s1[i] = (s[i], t[i]);
+  return s1;
+}
+
+stream
+as_soon_as (stream s, function f)
+{
+  stream ret = make_gnerator ();
+  
+  g = add (ret.predicates, f);
+  s1 = add (ret.depend_streams, s);
+
+  ret[i] = g (el = next (s1)) ? el : STOP;
+  return ret;
+}
+
+
+stream 
+merge (stream a, strem b)
+{
+  ret[2*i]     = a[i];
+  ret[2*i + 1] = b[i];
+  return ret;
+}
+
+
+Итого нам нужно:
+1) Различать типы потоков.
+2) Разрешать потоку внутри себя хранить список функций (predicates)
+   и список дркгих потоков (depend_streams).  При этом заметим, что
+   возврат фильтра и as_soon_as -- это поток-генератор.
+3) Хранить информацию о конечности потока внутри потока.
+4) Расширить синтаксис описывающий рекуррентность, чтобы
+   туда можно было пихать сложные выражения.
+
+
