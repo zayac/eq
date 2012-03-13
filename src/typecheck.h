@@ -24,6 +24,7 @@ int typecheck_expression (tree, tree, tree);
 int typecheck_type (tree, tree, tree);
 int typecheck_recurrent (tree);
 int typecheck_generator (tree, tree, tree);
+int typecheck_function_call_args (tree, tree, tree, tree);
 int typecheck_function_call (tree, tree, tree);
 int typecheck_genarray (tree, tree, tree);
 int typecheck_lower (tree, tree, tree, bool);

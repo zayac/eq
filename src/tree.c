@@ -341,7 +341,7 @@ make_function (tree name, tree args, tree arg_types, tree ret, tree instrs,
 tree
 make_string_cst_str (const char *value)
 {
-  tree t;
+  tree t, type;
 
   assert (value != NULL, 0);
   assert (TREE_CODE_TYPED (STRING_CST), "string has to have a type");
@@ -350,10 +350,13 @@ make_string_cst_str (const char *value)
   TREE_STRING_CST (t) = strdup (value);
   TREE_STRING_CST_LENGTH (t) = strlen (value);
   TREE_CONSTANT (t) = true;
-  TREE_TYPE (t) =
-    types_assign_type (STRING_TYPE, ((strlen (value) + 1) * 8), NULL, NULL);
-  /* FIXME Add is_char modifier to the tree.  */
-
+  if (strlen (value) == 1)
+    TREE_STRING_CST_IS_CHAR (t) = true;
+  type = make_type (STRING_TYPE);
+  TYPE_SIZE (type) = (strlen (value) + 1) * 8;
+  TREE_TYPE (t) = types_assign_type (type);
+  if (TREE_TYPE (t) != type)
+    free_tree_type (type, true);
   return t;
 }
 
@@ -514,7 +517,7 @@ make_type (enum tree_code code)
 
   t = make_tree (code);
   if (TREE_CODE (t) == B_TYPE)
-    TYPE_SIZE (t) = 8;
+    TYPE_SIZE (t) = 1;
   else if (TREE_CODE (t) == N_TYPE)
     TYPE_SIZE (t) = 8 * sizeof (unsigned);
   else if (TREE_CODE (t) == Z_TYPE)

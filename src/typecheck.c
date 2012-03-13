@@ -76,8 +76,11 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func)
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
-    ret += typecheck_stmt (tle->entry, ext_vars, vars, func);
-
+    {
+      ret += typecheck_stmt (tle->entry, ext_vars, vars, func);
+      if (ret)
+	return ret;
+    }
   return ret;
 }
 
@@ -122,58 +125,80 @@ typecheck_type (tree type, tree ext_vars, tree vars)
   assert (TREE_CODE_CLASS ( TREE_CODE (type)) == tcl_type,
 	  "type node must belong to class type");
 
-  /* validate dimension.  */
-  if (TYPE_DIM (type) != NULL)
+  if (TREE_CODE (type) == FUNCTION_TYPE)
     {
-      int ret_val;
-      if ((ret_val = typecheck_expression (TYPE_DIM (type), ext_vars, vars)))
-	return ret_val;
+      char* fname = TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME
+			      (TYPE_FUNCTION (type))));
+      tree t;
 
-      /* dimension must be some kind of integer type.
-	 We check here just static values.  */
-      if (TREE_TYPE (TYPE_DIM (type)) != z_type_node
-	  && (TREE_TYPE (TYPE_DIM (type)) != n_type_node
-	      || TYPE_DIM (type) != NULL
-	      || TYPE_SHAPE (type) != NULL))
+      /* check if function exists.  */
+      if (!(t = function_exists (fname)))
 	{
-	  error_loc (TREE_LOCATION (TYPE_DIM (type)),
-		     "type dimension must be an integer");
-	  ret += 1;
+	  if (!(t = function_proto_exists (fname)))
+	    {
+	      error_loc (TREE_LOCATION (type),
+			 "function `%s' is not defined", fname);
+	      return 1;
+	    }
 	}
+      free_tree (TYPE_FUNCTION (type));
+      TYPE_FUNCTION (type) = t;
     }
-
-  /* validate shape.  */
-  if (TYPE_SHAPE (type) != NULL)
+  else
     {
-      int dim = 0;
-      struct tree_list_element *el;
-      if (TYPE_DIM (type) != NULL && TREE_CONSTANT (TYPE_DIM (type)))
-	dim = TREE_INTEGER_CST (TYPE_DIM (type));
-      /* in general case, a shape is a list of integers.  */
-      DL_FOREACH (TREE_LIST (TYPE_SHAPE(type)), el)
+      /* validate dimension.  */
+      if (TYPE_DIM (type) != NULL)
 	{
 	  int ret_val;
-	  tree t = el->entry;
-
-	  /* dimension doesn't fit to shape.  */
-	  if (--dim <= -1)
-	    goto shape_fail;
-
-	  if ((ret_val = typecheck_expression (t, ext_vars, vars)))
+	  if ((ret_val = typecheck_expression (TYPE_DIM (type), ext_vars, vars)))
 	    return ret_val;
 
-	  if (TREE_TYPE (t) != z_type_node
-	      || TYPE_DIM (TREE_TYPE (t)) != NULL
-	      || TYPE_SHAPE (TREE_TYPE (t)) != NULL)
+	  /* dimension must be some kind of integer type.
+	     We check here just static values.  */
+	  if (TREE_TYPE (TYPE_DIM (type)) != z_type_node
+	      && (TREE_TYPE (TYPE_DIM (type)) != n_type_node
+		  || TYPE_DIM (type) != NULL
+		  || TYPE_SHAPE (type) != NULL))
 	    {
-	      error_loc (TREE_LOCATION (t),
-		"type shape must be a list of integers");
+	      error_loc (TREE_LOCATION (TYPE_DIM (type)),
+			 "type dimension must be an integer");
 	      ret += 1;
 	    }
 	}
-      /* dimension doesn't fit to shape.  */
-      if (dim != 0)
-	goto shape_fail;
+
+      /* validate shape.  */
+      if (TYPE_SHAPE (type) != NULL)
+	{
+	  int dim = 0;
+	  struct tree_list_element *el;
+	  if (TYPE_DIM (type) != NULL && TREE_CONSTANT (TYPE_DIM (type)))
+	    dim = TREE_INTEGER_CST (TYPE_DIM (type));
+	  /* in general case, a shape is a list of integers.  */
+	  DL_FOREACH (TREE_LIST (TYPE_SHAPE(type)), el)
+	    {
+	      int ret_val;
+	      tree t = el->entry;
+
+	      /* dimension doesn't fit to shape.  */
+	      if (--dim <= -1)
+		goto shape_fail;
+
+	      if ((ret_val = typecheck_expression (t, ext_vars, vars)))
+		return ret_val;
+
+	      if (TREE_TYPE (t) != z_type_node
+		  || TYPE_DIM (TREE_TYPE (t)) != NULL
+		  || TYPE_SHAPE (TREE_TYPE (t)) != NULL)
+		{
+		  error_loc (TREE_LOCATION (t),
+		    "type shape must be a list of integers");
+		  ret += 1;
+		}
+	    }
+	  /* dimension doesn't fit to shape.  */
+	  if (dim != 0)
+	    goto shape_fail;
+	}
     }
   return ret;
 
@@ -473,8 +498,6 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		int ret_val;
 		if ((ret_val = typecheck_type (rhs, ext_vars, vars)))
 		  return ret_val;
-		if (TREE_TYPE (rhs) == NULL)
-		  return 1;
 	      }
 
 	    if ((var = is_var_in_list (lhs, vars)) != NULL
@@ -693,7 +716,8 @@ typecheck_function (tree func)
 	    error_loc (TREE_LOCATION (func), "argument `%s' occures more "
 		       "than once in argument list",
 		       TREE_STRING_CST (TREE_ID_NAME (dup)));
-	    return 1;
+	    ret += 2;
+	    goto free_local;
 	  }
 
 	var_counter++;
@@ -708,7 +732,8 @@ typecheck_function (tree func)
 	    error_loc (TREE_LOCATION (func),
 		       "number of argument types is wrong: "
 		       "%u expected, %u found", var_counter, type_counter);
-	    return 2;
+	    ret = 2;
+	    goto free_local;
 	  }
 	else
 	  {
@@ -721,7 +746,10 @@ typecheck_function (tree func)
 	    tree_list_append (delete_list, vars);
 
 	    if (ret_val)
-	      return ret_val;
+	      {
+		ret += ret_val;
+		goto free_local;
+	      }
 	  }
 	type_counter++;
 	TREE_TYPE(el->entry) = type->entry;
@@ -737,12 +765,14 @@ typecheck_function (tree func)
 	}
       error_loc (TREE_LOCATION (func), "number of argument types is wrong: "
 		 "%u expected, %u found", var_counter, type_counter);
-      return 2;
+      ret += 2;
+      goto free_local;
     }
 
   ext_vars = tree_copy (TREE_OPERAND (func, 1));
   ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars, func);
 
+free_local:
   /* Free list with local variables.  */
   tree_list_append (delete_list, vars);
   tree_list_append (delete_list, ext_vars);
@@ -754,12 +784,11 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
 {
   int ret = 0;
   struct tree_list_element *el = NULL, *index_el = NULL;
-  
   tree lhs = TREE_OPERAND (expr, 0);
   tree rhs = TREE_OPERAND (expr, 1);
-  tree dim_t = NULL;
   int dim = 0;
   tree shape = NULL;
+  tree tmp_type;
 
   /* if 'generator' is not set, it means that this function was called from
      generator expression. Then 'lhs' must be an identifier.  */
@@ -872,22 +901,18 @@ typecheck_lower (tree expr, tree ext_vars, tree vars, bool generator)
 	}
     }
 
-  if (dim)
-    dim_t = make_integer_cst (dim);
+  tmp_type = tree_copy (TREE_TYPE (lhs));
+  TYPE_DIM (tmp_type) = dim ? make_integer_cst (dim) : NULL;
+  TYPE_SHAPE (tmp_type) = shape;
 
-  TREE_TYPE (expr) = types_assign_type (TREE_CODE (TREE_TYPE (lhs)),
-					TYPE_SIZE (TREE_TYPE (lhs)),
-					dim ? make_integer_cst (dim) : NULL,
-					shape);
+  TREE_TYPE (expr) = types_assign_type (tmp_type);
 
+  if (TREE_TYPE (expr) != tmp_type)
+    free_tree_type (tmp_type, true);
+  
   /* We consider indexing operation to be non-constant,
      as we can't really check it at this point.  */
   TREE_CONSTANT (expr) = false;
-  if (dim_t != TYPE_DIM (TREE_TYPE (expr)))
-    free_tree (dim_t);
-  if (shape != TYPE_SHAPE (TREE_TYPE (expr)))
-    free_tree (shape);
-
   return ret;
 }
 
@@ -973,29 +998,19 @@ typecheck_generator (tree expr, tree ext_vars, tree vars)
   return ret;
 }
 
+/* A helper function which checks arguments of a function call.
+   The first argument is a function definition tree,
+   the second argument is a function call tree. */
 int
-typecheck_function_call (tree expr, tree ext_vars, tree vars)
+typecheck_function_call_args (tree func, tree expr, tree ext_vars, tree vars)
 {
-  int ret = 0;
-  tree t;
-  struct tree_list_element *func_el, *expr_el;
-  int func_counter = 0, expr_counter = 0;
-  char *  fname = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0)));
-
-  /* check if function is declared.  */
-  if (!(t = function_exists (fname)))
-    {
-      if (!(t = function_proto_exists (fname)))
-	{
-	  error_loc (TREE_LOCATION (expr),
-		    "function `%s' is not defined", fname);
-	  return 1;
-	}
-    } 
+  struct tree_list_element *func_el;
+  struct tree_list_element *expr_el;
+  int expr_counter = 0, func_counter = 0; 
 
   /* argument list can be empty.  */
-  if (TREE_FUNC_ARG_TYPES (t) != NULL)
-    func_el = TREE_LIST (TREE_FUNC_ARG_TYPES (t));
+  if (TREE_FUNC_ARG_TYPES (func) != NULL)
+    func_el = TREE_LIST (TREE_FUNC_ARG_TYPES (func));
   else
     func_el = NULL;
 
@@ -1019,12 +1034,11 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars)
 		  expr_counter++;
 		  expr_el = expr_el->next;
 		}
-
 	      error_loc
 		(TREE_LOCATION (expr),
 		 "invalid number of arguments in function `%s' call: "
 		 "%u expected, %u found",
-		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
+		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))),
 		 func_counter, expr_counter);
 	      return 1;
 	    }
@@ -1069,10 +1083,32 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars)
       error_loc (TREE_LOCATION (expr),
 		 "invalid number of arguments in function '%s' call: "
 		 "%u expected, %u found",
-		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))),
+		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))),
 		 func_counter, expr_counter);
       return 1;
     }
+  return 0;
+}
+
+int
+typecheck_function_call (tree expr, tree ext_vars, tree vars)
+{
+  int ret = 0;
+  tree t;
+  char *  fname = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0)));
+
+  /* check if function is declared.  */
+  if (!(t = function_exists (fname)))
+    {
+      if (!(t = function_proto_exists (fname)))
+	{
+	  error_loc (TREE_LOCATION (expr),
+		    "function `%s' is not defined", fname);
+	  return 1;
+	}
+    }
+
+  ret += typecheck_function_call_args (t, expr, ext_vars, vars);
   if (TREE_LIST (TREE_FUNC_RET_TYPE (t))->next == NULL)
     TREE_TYPE (expr) = TREE_LIST (TREE_FUNC_RET_TYPE (t))->entry;
   else
@@ -1095,6 +1131,7 @@ typecheck_genarray (tree expr, tree ext_vars, tree vars)
   tree shape = NULL;
   ret += typecheck_expression (lim, ext_vars, vars);
   ret += typecheck_expression (exp, ext_vars, vars);
+  tree tmp_type;
 
   if (ret)
     return ret;
@@ -1197,12 +1234,15 @@ typecheck_genarray (tree expr, tree ext_vars, tree vars)
 	shape = unknown_mark_node;
     }
 
-  TREE_TYPE (expr) = types_assign_type (code, size, dim, shape);
+  tmp_type = make_type (code);
+  TYPE_SIZE (tmp_type) = size;
+  TYPE_DIM (tmp_type) = dim;
+  TYPE_SHAPE (tmp_type) = shape;
+  TREE_TYPE (expr) = types_assign_type (tmp_type);
 
-  if (dim != TYPE_DIM (TREE_TYPE (expr)))
-    free_tree (dim);
-  if (shape != TYPE_SHAPE (TREE_TYPE (expr)))
-    free_tree (shape);
+  if (TREE_TYPE (expr) != tmp_type)
+    free_tree_type (tmp_type, true);
+
   return ret;
 }
 
@@ -1222,10 +1262,15 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       TREE_CONSTANT (expr) = true;
       break;
     case STRING_CST:
-      TREE_TYPE (expr) =
-	types_assign_type (STRING_TYPE,
-			   strlen(TREE_STRING_CST (expr)) + 1, NULL, NULL);
-      TREE_CONSTANT (expr) = true;
+      {
+	tree t = make_type (STRING_TYPE);
+	TYPE_SIZE (t) = strlen(TREE_STRING_CST (expr)) + 1;
+	TREE_TYPE (expr) = types_assign_type (t);
+	if (TREE_TYPE (expr) != t)
+	  free_tree_type (t, true);
+
+	TREE_CONSTANT (expr) = true;
+      }
       break;
     case IDENTIFIER:
       {
@@ -1430,6 +1475,9 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	tree rhs = TREE_OPERAND (expr, 1);
 
 	ret += typecheck_expression (lhs, ext_vars, vars);
+	if (ret)
+	  return 1;
+
 	if (TREE_CIRCUMFLEX_INDEX_STATUS (expr) && typecheck_options.iter_index)
 	  ret += typecheck_recurrent (rhs);
 	else
@@ -1566,6 +1614,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	size_t size = 0;
 	bool const_matrix = true;
 	tree shape_t, dim_t;
+	tree type;
 
 	DL_FOREACH (TREE_LIST (el_list), l)
 	  {
@@ -1616,15 +1665,38 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	if (shape_x != 1)
 	  tree_list_append (shape_t, make_integer_cst (shape_x));
 
-	TREE_TYPE (expr) = types_assign_type (code, size, dim_t, shape_t);
+	type = make_type (code);
+	TYPE_SIZE (type) = size;
+	TYPE_DIM (type) = dim_t;
+	TYPE_SHAPE (type) = shape_t;
+	TREE_TYPE (expr) = types_assign_type (type);
 	TREE_CONSTANT (expr) = const_matrix;
 
-	if (dim_t != TYPE_DIM (TREE_TYPE (expr)))
-	  free_tree (dim_t);
-	if (shape_t != TYPE_SHAPE (TREE_TYPE (expr)))
-	  free_tree (shape_t);
+	if (TREE_TYPE (expr) != type)
+	  free_tree_type (type, true);
       }
       break;
+    case LAMBDA:
+      {
+	tree func;
+	ret += typecheck_expression (TREE_OPERAND (expr, 0), ext_vars, vars);
+	func = TREE_TYPE (TREE_OPERAND (expr, 0));
+	if (TREE_CODE (func) != FUNCTION_TYPE)
+	  {
+	    error_loc (TREE_LOCATION (expr), "variable `%s' is not of a "
+					     "function type",
+					     TREE_STRING_CST (TREE_ID_NAME
+					     (TREE_OPERAND (expr, 0))));
+	    return 1;
+	  }
+	if (!ret)
+	  {
+	    ret += typecheck_function_call_args (TYPE_FUNCTION (func), expr,
+						    ext_vars, vars);
+	    TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (TYPE_FUNCTION (func));
+	  }
+	return ret;
+      }
     default:
       /* FIXME Type printing is proper only for primitive types.  */
       error ("cannot typecheck expression of type `%s'",

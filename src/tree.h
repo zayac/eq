@@ -51,6 +51,7 @@ extern const char *tree_code_name[];
 union tree_node;
 typedef union tree_node *tree;
 
+
 /* Basic information each node should have.  */
 struct tree_base
 {
@@ -82,13 +83,24 @@ struct tree_type_base_op
   tree operands[];
 };
 
+struct type_numerical
+{
+  tree dim;
+  tree shape;
+};
+
+union type_properties
+{
+  struct type_numerical numerical;
+  tree functional;
+};
+
 /* A hash table for storing types.  */
 struct tree_type_node
 {
   struct tree_base base;
   size_t size;
-  tree dim;
-  tree shape;
+  union type_properties properties;
   UT_hash_handle hh;
 };
 
@@ -115,6 +127,7 @@ struct tree_string_cst_node
 {
   struct tree_type_base typed;
   int length;
+  bool is_char;
   char *value;
 };
 
@@ -191,8 +204,10 @@ enum tree_global_code
 #define TREE_TYPE(node) ((node)->typed.type)
 #define TYPE_HASH(node) ((node)->type_node)
 #define TYPE_SIZE(node) ((node)->type_node.size)
-#define TYPE_DIM(node) ((node)->type_node.dim)
-#define TYPE_SHAPE(node) ((node)->type_node.shape)
+#define TYPE_DIM(node) ((node)->type_node.properties.numerical.dim)
+#define TYPE_SHAPE(node) ((node)->type_node.properties.numerical.shape)
+#define TYPE_FUNCTION(node) \
+  ((node)->type_node.properties.functional)
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)
@@ -255,6 +270,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_REAL_CST(node)  ((node)->real_cst_node.value)
 #define TREE_STRING_CST(node) ((node)->string_cst_node.value)
 #define TREE_STRING_CST_LENGTH(node) ((node)->string_cst_node.length)
+#define TREE_STRING_CST_IS_CHAR(node) ((node)->string_cst_node.is_char)
 
 #define TREE_ID(node) (&((node)->identifier_node))
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)

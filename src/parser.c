@@ -759,6 +759,48 @@ handle_print (struct parser * parser)
 }
 
 /*
+   functiontype:
+   \function { <id> }
+ */
+tree
+handle_functiontype (struct parser *parser)
+{
+  tree t = NULL, func = NULL;
+  struct token *tok;
+  struct location loc;
+
+  if (!parser_forward_tval (parser, tv_function))
+    return error_mark_node;
+
+  /* memorize expression location.  */
+  parser_unget (parser);
+  tok = parser_get_token (parser);
+  loc = token_location (tok);
+
+  if (!parser_forward_tval (parser, tv_lbrace))
+    goto error;
+
+  t = make_type (FUNCTION_TYPE);
+
+  if (!is_id (tok = parser_get_token (parser), true))
+    goto error;
+  else
+    TYPE_FUNCTION (t) = make_function (make_identifier_tok (tok), NULL, NULL,
+					  NULL, NULL, loc);
+
+  if (!parser_forward_tval (parser, tv_rbrace))
+    goto error;
+
+
+  return t;
+//  return types_assign_type (TREE_CODE (t), TYPE_SIZE (t), NULL, NULL);
+error:
+  free_tree (func);
+  free_tree (t);
+  return error_mark_node;
+}
+
+/*
    type:
    \type { (Z | R | N | B) }
  */
@@ -796,8 +838,9 @@ handle_type (struct parser * parser)
   if (!parser_forward_tval (parser, tv_rbrace))
     return error_mark_node;
 
-  ret = types_assign_type (TREE_CODE (t), TYPE_SIZE (t), NULL, NULL);
-  free_tree_type (t, true);
+  ret = types_assign_type (t);
+  if (ret != t)
+    free_tree_type (t, true);
   return ret;
 error:
   parser_get_until_tval (parser, tv_rbrace);
@@ -923,8 +966,12 @@ handle_arraytype (struct parser * parser)
       free_tree (shape);
       shape = NULL;
     }
-  ret = types_assign_type (TREE_CODE (t), TYPE_SIZE (t), make_integer_cst (dim), shape);
-  free_tree_type (t, true);
+
+  TYPE_DIM (t) = make_integer_cst (dim);
+  TYPE_SHAPE (t) = shape;
+  ret = types_assign_type (t);
+  if (ret != t)
+    free_tree_type (t, true);
 
   return ret;
 error:
@@ -935,7 +982,7 @@ error:
 
 /*
   ext_type:
-  type | arraytype
+  type | arraytype | functiontype
  */
 tree
 handle_ext_type (struct parser * parser)
@@ -945,6 +992,11 @@ handle_ext_type (struct parser * parser)
     {
       parser_unget (parser);
       return handle_type (parser);
+    }
+  else if (token_is_keyword (tok, tv_function))
+    {
+      parser_unget (parser);
+      return handle_functiontype (parser);
     }
   else if (token_is_keyword (tok, tv_arraytype))
     {
@@ -1132,12 +1184,13 @@ handle_list (struct parser * parser, tree (*handler) (struct parser *),
   tree ret;
   tree t;
   t = handler (parser);
+  if (t == error_mark_node)
+    return t;
 
   if (!token_is_operator (parser_get_token (parser), delim))
     {
       ret = make_tree_list ();
-      if (t != error_mark_node)
-	tree_list_append (ret, t);
+      tree_list_append (ret, t);
     }
   else
     {
@@ -1278,6 +1331,13 @@ handle_instr_list (struct parser * parser)
 
       /* this one allows instructions separated by comma.  */
       t = handle_list (parser, handle_instr, tv_semicolon);
+     
+     if (t == error_mark_node)
+      {
+	free_tree (instrs);
+	return error_mark_node;
+      }
+
       assert (TREE_CODE (t) == LIST, "there should be an instruction list");
 
       DL_FOREACH_SAFE (TREE_LIST (t), el, tmp)
@@ -1476,18 +1536,22 @@ free_trees:
    \call { <id> } { [ expr [, expr ]* ] }
  */
 tree
-handle_function_call (struct parser * parser)
+handle_call (struct parser * parser, enum token_kind type)
 {
   tree t = NULL, args = NULL;
   struct token *tok;
 
-  if (!(tok = parser_forward_tval (parser, tv_call)))
+  assert (type == tv_call || type == tv_lambda, "unsupported token kind");
+  if (!(tok = parser_forward_tval (parser, type)))
     goto error;
 
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
 
-  t = make_tree (FUNCTION_CALL);
+  if (type == tv_call)
+    t = make_tree (FUNCTION_CALL);
+  else
+    t = make_tree (LAMBDA);
   TREE_LOCATION (t) = token_location (tok);
 
   if (!is_id (tok = parser_get_token (parser), true))
@@ -2245,7 +2309,25 @@ handle_sexpr_op (struct parser * parser)
     tok = parser_get_token (parser);
 
 
-  if (token_is_number (tok) || is_id (tok, false)
+  if (token_value (tok) == tv_call
+	|| token_value (tok) == tv_lambda)
+    {
+      if (token_value (parser_get_token (parser)) == tv_lbrace)
+	{
+	  parser_unget (parser);
+	  parser_unget (parser);
+	  t1 = handle_call (parser, token_value (tok));
+	}
+      else
+	{
+	  parser_unget (parser);
+	  parser_unget (parser);
+	  t1 = perform_transform (parser);
+	  if (t1 == NULL)
+	    t1 = handle_idx_numx (parser);
+	}
+    }
+  else if (token_is_number (tok) || is_id (tok, false)
       || token_is_keyword (tok, tv_frac) || token_is_keyword (tok, tv_dfrac))
     {
       parser_unget (parser);
@@ -2258,11 +2340,6 @@ handle_sexpr_op (struct parser * parser)
     {
       parser_unget (parser);
       t1 = handle_sexpr (parser);
-    }
-  else if (token_value (tok) == tv_call)
-    {
-      parser_unget (parser);
-      t1 = handle_function_call (parser);
     }
   else if (token_is_keyword (tok, tv_begin))
     {
@@ -2899,6 +2976,8 @@ handle_instr (struct parser * parser)
 	  parser_unget (parser);
 	  return handle_index_loop (parser, idx);
 	}
+
+	free_tree (idx);
     }
 
   error_loc (token_location (tok), "unexpected token `%s' ",
@@ -3087,7 +3166,6 @@ int
 parse (struct parser *parser)
 {
   struct token *tok;
-
   error_count = warning_count = 0;
   while (token_class (tok = parser_get_token (parser)) != tok_eof)
     {
@@ -3111,6 +3189,7 @@ parse (struct parser *parser)
 		  error_loc (TREE_LOCATION (t), 
 			"function `%s' is defined already",
 			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+		  free_tree (t);
 		}
 	      else if (function_proto_exists (
 		TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t)))))
@@ -3118,6 +3197,7 @@ parse (struct parser *parser)
 		  error_loc (TREE_LOCATION (t), 
 			"prototype `%s' is defined already",
 			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+		  free_tree (t);
 		}
 	      else
 		tree_list_append (function_proto_list, t);

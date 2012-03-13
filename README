@@ -1,4 +1,9 @@
-A stream-based LaTeX to SaC compiler
+Eq is a stream-based functional language designed for solving numerical tasks.
+The syntax of the Eq programming language is based on a document preparation
+system LaTeX. It follows that source files of the Eq can be interpreted by any
+LaTeX conversion tool (i.e. pdflatex, latex2html, etc.).
+The current version uses Python as a backend language.
+
 Version: 0.1.1
 
 Contribution:
@@ -6,13 +11,24 @@ Pavel Zaichenkov <zaichenkov@gmail.com>
 Artem Shinkarov  <artyom.shinkaroff@gmail.com>
 
 In order to build the compiler do the following:
-  $cd build/
-  $cmake ..
-  $make
+  $ cd build/
+  $ cmake ..
+  $ make
 
 CMake cache variables can be defined:
   -DBUILD_LEXER=[ON|OFF]	  = Select either to build the lexer only.
   -DBACKEND_LANG=[python|haskell] = Select compiler's backend.
 
-In case you want to test the binary run:
-  $make test
+In case you want to run a test bundle:
+  $ ctest
+or
+  $ make test
+
+It's possible to execute tests separately:
+  $ ctest -R run_test		| Tests compilation of a correct syntax on
+				| different stages (parser, type checking 
+				| and code generating).
+  $ ctest -R fail_test		| Tests invalid syntax processing and error
+				| handing.
+  $ ctest -R exec_test		| Validates the output of the compiler.
+  $ ctest -R memory_test	| Looks for memory leaks in the compiler.

@@ -176,7 +176,7 @@ main (int argc, char *argv[])
   /* Initialize the parser.  */
   parser_init (parser, lex);
 
-  if (parse (parser) == 0 && options.break_option != break_parser)
+  if ((ret += parse (parser)) == 0 && options.break_option != break_parser)
     ret += typecheck ();
 
   /* printing debug routine.  */

@@ -356,33 +356,44 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	       not a recurrent expression.  */
 	    if (TREE_ID_ITER (el->entry) == NULL)
 	      {
-		/* shortcuts. */
-		tree shape = TYPE_SHAPE (TREE_TYPE (el->entry));
-		tree dim = TYPE_DIM (TREE_TYPE (el->entry));
 		enum tree_code code = TREE_CODE (TREE_TYPE (el->entry));
 		
-		/* a vector type.  */
-		if (shape != NULL)
+		if (code == FUNCTION_TYPE)
 		  {
 		    error += codegen_expression (f, el->entry);
 		    fprintf (f, " = ");
-		    error += codegen_zero_array (f, TREE_LIST (shape), code);
-		    if (el->next != NULL)
-		      {
-			fprintf (f, "\n");
-			indent (f, level);
-		      }
+		    error += codegen_expression (f, TREE_OPERAND (TYPE_FUNCTION 
+						    (TREE_TYPE (el->entry)), 0));
 		  }
-		/* a scalar type.  */
-		else if (dim == NULL)
+		else
 		  {
-		    error += codegen_expression (f, el->entry);
-		    fprintf (f, " = ");
-		    fprintf_zero_element (f, code);
-		    if (el->next != NULL)
+		    /* shortcuts. */
+		    tree shape = TYPE_SHAPE (TREE_TYPE (el->entry));
+		    tree dim = TYPE_DIM (TREE_TYPE (el->entry));
+		    
+		    /* a vector type.  */
+		    if (shape != NULL)
 		      {
-			fprintf (f, "\n");
-			indent (f, level);
+			error += codegen_expression (f, el->entry);
+			fprintf (f, " = ");
+			error += codegen_zero_array (f, TREE_LIST (shape), code);
+			if (el->next != NULL)
+			  {
+			    fprintf (f, "\n");
+			    indent (f, level);
+			  }
+		      }
+		    /* a scalar type.  */
+		    else if (dim == NULL)
+		      {
+			error += codegen_expression (f, el->entry);
+			fprintf (f, " = ");
+			fprintf_zero_element (f, code);
+			if (el->next != NULL)
+			  {
+			    fprintf (f, "\n");
+			    indent (f, level);
+			  }
 		      }
 		  }
 	      }
@@ -649,6 +660,7 @@ codegen_expression (FILE* f, tree expr)
       break;
 
     case FUNCTION_CALL:
+    case LAMBDA:
       {
 	struct tree_list_element *el;
 	codegen_expression (f, TREE_OPERAND (expr, 0));
@@ -662,7 +674,6 @@ codegen_expression (FILE* f, tree expr)
 	fprintf (f, ")");
       }
       break;
-
     case MATRIX_EXPR:
       {
 	struct tree_list_element *eli, *elj;

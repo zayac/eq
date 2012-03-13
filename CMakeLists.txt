@@ -39,8 +39,16 @@ if (NOT BACKEND_LANG)
 else()
   list(FIND BACKENDS ${BACKEND_LANG} contains)
   if (${contains} LESS 0)
-    message("-- Error: `${BACKEND_LANG}' backend is not supported.")
+    message(FATAL_ERROR "`${BACKEND_LANG}' backend is not supported.")
   endif()
+endif()
+
+# Check valgrind existence
+execute_process(COMMAND valgrind --version
+  RESULT_VARIABLE valgrind_result
+  OUTPUT_VARIABLE valgrind_out)
+if (NOT ${valgrind_result} EQUAL 0)
+  message(STATUS "valgrind is not found. You will be unable to run 'memory_test' test")
 endif()
 
 set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
@@ -48,9 +56,9 @@ set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
 
 # Custom messages
 if (BUILD_LEXER)
-  message("-- Only lexer is being built")
+  message(STATUS "Only lexer is being built")
 endif()
-message("-- `${BACKEND_LANG}' as a backend is used")
+message(STATUS "`${BACKEND_LANG}' as a backend is used")
 
 include (cmake/version.cmake)
 
@@ -85,6 +93,16 @@ macro (run_test arg opt)
     PASS_REGULAR_EXPRESSION "finished compiling"
     FAIL_REGULAR_EXPRESSION "^error:")
 endmacro (run_test)
+
+# Add tests that must run and should not produce any errors
+macro (memory_test arg opt)
+  add_test (NAME memory_test_${arg}
+	    COMMAND valgrind ${PROJECT_BINARY_DIR}/eq ${opt} ${arg})
+  set_tests_properties (memory_test_${arg}
+  PROPERTIES 
+    PASS_REGULAR_EXPRESSION "no leaks are possible"
+    FAIL_REGULAR_EXPRESSION "definitely lost:")
+endmacro (memory_test)
 
 # Add tests that produce errors and have appropriate error-annotations
 macro (fail_test arg opt)
@@ -161,3 +179,13 @@ file (GLOB exec_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex")
 foreach (test ${exec_tests})
   exec_test (${test} "")
 endforeach ()
+
+# include files for memory testing
+file (GLOB_RECURSE memory_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex"
+				"tests/parser_tests/*.tex"
+				"tests/type_tests/*.tex")
+foreach (test ${memory_tests})
+  memory_test (${test} "")
+endforeach ()
+
+

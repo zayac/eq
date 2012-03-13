@@ -22,7 +22,7 @@
 extern struct tree_type_node *type_table;
 
 void types_init ();
-tree types_assign_type (enum tree_code, size_t, tree, tree);
+tree types_assign_type (tree);
 void types_finalize ();
 
 #endif /* __TYPES_H__  */
