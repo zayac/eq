@@ -44,11 +44,15 @@ else()
 endif()
 
 # Check valgrind existence
+set (VALGRIND_EXISTS 0)
 execute_process(COMMAND valgrind --version
   RESULT_VARIABLE valgrind_result
   OUTPUT_VARIABLE valgrind_out)
 if (NOT ${valgrind_result} EQUAL 0)
-  message(STATUS "valgrind is not found. You will be unable to run 'memory_test' test")
+  message(STATUS "vailgrind is not found. You will be unable to "
+		 "run 'memory_test' test")
+else()
+  set (VALGRIND_EXISTS 1)
 endif()
 
 set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
@@ -180,12 +184,15 @@ foreach (test ${exec_tests})
   exec_test (${test} "")
 endforeach ()
 
+
 # include files for memory testing
-file (GLOB_RECURSE memory_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex"
-				"tests/parser_tests/*.tex"
-				"tests/type_tests/*.tex")
-foreach (test ${memory_tests})
-  memory_test (${test} "")
-endforeach ()
+if (${VALGRIND_EXISTS} EQUAL 1)
+  file (GLOB_RECURSE memory_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex"
+				  "tests/parser_tests/*.tex"
+				  "tests/type_tests/*.tex")
+  foreach (test ${memory_tests})
+    memory_test (${test} "")
+  endforeach ()
+endif()
 
 
