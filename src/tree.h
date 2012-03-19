@@ -89,10 +89,16 @@ struct type_numerical
   tree shape;
 };
 
+struct type_functional
+{
+  tree arg_types;
+  tree ret_types;
+};
+
 union type_properties
 {
   struct type_numerical numerical;
-  tree functional;
+  struct type_functional functional;
 };
 
 /* A hash table for storing types.  */
@@ -206,8 +212,11 @@ enum tree_global_code
 #define TYPE_SIZE(node) ((node)->type_node.size)
 #define TYPE_DIM(node) ((node)->type_node.properties.numerical.dim)
 #define TYPE_SHAPE(node) ((node)->type_node.properties.numerical.shape)
-#define TYPE_FUNCTION(node) \
-  ((node)->type_node.properties.functional)
+#define TYPE_FUNCTION_ARGS(node) \
+  ((node)->type_node.properties.functional.arg_types)
+#define TYPE_FUNCTION_RET(node) \
+  ((node)->type_node.properties.functional.ret_types)
+
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)
@@ -281,11 +290,11 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ITER_SIZE(node) ((node)->rec_expr_node.size)
 #define TREE_ITER_LIST(node) ((node)->rec_expr_node.list)
 
-#define TREE_FUNC_NAME(node) ((node)->base_op.operands[0])
-#define TREE_FUNC_ARGS(node) ((node)->base_op.operands[1])
-#define TREE_FUNC_ARG_TYPES(node) ((node)->base_op.operands[2])
-#define TREE_FUNC_RET_TYPE(node) ((node)->base_op.operands[3])
-#define TREE_FUNC_INSTRS(node) ((node)->base_op.operands[4])
+#define TREE_FUNC_NAME(node) ((node)->typed_op.operands[0])
+#define TREE_FUNC_ARGS(node) ((node)->typed_op.operands[1])
+#define TREE_FUNC_ARG_TYPES(node) ((node)->typed_op.operands[2])
+#define TREE_FUNC_RET_TYPE(node) ((node)->typed_op.operands[3])
+#define TREE_FUNC_INSTRS(node) ((node)->typed_op.operands[4])
 
 #define TREE_IS_FUNCTION_PROTO (TREE_FUNC_INSTRS(node) == NULL)
 

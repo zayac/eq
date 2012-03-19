@@ -106,10 +106,10 @@ codegen ()
       return 1;
     }
 
-  fprintf (f, "import sys\n");
-  fprintf (f, "import collections\n");
-  fprintf (f, "import itertools\n");
-  fprintf (f, "import numpy\n");
+  fprintf (f, "from  sys import version_info\n");
+  fprintf (f, "from collections import deque\n");
+  fprintf (f, "from itertools import product\n");
+  fprintf (f, "from numpy import array\n");
   fprintf (f, "from math import *\n\n");
 
   codegen_get_gen_last_value_function (f);
@@ -126,7 +126,7 @@ codegen ()
       level = 0;
       function_error += codegen_function (f, tl->entry);
     }
-  fprintf (f, "\nif sys.version_info < (3, 0):\n\trange = xrange\n");
+  fprintf (f, "\nif version_info < (3, 0):\n\trange = xrange\n");
   fprintf (f, "\nif __name__ == '__main__':\n\t__main()\n");
   fclose (f);
   printf ("note: finished generating code.\n");
@@ -256,7 +256,7 @@ codegen_iterative (FILE* f, tree var)
       codegen_options.is_var_in_arg = false;
       codegen_options.circumflex_state = CIRC_LOCAL_VAR;
       fprintf (f, "\n");
-      fprintf (f, "\t\t\t__deq = collections.deque(__window)\n");
+      fprintf (f, "\t\t\t__deq = deque(__window)\n");
       fprintf (f, "\t\t\t__deq.rotate(-1)\n");
       fprintf (f, "\t\t\t__window = list (__deq)\n");
       fprintf (f, "\t\t\t__window[__size - 1] = __new\n");
@@ -360,10 +360,14 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		
 		if (code == FUNCTION_TYPE)
 		  {
+		    /* Currently no code is generated.  */
+		    /*
 		    error += codegen_expression (f, el->entry);
 		    fprintf (f, " = ");
+		    
 		    error += codegen_expression (f, TREE_OPERAND (TYPE_FUNCTION 
 						    (TREE_TYPE (el->entry)), 0));
+		    */
 		  }
 		else
 		  {
@@ -426,7 +430,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	  }
 	fprintf (f, ") in ");
 	if (counter > 1)
-	  fprintf (f, "itertools.product(");
+	  fprintf (f, "product(");
 	counter = 0;
 	DL_FOREACH (TREE_LIST (gen_id_list), el)
 	  {
@@ -678,7 +682,7 @@ codegen_expression (FILE* f, tree expr)
       {
 	struct tree_list_element *eli, *elj;
 	
-	fprintf (f, "numpy.array([");
+	fprintf (f, "array([");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), eli)
 	  {
 	    bool type_dim;

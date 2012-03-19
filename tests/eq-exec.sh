@@ -25,6 +25,9 @@ egrep '%[ \t]*eq-exec:' | \
 sed -e 's/^[ \t]*\([0-9]*\)[^%]*%[ \t]*eq-exec: \(.*\)/\2/g'`
 ./eq $1
 execOutput=`$2 out.py`
+echo "$execOutput"
+echo "----"
+echo "$texOutput"
 if [ "$execOutput" == "$texOutput" ]
 then
   echo "$1 passed"

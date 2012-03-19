@@ -760,42 +760,49 @@ handle_print (struct parser * parser)
 
 /*
    functiontype:
-   \function { <id> }
+   ( ext_type [ , ext_type ]* \rightarrow  ext_type [ , ext_type ]* )
  */
 tree
 handle_functiontype (struct parser *parser)
 {
-  tree t = NULL, func = NULL;
+  tree t = NULL, tmp = NULL;
   struct token *tok;
   struct location loc;
-
-  if (!parser_forward_tval (parser, tv_function))
-    return error_mark_node;
 
   /* memorize expression location.  */
   parser_unget (parser);
   tok = parser_get_token (parser);
   loc = token_location (tok);
 
-  if (!parser_forward_tval (parser, tv_lbrace))
+  if (!parser_forward_tval (parser, tv_lparen))
+    goto error;
+
+  tmp = handle_list (parser, handle_ext_type, tv_comma);
+  if (tmp == error_mark_node)
     goto error;
 
   t = make_type (FUNCTION_TYPE);
+  
+  TYPE_FUNCTION_ARGS (t) = tmp;
 
-  if (!is_id (tok = parser_get_token (parser), true))
-    goto error;
-  else
-    TYPE_FUNCTION (t) = make_function (make_identifier_tok (tok), NULL, NULL,
-					  NULL, NULL, loc);
-
-  if (!parser_forward_tval (parser, tv_rbrace))
+  if (!parser_forward_tval (parser, tv_rightarrow))
     goto error;
 
+  tmp = handle_list (parser, handle_ext_type, tv_comma);
+  if (tmp == error_mark_node)
+    goto error;
 
-  return t;
-//  return types_assign_type (TREE_CODE (t), TYPE_SIZE (t), NULL, NULL);
+  TYPE_FUNCTION_RET (t) = tmp;
+  
+  if (!parser_forward_tval (parser, tv_rparen))
+    goto error;
+
+  TREE_LOCATION (t) = loc;
+  
+  //return t;
+  return types_assign_type (t);
 error:
-  free_tree (func);
+  free_tree (tmp);
   free_tree (t);
   return error_mark_node;
 }
@@ -988,12 +995,13 @@ tree
 handle_ext_type (struct parser * parser)
 {
   struct token * tok = parser_get_token (parser);
+
   if (token_is_keyword (tok, tv_type))
     {
       parser_unget (parser);
       return handle_type (parser);
     }
-  else if (token_is_keyword (tok, tv_function))
+  else if (token_is_operator (tok, tv_lparen))
     {
       parser_unget (parser);
       return handle_functiontype (parser);
@@ -2891,7 +2899,7 @@ error:
 
 /*
    declare:
-   idx [ , idx ]* \in expr [, expr ]*
+   idx [ , idx ]* \in ext_type [, ext_type ]*
  */
 tree
 handle_declare (struct parser * parser, tree prefix_id)

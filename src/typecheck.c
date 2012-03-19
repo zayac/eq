@@ -121,28 +121,16 @@ int
 typecheck_type (tree type, tree ext_vars, tree vars)
 {
   int ret = 0;
-
   assert (TREE_CODE_CLASS ( TREE_CODE (type)) == tcl_type,
 	  "type node must belong to class type");
 
   if (TREE_CODE (type) == FUNCTION_TYPE)
     {
-      char* fname = TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME
-			      (TYPE_FUNCTION (type))));
-      tree t;
-
-      /* check if function exists.  */
-      if (!(t = function_exists (fname)))
-	{
-	  if (!(t = function_proto_exists (fname)))
-	    {
-	      error_loc (TREE_LOCATION (type),
-			 "function `%s' is not defined", fname);
-	      return 1;
-	    }
-	}
-      free_tree (TYPE_FUNCTION (type));
-      TYPE_FUNCTION (type) = t;
+      struct tree_list_element *el;
+      DL_FOREACH (TREE_LIST (TYPE_FUNCTION_ARGS (type)), el)
+	ret += typecheck_type (el->entry, ext_vars, vars);
+      DL_FOREACH (TREE_LIST (TYPE_FUNCTION_RET (type)), el)
+	ret += typecheck_type (el->entry, ext_vars, vars);
     }
   else
     {
@@ -270,6 +258,13 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars, tree va
 	  el->entry = var;
 	  lhs = var;
 	}
+      else if ((var = function_exists (TREE_STRING_CST (TREE_ID_NAME (lhs))))
+	|| (var = function_proto_exists (TREE_STRING_CST (TREE_ID_NAME (lhs)))))
+	{
+	  error_loc (TREE_LOCATION (lhs),
+		    "it is impossible to assign to a function");
+	  return ret;
+	}
       else
 	tree_list_append (ext_vars, lhs);
       TREE_ID_DEFINED (lhs) = true;
@@ -310,7 +305,13 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars, tree va
 	  TREE_OPERAND_SET (lhs, 0, var);
 	  id = var;
 	}
-
+      else if ((var = function_exists (TREE_STRING_CST (TREE_ID_NAME (id))))
+	|| (var = function_proto_exists (TREE_STRING_CST (TREE_ID_NAME (id)))))
+	{
+	  error_loc (TREE_LOCATION (id),
+		    "it is impossible to assign to a function");
+	  return ret;
+	}
       TREE_ID_DEFINED (id) = true;
 
       TREE_TYPE (lhs) = TREE_TYPE (TREE_OPERAND (lhs, 0));
@@ -695,6 +696,7 @@ typecheck_function (tree func)
   tree vars = make_tree_list ();
   unsigned type_counter = 0, var_counter = 0;
   int ret = 0;
+  tree func_type;
   assert (TREE_CODE (func) == FUNCTION, "function tree expected");
 
   /* get argument names.  */
@@ -769,6 +771,12 @@ typecheck_function (tree func)
       goto free_local;
     }
 
+  func_type = make_tree (FUNCTION_TYPE);
+  TYPE_FUNCTION_ARGS (func_type) = TREE_OPERAND (func, 2);
+  TYPE_FUNCTION_RET (func_type) = TREE_OPERAND (func, 3);
+  TREE_TYPE (func) = types_assign_type (func_type);
+  if (TREE_TYPE (func) != func_type)
+    free_tree_type (func_type, false);
   ext_vars = tree_copy (TREE_OPERAND (func, 1));
   ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars, func);
 
@@ -999,18 +1007,18 @@ typecheck_generator (tree expr, tree ext_vars, tree vars)
 }
 
 /* A helper function which checks arguments of a function call.
-   The first argument is a function definition tree,
+   The first argument is a function arg types,
    the second argument is a function call tree. */
 int
-typecheck_function_call_args (tree func, tree expr, tree ext_vars, tree vars)
+typecheck_function_call_args (tree func_args, tree expr, tree ext_vars, tree vars)
 {
   struct tree_list_element *func_el;
   struct tree_list_element *expr_el;
   int expr_counter = 0, func_counter = 0; 
 
   /* argument list can be empty.  */
-  if (TREE_FUNC_ARG_TYPES (func) != NULL)
-    func_el = TREE_LIST (TREE_FUNC_ARG_TYPES (func));
+  if (func_args != NULL)
+    func_el = TREE_LIST (func_args);
   else
     func_el = NULL;
 
@@ -1036,9 +1044,8 @@ typecheck_function_call_args (tree func, tree expr, tree ext_vars, tree vars)
 		}
 	      error_loc
 		(TREE_LOCATION (expr),
-		 "invalid number of arguments in function `%s' call: "
+		 "invalid number of arguments in function call: "
 		 "%u expected, %u found",
-		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))),
 		 func_counter, expr_counter);
 	      return 1;
 	    }
@@ -1081,9 +1088,8 @@ typecheck_function_call_args (tree func, tree expr, tree ext_vars, tree vars)
 	}
 
       error_loc (TREE_LOCATION (expr),
-		 "invalid number of arguments in function '%s' call: "
+		 "invalid number of arguments in function call: "
 		 "%u expected, %u found",
-		 TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))),
 		 func_counter, expr_counter);
       return 1;
     }
@@ -1108,7 +1114,9 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars)
 	}
     }
 
-  ret += typecheck_function_call_args (t, expr, ext_vars, vars);
+  ret += typecheck_function_call_args (TREE_FUNC_ARG_TYPES (t), 
+				       expr, 
+				       ext_vars, vars);
   if (TREE_LIST (TREE_FUNC_RET_TYPE (t))->next == NULL)
     TREE_TYPE (expr) = TREE_LIST (TREE_FUNC_RET_TYPE (t))->entry;
   else
@@ -1151,7 +1159,7 @@ typecheck_genarray (tree expr, tree ext_vars, tree vars)
   if (TYPE_DIM (TREE_TYPE (lim)) == NULL)
     {
       if (TYPE_DIM (TREE_TYPE (exp)) == NULL)
-	{
+    {
 	  dim = make_integer_cst (1);
 	  if (TREE_CODE (lim) == INTEGER_CST)
 	    {
@@ -1297,6 +1305,13 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 	       in parent node.  */
 	    TREE_TYPE (expr) = TREE_TYPE (var);
 	    TREE_CONSTANT (expr) = TREE_CONSTANT (var);
+	  }
+	else if ((var = function_exists (TREE_STRING_CST 
+					(TREE_ID_NAME (expr))))
+	      || (var = function_proto_exists (TREE_STRING_CST
+					      (TREE_ID_NAME (expr)))))
+	  {
+	    TREE_TYPE (expr) = TREE_TYPE (var);
 	  }
 	else
 	  {
@@ -1678,6 +1693,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
       break;
     case LAMBDA:
       {
+	#if 0
 	tree func;
 	ret += typecheck_expression (TREE_OPERAND (expr, 0), ext_vars, vars);
 	func = TREE_TYPE (TREE_OPERAND (expr, 0));
@@ -1689,11 +1705,26 @@ typecheck_expression (tree expr, tree ext_vars, tree vars)
 					     (TREE_OPERAND (expr, 0))));
 	    return 1;
 	  }
+	#endif
 	if (!ret)
 	  {
-	    ret += typecheck_function_call_args (TYPE_FUNCTION (func), expr,
-						    ext_vars, vars);
-	    TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (TYPE_FUNCTION (func));
+	    char* fname = TREE_STRING_CST (TREE_ID_NAME (
+					   TREE_OPERAND (expr, 0)));
+	    tree t;
+	    /* check if function exists.  */
+	    if (!(t = function_exists (fname)))
+	      {
+		if (!(t = function_proto_exists (fname)))
+		  {
+		    error_loc (TREE_LOCATION (expr),
+			       "function `%s' is not defined", fname);
+		    return 1;
+		  }
+	      }
+	    ret += typecheck_function_call_args (TREE_FUNC_ARG_TYPES (t),
+						 expr,
+						 ext_vars, vars);
+	    TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (t);
 	  }
 	return ret;
       }
