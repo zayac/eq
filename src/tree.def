@@ -75,7 +75,6 @@ DEF_TREE_CODE (VERTICAL_EXPR, "vertical_expr", tcl_expression, 2, true)
 
 DEF_TREE_CODE (GENAR_EXPR, "genar_expr", tcl_expression ,2, true)
 DEF_TREE_CODE (FUNCTION_CALL, "function_call_node", tcl_expression, 2, true)
-DEF_TREE_CODE (LAMBDA, "lambda_node", tcl_expression, 2, true)
 
 /* Arithmetic.  */
 DEF_TREE_CODE (PLUS_EXPR, "plus_expr", tcl_expression, 2, true)

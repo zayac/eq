@@ -298,28 +298,37 @@ free_tree_type (tree node, bool hard)
   assert (TREE_CODE_CLASS (code) == tcl_type,
 	  "Only types are allowed to be deleted in free_tree_type function");
 
-  /* if hard is not set we don't free dim and shape.  */
-  if (hard)
+  if (code == FUNCTION_TYPE)
     {
-      if (TYPE_DIM (node) != NULL)
-	{
-	  if (TREE_CODE_CLASS (TREE_CODE (TYPE_DIM (node))) != tcl_type)
-	    free_tree (TYPE_DIM (node));
-	  else
-	    free_tree_type (TYPE_DIM (node), true);
-	}
-
-      if (TYPE_SHAPE (node) != NULL)
-	{
-	  if (TREE_CODE_CLASS (TREE_CODE (TYPE_SHAPE (node))) != tcl_type)
-	    free_tree (TYPE_SHAPE (node));
-	  else
-	    free_tree_type (TYPE_SHAPE (node), true);
-	}
+      free_tree (TYPE_FUNCTION_ARGS (node));
+      free_tree (TYPE_FUNCTION_RET (node));
+      TYPE_FUNCTION_ARGS (node) = NULL;
+      TYPE_FUNCTION_RET (node) = NULL;
     }
+  else
+    {
+      /* if hard is not set we don't free dim and shape.  */
+      if (hard)
+	{
+	  if (TYPE_DIM (node) != NULL)
+	    {
+	      if (TREE_CODE_CLASS (TREE_CODE (TYPE_DIM (node))) != tcl_type)
+		free_tree (TYPE_DIM (node));
+	      else
+		free_tree_type (TYPE_DIM (node), true);
+	    }
 
-  TYPE_DIM (node) = NULL;
-  TYPE_SHAPE (node) = NULL;
+	  if (TYPE_SHAPE (node) != NULL)
+	    {
+	      if (TREE_CODE_CLASS (TREE_CODE (TYPE_SHAPE (node))) != tcl_type)
+		free_tree (TYPE_SHAPE (node));
+	      else
+		free_tree_type (TYPE_SHAPE (node), true);
+	    }
+	}
+      TYPE_DIM (node) = NULL;
+      TYPE_SHAPE (node) = NULL;
+    }
   TREE_CODE_SET (node, EMPTY_MARK);
   atomic_trees_add (node);
 }

@@ -760,7 +760,7 @@ handle_print (struct parser * parser)
 
 /*
    functiontype:
-   ( ext_type [ , ext_type ]* \rightarrow  ext_type [ , ext_type ]* )
+   ( [ ext_type [ , ext_type ]* ] \rightarrow  ext_type [ , ext_type ]* )
  */
 tree
 handle_functiontype (struct parser *parser)
@@ -777,7 +777,12 @@ handle_functiontype (struct parser *parser)
   if (!parser_forward_tval (parser, tv_lparen))
     goto error;
 
-  tmp = handle_list (parser, handle_ext_type, tv_comma);
+  tok = parser_get_token (parser);
+  parser_unget (parser);
+  if (token_is_keyword (tok, tv_rightarrow))
+    tmp = make_tree_list ();
+  else
+    tmp = handle_list (parser, handle_ext_type, tv_comma);
   if (tmp == error_mark_node)
     goto error;
 
@@ -1473,7 +1478,7 @@ handle_function (struct parser * parser)
   else
     {
       parser_unget (parser);
-      arg_types = NULL;
+      arg_types = make_tree_list ();
     }
 
   if (!parser_forward_tval (parser, tv_rbrace))
@@ -1558,8 +1563,6 @@ handle_call (struct parser * parser, enum token_kind type)
 
   if (type == tv_call)
     t = make_tree (FUNCTION_CALL);
-  else
-    t = make_tree (LAMBDA);
   TREE_LOCATION (t) = token_location (tok);
 
   if (!is_id (tok = parser_get_token (parser), true))

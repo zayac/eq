@@ -108,6 +108,7 @@ struct tree_type_node
   size_t size;
   union type_properties properties;
   UT_hash_handle hh;
+  tree list;
 };
 
 struct tree_list_element
@@ -216,7 +217,7 @@ enum tree_global_code
   ((node)->type_node.properties.functional.arg_types)
 #define TYPE_FUNCTION_RET(node) \
   ((node)->type_node.properties.functional.ret_types)
-
+#define TYPE_LIST(node) ((node)->type_node.list)
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)

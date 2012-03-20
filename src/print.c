@@ -200,6 +200,26 @@ print_expression (xfile *  xf, tree exp)
 	xfile_fprintf (xf, "}");
 	break;
       }
+    case FUNCTION_TYPE:
+      {
+	struct tree_list_element *el;
+	xfile_fprintf (xf, "(");
+	DL_FOREACH (TREE_LIST (TYPE_FUNCTION_ARGS (exp)), el)
+	  {
+	    print_expression (xf, el->entry);
+	    if (el->next != NULL)
+	      xfile_fprintf (xf, ", ");
+	  }
+	xfile_fprintf (xf, " -> ");
+	DL_FOREACH (TREE_LIST (TYPE_FUNCTION_RET (exp)), el)
+	  {
+	    print_expression (xf, el->entry);
+	    if (el->next != NULL)
+	      xfile_fprintf (xf, ", ");
+	  }
+	xfile_fprintf (xf, ")");
+	break;
+      }
     case FILTER_EXPR:
       {
 	xfile_fprintf (xf, "\\filter { ");

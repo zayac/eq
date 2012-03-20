@@ -1,0 +1,29 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+\begin{document}
+
+%\begin{eqcode}{d}{b}{\type{Z}}{\type{Z}}
+%  \return {b} \lend
+%\end{eqcode}
+
+%\begin{eqcode}{e}{b}{(\type{Z} \rightarrow \type{Z})}{\type{Z}}
+%  \return {\call{b}{2}} \lend
+%\end{eqcode}
+
+\begin{eqcode}{g}{ }{ }{\type{Z}}
+  \return {100} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{ }{ }{\type{Z}}
+%  b \in \type{Z} \lend
+  f \in (\rightarrow \type{Z}) \lend
+  f \gets g + 4 \lend % eq-error-loc: type mismatch
+  \print {\call{f}{ } } \lend
+%  c \in ((\type{Z} \rightarrow \type{Z}) \rightarrow \type{Z}) \lend
+%  c \gets e \lend
+%  b \gets \call{c}{d} \lend
+%  \print {b + \call{g}{ }} \lend
+% eq-exec: 2
+\end{eqcode}
+
+\end{document}

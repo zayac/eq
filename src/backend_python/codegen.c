@@ -278,6 +278,39 @@ codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
   return error;
 }
 
+static int 
+codegen_zero_function (FILE* f, tree function)
+{
+  fprintf (f, "lambda ");
+  struct tree_list_element *el = NULL;
+  unsigned counter = 0;
+  DL_FOREACH (TREE_LIST (TYPE_FUNCTION_ARGS(function)), el)
+    {
+      fprintf (f, "x%d", counter);
+      if (el->next != NULL)
+	fprintf (f, ", ");
+    }
+  fprintf (f, ": ");
+  DL_FOREACH (TREE_LIST (TYPE_FUNCTION_RET (function)), el)
+    {
+      if (TREE_CODE (el->entry) == FUNCTION_TYPE)
+	codegen_zero_function (f, el->entry);
+      else
+	{
+	  if (TYPE_DIM (el->entry) != 0)
+	    codegen_zero_array (f, TREE_LIST (TREE_OPERAND (el->entry, 1)),
+				TREE_CODE (el->entry));
+	  else
+	    {
+	      fprintf_zero_element (f, TREE_CODE (el->entry));
+	    }
+	}
+      if (el->next != NULL)
+	fprintf (f, ", ");
+    }
+  return 0;
+}
+
 int
 codegen_stmt (FILE* f, tree stmt, char* func_name)
 {
@@ -328,6 +361,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		   to the list will be assigned.  */
 		bool copy_list = false;
 		if (TREE_CODE (rel->entry) == IDENTIFIER
+		 && TREE_CODE (TREE_TYPE (rel->entry)) != FUNCTION_TYPE
 		 && TYPE_DIM (TREE_TYPE (rel->entry)) != NULL)
 		  copy_list = true;
 		if (copy_list)
@@ -360,14 +394,9 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		
 		if (code == FUNCTION_TYPE)
 		  {
-		    /* Currently no code is generated.  */
-		    /*
 		    error += codegen_expression (f, el->entry);
 		    fprintf (f, " = ");
-		    
-		    error += codegen_expression (f, TREE_OPERAND (TYPE_FUNCTION 
-						    (TREE_TYPE (el->entry)), 0));
-		    */
+		    error += codegen_zero_function (f, TREE_TYPE (el->entry));
 		  }
 		else
 		  {
@@ -664,7 +693,6 @@ codegen_expression (FILE* f, tree expr)
       break;
 
     case FUNCTION_CALL:
-    case LAMBDA:
       {
 	struct tree_list_element *el;
 	codegen_expression (f, TREE_OPERAND (expr, 0));
