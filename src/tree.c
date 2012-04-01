@@ -300,10 +300,34 @@ free_tree_type (tree node, bool hard)
 
   if (code == FUNCTION_TYPE)
     {
-      free_tree (TYPE_FUNCTION_ARGS (node));
-      free_tree (TYPE_FUNCTION_RET (node));
+      if (hard)
+	{
+	  if (TYPE_FUNCTION_ARGS (node))
+	    {
+	      if (TREE_CODE_CLASS (TREE_CODE (
+		    TYPE_FUNCTION_ARGS (node))) != tcl_type)
+		free_tree (TYPE_FUNCTION_ARGS (node));
+	      else
+		free_tree_type (TYPE_FUNCTION_ARGS (node), true);
+	    }
+
+	  if (TYPE_FUNCTION_RET (node))
+	    {
+	      if (TREE_CODE_CLASS (TREE_CODE (
+		    TYPE_FUNCTION_RET (node))) != tcl_type)
+		free_tree (TYPE_FUNCTION_RET (node));
+	      else
+		free_tree_type (TYPE_FUNCTION_RET (node), true);
+	    }
+	  assert (TREE_CODE (TYPE_LIST (node)) == LIST, 
+		"a list property code of `%s' has to be `%s' only",
+		TREE_CODE_NAME (FUNCTION_TYPE),
+		TREE_CODE_NAME (LIST));
+	  free_tree (TYPE_LIST (node));
+	}
       TYPE_FUNCTION_ARGS (node) = NULL;
       TYPE_FUNCTION_RET (node) = NULL;
+      TYPE_LIST (node) = NULL;
     }
   else
     {
@@ -754,6 +778,8 @@ tree_compare (tree left, tree right)
 	  if (!tree_compare (lel->entry, rel->entry))
 	    return false;
 	}
+      if (rel != lel)
+	return false;
       return true;
     }
 

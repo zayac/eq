@@ -106,6 +106,8 @@ types_add_type (tree el)
 	{
 	  TYPE_LIST (el) = make_tree_list ();
 	  tree_list_append (TYPE_LIST (el), el);
+	  HASH_ADD_KEYPTR (hh, type_table, &(el->base.code), 
+	      hash_key_length (), (struct tree_type_node *) el);
 	}
       else
 	tree_list_append (ret->list, el);
