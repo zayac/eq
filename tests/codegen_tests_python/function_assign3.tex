@@ -1,0 +1,20 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+
+\begin{document}
+
+\proto{abs}{\type{R}}{\type{Z}}
+
+\begin{eqcode}{myabs}{ }{ }{(\type{R} \to \type{Z})}
+  \return {abs} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{ }{ }{\type{Z}}
+  a \in (\type{R} \to \type{Z}) \lend
+  a \gets \call{myabs}{ } \lend
+  \print {\call{a}{-5.3}} \lend
+% eq-exec: 5.3
+  \return {\call{a}{-5.3}} \lend
+\end{eqcode}
+
+\end{document}

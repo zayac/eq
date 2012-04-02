@@ -6,7 +6,7 @@
 %  \return {b} \lend
 %\end{eqcode}
 
-%\begin{eqcode}{e}{b}{(\type{Z} \rightarrow \type{Z})}{\type{Z}}
+%\begin{eqcode}{e}{b}{(\type{Z} \to \type{Z})}{\type{Z}}
 %  \return {\call{b}{2}} \lend
 %\end{eqcode}
 
@@ -16,10 +16,10 @@
 
 \begin{eqcode}{\mu}{ }{ }{\type{Z}}
 %  b \in \type{Z} \lend
-  f \in (\rightarrow \type{Z}) \lend
+  f \in (\to \type{Z}) \lend
   f \gets g + 4 \lend % eq-error-loc: type mismatch
   \print {\call{f}{ } } \lend
-%  c \in ((\type{Z} \rightarrow \type{Z}) \rightarrow \type{Z}) \lend
+%  c \in ((\type{Z} \to \type{Z}) \to \type{Z}) \lend
 %  c \gets e \lend
 %  b \gets \call{c}{d} \lend
 %  \print {b + \call{g}{ }} \lend

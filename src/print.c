@@ -45,7 +45,8 @@ print_expression (xfile *  xf, tree exp)
 	      || TREE_CODE (exp) == IF_STMT
 	      || TREE_CODE (exp) == DECLARE_STMT
 	      || TREE_CODE (exp) == ASSIGN_STMT
-	      || TREE_CODE (exp) == RETURN_STMT),
+	      || TREE_CODE (exp) == RETURN_STMT
+	      || TREE_CODE (exp) == PRINT_MARK),
 	  "attempt to print non-expression tree %s",
 	  TREE_CODE_NAME (TREE_CODE (exp)));
 
@@ -244,6 +245,13 @@ print_expression (xfile *  xf, tree exp)
     case RETURN_STMT:
       {
 	xfile_fprintf (xf, "\\return {");
+	print_expression (xf, TREE_OPERAND (exp, 0));
+	xfile_fprintf (xf, "} ");
+	break;
+      }
+    case PRINT_MARK:
+      {
+	xfile_fprintf (xf, "\\print {");
 	print_expression (xf, TREE_OPERAND (exp, 0));
 	xfile_fprintf (xf, "} ");
 	break;

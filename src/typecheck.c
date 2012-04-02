@@ -46,6 +46,11 @@ typecheck ()
   int function_check = 0;
   init_typecheck_options ();
 
+  /* check prototypes types.  */
+  DL_FOREACH (TREE_LIST (function_proto_list), tl)
+    function_check += typecheck_function (tl->entry);
+
+  /* check functions types.  */
   DL_FOREACH (TREE_LIST (function_list), tl)
     function_check += typecheck_function (tl->entry);
 
@@ -395,7 +400,17 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 
 	    if (ret)
 	      return ret;
-	    if (TREE_CODE  (TREE_TYPE (rhs)) != LIST)
+
+#ifdef DISABLE_FCF
+      	    if (TREE_CODE (TREE_TYPE (rhs)) == FUNCTION_TYPE)
+	      {
+		error_loc (TREE_LOCATION (rhs),
+		  "Functions are second-class objects. "
+		  "You aren't allowed to assign function to a variable");
+		return 1;
+	      }
+#endif
+	    if (TREE_CODE (TREE_TYPE (rhs)) != LIST)
 	      {
 		if (TREE_TYPE (lhs) == NULL)
 		  TREE_TYPE (lhs) = TREE_TYPE (rhs);
@@ -499,6 +514,16 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func)
 		int ret_val;
 		if ((ret_val = typecheck_type (rhs, ext_vars, vars)))
 		  return ret_val;
+
+#ifdef DISABLE_FCF
+		if (TREE_CODE (rhs) == FUNCTION_TYPE)
+		  {
+		    error_loc (TREE_LOCATION (lhs), 
+		      "Functions are second-class objects. "
+		      "You aren't allowed to assign function to a variable");
+		    return 1;
+		  }
+#endif
 	      }
 
 	    if ((var = is_var_in_list (lhs, vars)) != NULL
@@ -639,6 +664,16 @@ finalize_withloop:
 	    ret += typecheck_expression (ret_el->entry, ext_vars, vars);
 	    if (ret)
 	      return ret;
+#ifdef DISABLE_FCF
+      	    if (TREE_CODE (TREE_TYPE (ret_el->entry)) == FUNCTION_TYPE)
+	      {
+		error_loc (TREE_LOCATION (ret_el->entry),
+		  "Functions are second-class objects. "
+		  "You aren't allowed to return functions");
+		return 1;
+	      }
+#endif
+
 	    if (!tree_compare (TREE_TYPE (ret_el->entry),
 		  type_el->entry))
 	      {
@@ -754,7 +789,9 @@ typecheck_function (tree func)
 	TREE_TYPE(el->entry) = type->entry;
 	type = type->next;
       }
-  if (type != NULL)
+
+  /* Perform only for function (not prototypes) nodes.  */
+  if (type != NULL && ext_vars != NULL)
     {
       /* count total argument type number.  */
       while (type != NULL)
@@ -768,6 +805,21 @@ typecheck_function (tree func)
       goto free_local;
     }
 
+  DL_FOREACH (TREE_LIST (TREE_OPERAND (func, 3)), el)
+    {
+      ret += typecheck_type (el->entry, ext_vars, vars);
+      if (ret)
+        goto free_local;
+#ifdef DISABLE_FCF
+      if (TREE_CODE (el->entry) == FUNCTION_TYPE)
+	{
+	  error_loc (TREE_LOCATION (el->entry),
+	    "Functions are second-class objects. "
+	    "You aren't allowed to return functions");
+	  goto free_local;
+	}
+#endif
+    }
   func_type = make_tree (FUNCTION_TYPE);
   TYPE_FUNCTION_ARGS (func_type) = TREE_OPERAND (func, 2);
   if (TYPE_FUNCTION_ARGS (func_type) == NULL)
@@ -776,9 +828,13 @@ typecheck_function (tree func)
   TREE_TYPE (func) = types_assign_type (func_type);
   if (TREE_TYPE (func) != func_type)
     free_tree_type (func_type, false);
-  ext_vars = tree_copy (TREE_OPERAND (func, 1));
-  ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars, func);
-
+  /* Statements nodes are NULL in function prototypes. 
+     Therefore, check statements types for functions only.  */
+  if (TREE_OPERAND (func, 4) != NULL)
+    {
+      ext_vars = tree_copy (TREE_OPERAND (func, 1));
+      ret =typecheck_stmt_list (TREE_OPERAND (func, 4), ext_vars, vars, func);
+    }
 free_local:
   /* Free list with local variables.  */
   tree_list_append (delete_list, vars);

@@ -760,7 +760,7 @@ handle_print (struct parser * parser)
 
 /*
    functiontype:
-   ( [ ext_type [ , ext_type ]* ] \rightarrow  ext_type [ , ext_type ]* )
+   ( [ ext_type [ , ext_type ]* ] \to  ext_type [ , ext_type ]* )
  */
 tree
 handle_functiontype (struct parser *parser)
@@ -779,7 +779,7 @@ handle_functiontype (struct parser *parser)
 
   tok = parser_get_token (parser);
   parser_unget (parser);
-  if (token_is_keyword (tok, tv_rightarrow))
+  if (token_is_keyword (tok, tv_to))
     tmp = make_tree_list ();
   else
     tmp = handle_list (parser, handle_ext_type, tv_comma);
@@ -790,7 +790,7 @@ handle_functiontype (struct parser *parser)
   
   TYPE_FUNCTION_ARGS (t) = tmp;
 
-  if (!parser_forward_tval (parser, tv_rightarrow))
+  if (!parser_forward_tval (parser, tv_to))
     goto error;
 
   tmp = handle_list (parser, handle_ext_type, tv_comma);
@@ -804,8 +804,10 @@ handle_functiontype (struct parser *parser)
 
   TREE_LOCATION (t) = loc;
   
-  //return t;
-  return types_assign_type (t);
+  tmp = types_assign_type (t);
+  if (t != tmp)
+    free_tree_type (t, false);
+  return tmp;
 error:
   free_tree (tmp);
   free_tree (t);

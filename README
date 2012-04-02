@@ -16,13 +16,18 @@ In order to build the compiler do the following:
   $ make
 
 CMake cache variables can be defined:
-  -DBUILD_LEXER=[ON|OFF]	  = Select either to build the lexer only.
-  -DBACKEND_LANG=[python|haskell] = Select compiler's backend.
+  -DBUILD_LEXER=[ON|<OFF>]	      = Select either to build the lexer only.
+  -DBACKEND_LANG=[<python>|haskell]   = Select compiler's backend.
+  -DFIRST_CLASS_FUNCTIONS=[<ON>|OFF]  = Enable or disable functions as
+					a first-class objects.
 
 In case you want to run a test bundle:
   $ ctest
 or
   $ make test
+
+A verbose output of the build is supported:
+  $ make VERBOSE=1
 
 It's possible to execute tests separately:
   $ ctest -R run_test		| Tests compilation of a correct syntax on

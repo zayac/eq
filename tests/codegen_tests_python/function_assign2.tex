@@ -1,0 +1,20 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+
+\begin{document}
+
+\proto{abs}{\type{R}}{\type{Z}}
+
+\begin{eqcode}{map}{x, f}{\type{R}, (\type{R} \to \type{Z})}{\type{Z}}
+  \return {\call{f}{x}} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{ }{ }{\type{Z}}
+  a \in \type{Z} \lend
+  a \gets \call{map}{-5.3, abs} \lend
+  \print {a} \lend
+% eq-exec: 5.3
+  \return {a} \lend
+\end{eqcode}
+
+\end{document}

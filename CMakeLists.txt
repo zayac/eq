@@ -24,10 +24,16 @@ project (eq C)
 
 option (BUILD_LEXER "compiling lexer")
 option (DEBUG_ENABLE "set debugging flag")
+option (FIRST_CLASS_FUNCTIONS "functions as first-class objects")
 
 # Set BUILD_LEXER variable value to ON if you want to compile the lexer only
 if (BUILD_LEXER-NOTFOUND)
   set (BUILD_LEXER OFF)
+endif()
+
+# First-class objects functions are set ON by default
+if (FIRST_CLASS_FUNCTIONS-NOTFOUND)
+  set (FIRST_CLASS_FUNCTIONS ON)
 endif()
 
 # A list of available backends
@@ -62,6 +68,7 @@ set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
 if (BUILD_LEXER)
   message(STATUS "Only lexer is being built")
 endif()
+
 message(STATUS "`${BACKEND_LANG}' as a backend is used")
 
 include (cmake/version.cmake)
@@ -70,6 +77,11 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/src/config.h.in"
   "${PROJECT_BINARY_DIR}/config.h"
 )
+
+if (NOT FIRST_CLASS_FUNCTIONS)
+  message (STATUS "First-class functions are disabled")
+  add_definitions(-DDISABLE_FCF)
+endif()
 
 include_directories ("${PROJECT_BINARY_DIR}")
 include_directories ("src")
