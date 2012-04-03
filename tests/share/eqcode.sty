@@ -34,6 +34,7 @@
 \RequirePackage{amssymb}
 \RequirePackage{amsfonts}
 \RequirePackage{ifthen}
+\RequirePackage{tikz}
 %
 
 \newcommand{\pcode@AF}[1]{\mbox{\textsc{#1}}} % Algorithm font
@@ -46,7 +47,7 @@
  \begin{Sbox}%
  \begin{minipage}{\pcode@width}%
  \begin{onehalfspacing}
- \pcode@AF{$#2$}($#3$):\  $#4 \to #5$ \\
+ \pcode@AF{$#2$}($#3$):\ $#4 \to #5$ \\
  \noindent\begin{tabular}{A}%
 }%
 {%
@@ -54,6 +55,7 @@
   \TheSbox{}%
 }%
 %
+\newcommand{\proto}[3]{}
 \newcommand{\call}[2]{\pcode@AF{$#1$}(#2)} % 
 \newcommand{\return}[1]{\ifthenelse{\equal{#1}{} }%
 {\mbox{\bfseries return }}%
@@ -70,10 +72,21 @@
 \newcommand{\type}[1]{\mathbb{#1}}
 \newcommand{\match}[2]{}
 \newcommand{\expr}[1]{}
+\newcommand{\iter}{\textbf{i}}
 \newcommand{\comment}[1]{\emph{#1} \\}
-\newenvironment{tvector}{\left(\begin{array}{c}}{\end{array}\right)}
-\newenvironment{tmatrix}{\left(\begin{array}}{\end{array}\right)}
+\newenvironment{tmatrix}{\begin{pmatrix}}{\end{pmatrix}}
 \DeclareMathOperator{\genar}{\mathfrak{G}}
+\newcommand{\arraytype}[2]{
+  (
+  \foreach \item [count=\ni] in {#1}
+  {
+    \ifnum\ni>1%
+      \times
+    \fi%
+    [0,\item]
+  }
+  \Rightarrow \type{#2})
+}
 
 \endinput
 %% END eqdcode.sty

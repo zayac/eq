@@ -85,7 +85,7 @@
 
 \newcommand{\BnfExtType}{
 \bHead{ext\_type}
-  \bAlt{type}{arraytype}
+  \bAltBegin type \bDAlt arraytype \bDAlt functiontype \bAltEnd
 \bEnd
 }
 
@@ -95,6 +95,12 @@
   \bAlt{sexpr}{\bToken{\bs ldots}}} \bSymb{\}} \bSkip \bSymb{\{} \bAltBegin
   \bToken{Z} \bDAlt \bToken{R} \bDAlt
   \bToken{N} \bDAlt \bToken{B} \bAltEnd \bSymb{\}} 
+\bEnd
+}
+
+\newcommand{\BnfFunctionType}{
+\bHead{functiontype}
+  \bSymb{(} \bStar{ext\_type} \bToken{\bs to} \bPlus{ext\_type} \bSymb{)}
 \bEnd
 }
 
