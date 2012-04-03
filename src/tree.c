@@ -325,6 +325,11 @@ free_tree_type (tree node, bool hard)
 		TREE_CODE_NAME (LIST));
 	  free_tree (TYPE_LIST (node));
 	}
+      else
+	{
+	  tree_list_append (delete_list, TYPE_FUNCTION_ARGS (node));
+	  tree_list_append (delete_list, TYPE_FUNCTION_RET (node));
+	}
       TYPE_FUNCTION_ARGS (node) = NULL;
       TYPE_FUNCTION_RET (node) = NULL;
       TYPE_LIST (node) = NULL;
