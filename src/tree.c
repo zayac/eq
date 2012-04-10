@@ -428,6 +428,8 @@ make_identifier_tok (struct token * tok)
 
   t = make_tree (IDENTIFIER);
   TREE_ID_NAME (t) = make_string_cst_tok (tok);
+  /* `source name' is used to be outputed in error messages, as
+     variable names are going to be modified by compiler.  */
   TREE_ID_SOURCE_NAME (t) = make_string_cst_tok (tok);
   TREE_ID_DEFINED (t) = false;
   TREE_ID_ITER (t) = NULL;
