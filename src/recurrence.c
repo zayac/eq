@@ -194,7 +194,7 @@ recurrence_validate (tree t)
       if (max_shift == 1 && !min_exists)
 	{
 	  error ("there has to be one initial value for variable `%s'",
-	      TREE_STRING_CST (TREE_ID_NAME (t)));
+	      TREE_STRING_CST (TREE_ID_SOURCE_NAME (t)));
 	  ret += 1;
 	  return ret;
 	}
@@ -207,7 +207,7 @@ recurrence_validate (tree t)
 	      if (i++ >= max_shift)
 		{
 		  error ("too many initial values found for variable `%s'", 
-		    TREE_STRING_CST (TREE_ID_NAME (t)));
+		    TREE_STRING_CST (TREE_ID_SOURCE_NAME (t)));
 		  ret += 1;
 		  return ret;
 		}
@@ -224,7 +224,7 @@ recurrence_validate (tree t)
 		  error ("there have to be %d consequent initial values for "
 		         "variable `%s'",
 			 max_shift,
-			 TREE_STRING_CST (TREE_ID_NAME (t)));
+			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (t)));
 		  ret += 1;
 		  return ret;
 		}

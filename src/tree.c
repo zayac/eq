@@ -229,6 +229,7 @@ free_tree (tree node)
 	  //tree_list_append (delete_list, TREE_ID_NAME (node));
 	  free_tree (TREE_ID_ITER (node));
 	  free_tree (TREE_ID_NAME (node));
+	  free_tree (TREE_ID_SOURCE_NAME (node));
 	}
       else if (code == LIST)
 	{
@@ -427,6 +428,7 @@ make_identifier_tok (struct token * tok)
 
   t = make_tree (IDENTIFIER);
   TREE_ID_NAME (t) = make_string_cst_tok (tok);
+  TREE_ID_SOURCE_NAME (t) = make_string_cst_tok (tok);
   TREE_ID_DEFINED (t) = false;
   TREE_ID_ITER (t) = NULL;
   TREE_LOCATION (t) = token_location (tok);

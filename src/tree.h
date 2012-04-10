@@ -134,7 +134,7 @@ struct tree_string_cst_node
 {
   struct tree_type_base typed;
   int length;
-  bool is_char;
+  unsigned is_char:1;
   char *value;
 };
 
@@ -154,8 +154,10 @@ struct tree_identifier_node
 {
   struct tree_type_base typed;
   tree name;
+  tree source_name;
   tree iter_desc;
   unsigned defined:1;
+  unsigned with_prefix:1;
 };
 
 struct tree_rec_expr_node
@@ -284,7 +286,9 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_ID(node) (&((node)->identifier_node))
 #define TREE_ID_NAME(node) ((node)->identifier_node.name)
+#define TREE_ID_SOURCE_NAME(node) ((node)->identifier_node.source_name)
 #define TREE_ID_DEFINED(node) ((node)->identifier_node.defined)
+#define TREE_ID_WITH_PREFIX(node) ((node)->identifier_node.with_prefix)
 #define TREE_ID_ITER(node) ((node)->identifier_node.iter_desc)
 
 #define TREE_ITER_MIN(node) ((node)->rec_expr_node.min_value)

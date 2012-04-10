@@ -3201,7 +3201,8 @@ parse (struct parser *parser)
 		{
 		  error_loc (TREE_LOCATION (t), 
 			"function `%s' is defined already",
-			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+			TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+					 (TREE_FUNC_NAME (t))));
 		  free_tree (t);
 		}
 	      else if (function_proto_exists (
@@ -3209,7 +3210,8 @@ parse (struct parser *parser)
 		{
 		  error_loc (TREE_LOCATION (t), 
 			"prototype `%s' is defined already",
-			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+			TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+					 (TREE_FUNC_NAME (t))));
 		  free_tree (t);
 		}
 	      else
@@ -3230,7 +3232,8 @@ parse (struct parser *parser)
 		{
 		  error_loc (TREE_LOCATION (t), 
 			"function `%s' is defined already",
-			TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t))));
+			TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+					  (TREE_FUNC_NAME (t))));
 		}
 	    }
 	  parser->lex->error_notifications = false;
