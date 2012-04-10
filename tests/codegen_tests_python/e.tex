@@ -1,0 +1,23 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+\begin{document}
+
+\begin{eqcode}{g}{ }{ }{\type{Z}}
+  b \in \type{Z} \lend
+  b^{[0]} \gets 3 \lend
+  b^{[\iter]} \gets b^{[\iter -1]} \lend
+  \print{b^{[1]}} \lend
+% eq-exec: 3
+  \return {100} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{ }{ }{\type{Z}}
+  b \in \type{Z} \lend
+  b^{[0]} \gets \call{g}{} \lend
+  b^{[1]} \gets 1 \lend
+  \print{b^{[1]}} \lend
+% eq-exec: 1
+  \return {b^{[1]}} \lend
+\end{eqcode}
+
+\end{document}
