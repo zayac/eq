@@ -32,8 +32,8 @@ typecheck_options
   bool iter_index;
 } typecheck_options;
 
-static void 
-init_typecheck_options ()
+static void
+init_typecheck_options (void)
 {
   /* indicate that recurrent expressions is being typechecked now.  */
   typecheck_options.iter_index = false;
@@ -54,7 +54,7 @@ add_prefix_to_var (tree expr, char* prefix)
   assert (TREE_CODE (expr) == IDENTIFIER, "identifier node expected here, "
 					  "`%s' found",
 					  TREE_CODE_NAME (TREE_CODE (expr)));
-  
+
   id_name = TREE_STRING_CST (TREE_ID_NAME (expr));
   if (!TREE_ID_WITH_PREFIX (expr)
      && !(function_exists (id_name) || function_proto_exists (id_name)))
@@ -62,7 +62,7 @@ add_prefix_to_var (tree expr, char* prefix)
       id_name_new = (char*) malloc (strlen (id_name) + strlen (prefix) + 2);
       memcpy (id_name_new, prefix, strlen (prefix));
       id_name_new[strlen (prefix)] = '_';
-      memcpy (id_name_new + strlen (prefix) + 1, id_name, 
+      memcpy (id_name_new + strlen (prefix) + 1, id_name,
 						    strlen (id_name) + 1);
       TREE_STRING_CST (TREE_ID_NAME (expr)) = id_name_new;
       free (id_name);
@@ -73,7 +73,7 @@ add_prefix_to_var (tree expr, char* prefix)
 }
 
 int
-typecheck ()
+typecheck (void)
 {
   struct tree_list_element *tl;
   int function_check = 0;
@@ -89,7 +89,7 @@ typecheck ()
 
   /* sort recurrent expressions by initial values.  */
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
-    DL_SORT (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (tl->entry))), 
+    DL_SORT (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (tl->entry))),
 	     recurrence_sort);
 
   /* validate recurrent expressions.  */
@@ -127,12 +127,12 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
 static inline bool
 conversion_possible (tree from, tree to)
 {
- 
+
   if (((from == z_type_node || from == n_type_node) && to == r_type_node)
     || (from == n_type_node && to == z_type_node))
     return true;
 
-	
+
   if (TYPE_DIM (from) != NULL
       && TYPE_DIM (to) != NULL)
     {
@@ -177,7 +177,7 @@ typecheck_type (tree type, tree ext_vars, tree vars, tree func_ref)
       if (TYPE_DIM (type) != NULL)
 	{
 	  int ret_val;
-	  if ((ret_val = typecheck_expression (TYPE_DIM (type), ext_vars, 
+	  if ((ret_val = typecheck_expression (TYPE_DIM (type), ext_vars,
 							      vars, func_ref)))
 	    return ret_val;
 
@@ -211,7 +211,7 @@ typecheck_type (tree type, tree ext_vars, tree vars, tree func_ref)
 	      if (--dim <= -1)
 		goto shape_fail;
 
-	      if ((ret_val = typecheck_expression (t, ext_vars, vars, 
+	      if ((ret_val = typecheck_expression (t, ext_vars, vars,
 								func_ref)))
 		return ret_val;
 
@@ -239,7 +239,7 @@ shape_fail:
 }
 
 /* typecheck recurrent index.
-   ( <\iter> [ - <integer> ] ) | <integer> 
+   ( <\iter> [ - <integer> ] ) | <integer>
  */
 int
 typecheck_recurrent (tree expr)
@@ -268,7 +268,7 @@ error:
 
 /* typecheck the right part (only one enumeration element) of the assignment.  */
 int
-typecheck_stmt_assign_right (struct tree_list_element *el, 
+typecheck_stmt_assign_right (struct tree_list_element *el,
 				    tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;
@@ -280,7 +280,7 @@ typecheck_stmt_assign_right (struct tree_list_element *el,
 
 /* typecheck the left part( only one identifier) of the assignment.  */
 int
-typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars, 
+typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 						    tree vars, tree func_ref)
 {
   int ret = 0;
@@ -292,7 +292,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       tree var;
 
       /* add function prefix to the identifier.  */
-      add_prefix_to_var (lhs, TREE_STRING_CST (TREE_ID_NAME 
+      add_prefix_to_var (lhs, TREE_STRING_CST (TREE_ID_NAME
 			      (TREE_OPERAND (func_ref, 0))));
 
       /* Check if the variable was defined locally. */
@@ -346,7 +346,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 
       assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER,
 	      "identifier expected");
-     
+
       /* try to find identifier in the defined variable list.  */
       id = TREE_OPERAND (lhs, 0);
       if ((var = is_var_in_list (id, vars)) != NULL
@@ -381,11 +381,11 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
    Here we put an expression corresponding to a current iteration into a list
    with all states.  */
 int
-typecheck_assign_index (tree lhs, tree rhs) 
+typecheck_assign_index (tree lhs, tree rhs)
 {
   int ret = 0;
   tree id = TREE_OPERAND (lhs, 0);
-  assert (TREE_CODE (lhs) == CIRCUMFLEX, 
+  assert (TREE_CODE (lhs) == CIRCUMFLEX,
       "only circumflex expression can be checked");
   if (TREE_ID_ITER (id) == NULL)
     {
@@ -440,7 +440,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	    tree lhs, rhs;
 	    ret += typecheck_stmt_assign_left (lel, ext_vars, vars, func_ref);
 	    ret += typecheck_stmt_assign_right (rel, ext_vars, vars, func_ref);
-	    
+
 	    if (ret)
 	      return ret;
 
@@ -490,7 +490,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 		DL_FOREACH (TREE_LIST (TREE_TYPE (rhs)), el)
 		  {
 		    lhs = lel->entry;
-		    
+
 		    if (TREE_TYPE (lhs) == NULL)
 		      TREE_TYPE (lhs) = el->entry;
 		    else if (!tree_compare (TREE_TYPE (lhs), el->entry))
@@ -517,7 +517,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 							     vars, func_ref);
 			  if (TREE_CODE (lel->entry) == CIRCUMFLEX)
 			    ret += typecheck_assign_index (lel->entry, rhs);
-			}	  
+			}
 		  }
 	      }
 	    lel = lel->next;
@@ -572,7 +572,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 #ifdef DISABLE_FCF
 		if (TREE_CODE (rhs) == FUNCTION_TYPE)
 		  {
-		    error_loc (TREE_LOCATION (lhs), 
+		    error_loc (TREE_LOCATION (lhs),
 		      "Functions are second-class objects. "
 		      "You aren't allowed to assign function to a variable");
 		    return 1;
@@ -581,9 +581,9 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	      }
 
 	    /* add function prefix to the identifier.  */
-	    add_prefix_to_var (lhs, TREE_STRING_CST (TREE_ID_NAME 
+	    add_prefix_to_var (lhs, TREE_STRING_CST (TREE_ID_NAME
 				    (TREE_OPERAND (func_ref, 0))));
-	    
+
 	    if ((var = is_var_in_list (lhs, vars)) != NULL
 		|| (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	      {
@@ -594,7 +594,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 
 	    TREE_TYPE (lhs) = rhs;
 	    tree_list_append (vars, lhs);
-	  
+
 	    lel = lel->next;
 	    rel = rel->next;
 	  }
@@ -626,9 +626,9 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 
 	tree_list_combine (ext_vars, vars);
 
-	assert (TREE_CODE (var) == LOWER, 
+	assert (TREE_CODE (var) == LOWER,
 	    "index loop can be performed only on lower indeces");
-	
+
 	ret += typecheck_lower (lower, ext_vars, new_scope, func_ref, true);
 	/* variables used as a lower indeces in the identifier belong to a new
 	   scope. Therefore, they can be used in current statement.  */
@@ -705,7 +705,7 @@ finalize_withloop:
 	if (fs_stmts != NULL)
 	  {
 	    new_scope = make_tree_list ();
-	    ret += typecheck_stmt_list (fs_stmts, ext_vars, 
+	    ret += typecheck_stmt_list (fs_stmts, ext_vars,
 						  new_scope, func_ref);
 	    free_tree (new_scope);
 	  }
@@ -716,12 +716,12 @@ finalize_withloop:
     case RETURN_STMT:
       {
 	struct tree_list_element *ret_el = TREE_LIST (TREE_OPERAND (stmt, 0));
-	struct tree_list_element *type_el = TREE_LIST (TREE_OPERAND 
+	struct tree_list_element *type_el = TREE_LIST (TREE_OPERAND
 							      (func_ref, 3));
 	/* The argument of the return statement is a list.  */
 	while (ret_el != NULL && type_el != NULL)
 	  {
-	    ret += typecheck_expression (ret_el->entry, ext_vars, 
+	    ret += typecheck_expression (ret_el->entry, ext_vars,
 							vars, func_ref);
 	    if (ret)
 	      return ret;
@@ -771,7 +771,7 @@ finalize_withloop:
 	struct tree_list_element *el;
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
 	  {
-	    int tmp_ret = typecheck_expression (el->entry, ext_vars, 
+	    int tmp_ret = typecheck_expression (el->entry, ext_vars,
 							   vars, func_ref);
 	    if (tmp_ret > 0)
 	      ret += tmp_ret;
@@ -805,7 +805,7 @@ typecheck_function (tree func_ref)
   if (ext_vars != NULL)
     DL_FOREACH (TREE_LIST (ext_vars), el)
       {
-	
+
 	/* add function prefix to the identifier.  */
 	add_prefix_to_var (el->entry, TREE_STRING_CST (TREE_ID_NAME (
 				      TREE_OPERAND (func_ref, 0))));
@@ -866,7 +866,7 @@ typecheck_function (tree func_ref)
 	  type_counter++;
 	  type = type->next;
 	}
-      error_loc (TREE_LOCATION (func_ref), 
+      error_loc (TREE_LOCATION (func_ref),
 		 "number of argument types is wrong: "
 		 "%u expected, %u found", var_counter, type_counter);
       ret += 2;
@@ -896,12 +896,12 @@ typecheck_function (tree func_ref)
   TREE_TYPE (func_ref) = types_assign_type (func_type);
   if (TREE_TYPE (func_ref) != func_type)
     free_tree_type (func_type, false);
-  /* Statements nodes are NULL in function prototypes. 
+  /* Statements nodes are NULL in function prototypes.
      Therefore, check statements types for functions only.  */
   if (TREE_OPERAND (func_ref, 4) != NULL)
     {
       ext_vars = tree_copy (TREE_OPERAND (func_ref, 1));
-      ret =typecheck_stmt_list (TREE_OPERAND (func_ref, 4), ext_vars, 
+      ret =typecheck_stmt_list (TREE_OPERAND (func_ref, 4), ext_vars,
 							    vars, func_ref);
     }
 free_local:
@@ -912,7 +912,7 @@ free_local:
 }
 
 int
-typecheck_lower (tree expr, tree ext_vars, tree vars, 
+typecheck_lower (tree expr, tree ext_vars, tree vars,
 					   tree func_ref, bool generator)
 {
   int ret = 0;
@@ -973,7 +973,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
       if (generator)
 	{
 	  assert (TREE_CODE (t) == IDENTIFIER, "only identifier is valid here");
-  
+
 	  /* add function prefix to the identifier.  */
 	  add_prefix_to_var (t, TREE_STRING_CST (TREE_ID_NAME (
 				TREE_OPERAND (func_ref, 0))));
@@ -1046,7 +1046,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
 
   if (TREE_TYPE (expr) != tmp_type)
     free_tree_type (tmp_type, true);
-  
+
   /* We consider indexing operation to be non-constant,
      as we can't really check it at this point.  */
   TREE_CONSTANT (expr) = false;
@@ -1054,7 +1054,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
 }
 
 /* try to find variables in the list of already defined variables.  */
-static int 
+static int
 associate_variables (tree t, tree ext_vars, tree vars)
 {
   tree var;
@@ -1101,14 +1101,14 @@ typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref)
 	  error_loc (TREE_LOCATION (el->entry),
 		     "variable `%s' occurs more than once in the list",
 		     TREE_STRING_CST (TREE_ID_SOURCE_NAME (el->entry)));
-	  ret += 1; 
+	  ret += 1;
 
 	}
       /* add function prefix to the identifier.  */
       add_prefix_to_var (el->entry, TREE_STRING_CST (TREE_ID_NAME (
 				    TREE_OPERAND (func_ref, 0))));
 
-      
+
       if ((var = is_var_in_list (el->entry, vars)) == NULL)
 	{
 	  error_loc (TREE_LOCATION (el->entry),
@@ -1144,12 +1144,12 @@ typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref)
    The first argument is a function arg types,
    the second argument is a function call tree. */
 int
-typecheck_function_call_args (tree func_args, tree expr, tree ext_vars,	
+typecheck_function_call_args (tree func_args, tree expr, tree ext_vars,
 					      tree vars, tree func_ref)
 {
   struct tree_list_element *func_el;
   struct tree_list_element *expr_el;
-  int expr_counter = 0, func_counter = 0; 
+  int expr_counter = 0, func_counter = 0;
 
   /* argument list can be empty.  */
   if (func_args != NULL)
@@ -1239,7 +1239,7 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
   char *  fname;
 
   /* add function prefix to the identifier.  */
-  add_prefix_to_var (TREE_OPERAND (expr, 0), 
+  add_prefix_to_var (TREE_OPERAND (expr, 0),
 		TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (func_ref, 0))));
 
   fname = TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (expr, 0)));
@@ -1268,8 +1268,8 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
     }
   else
     {
-      ret += typecheck_function_call_args (TREE_FUNC_ARG_TYPES (t), 
-					   expr, 
+      ret += typecheck_function_call_args (TREE_FUNC_ARG_TYPES (t),
+					   expr,
 					   ext_vars, vars, func_ref);
       if (TREE_LIST (TREE_FUNC_RET_TYPE (t))->next == NULL)
 	TREE_TYPE (expr) = TREE_LIST (TREE_FUNC_RET_TYPE (t))->entry;
@@ -1277,7 +1277,7 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
 	TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (t);
       /* We suppose that function calls aren't constant expressions.
 	 so we can't predict the return value statically.  */
-    } 
+    }
   TREE_CONSTANT (expr) = false;
   return ret;
 }
@@ -1596,7 +1596,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 		else if (TREE_CODE (expr) == MULT_EXPR)
 		  {
 		    if (TYPE_DIM (TREE_TYPE (lhs)) != NULL
-		      && TREE_TYPE (rhs) == TREE_TYPE (TREE_LIST 
+		      && TREE_TYPE (rhs) == TREE_TYPE (TREE_LIST
 		      (TREE_LIST (TREE_OPERAND (lhs, 0))->entry)->entry))
 		      TREE_TYPE (expr) = TREE_TYPE (lhs);
 		    else if (TYPE_DIM (TREE_TYPE (rhs)) != NULL
@@ -1676,7 +1676,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 		return 1;
 	      }
 	    TREE_TYPE (expr) = change_stream_prop (TREE_TYPE (lhs));
-	  
+
 	  }
 	else
 	  {
@@ -1734,13 +1734,13 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 		  {
 		    index = TREE_OPERAND (el->entry, 1);
 		    /* add function prefix to the identifier.  */
-		    add_prefix_to_var (index, TREE_STRING_CST (TREE_ID_NAME 
+		    add_prefix_to_var (index, TREE_STRING_CST (TREE_ID_NAME
 					      (TREE_OPERAND (func_ref, 0))));
 
 		    tree_list_append (new_scope, index);
 		  }
 		else
-		  ret += typecheck_expression (index, ext_vars, 
+		  ret += typecheck_expression (index, ext_vars,
 						      new_scope, func_ref);
 
 		TREE_TYPE (index) = z_type_node;
@@ -1801,7 +1801,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	    shape_x = 0;
 	    DL_FOREACH (TREE_LIST (l->entry), el)
 	      {
-		ret += typecheck_expression (el->entry, ext_vars, 
+		ret += typecheck_expression (el->entry, ext_vars,
 							vars, func_ref);
 
 		if (!TREE_CONSTANT (el->entry))

@@ -65,8 +65,8 @@ typedef union xfile_union xfile;
 
 
 xfile * xfile_init_file (const char *);
-xfile * xfile_init_file_stderr ();
-xfile * xfile_init_file_stdout ();
+xfile * xfile_init_file_stderr (void);
+xfile * xfile_init_file_stdout (void);
 xfile * xfile_init_memory (size_t);
 void xfile_finalize (xfile *);
 int xfile_fprintf (xfile *, const char *, ...);

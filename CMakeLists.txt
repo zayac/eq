@@ -61,7 +61,8 @@ else()
   set (VALGRIND_EXISTS 1)
 endif()
 
-set (CFLAGS "-g -gdwarf-2 -g3 -Wall -std=c99 -D_BSD_SOURCE"
+set (CFLAGS "-g -gdwarf-2 -g3 -Wall -Wextra -Wstrict-prototypes "
+	    "-pedantic -std=c99 -D_BSD_SOURCE"
 	    " -D_GNU_SOURCE -pedantic")
 
 # Custom messages

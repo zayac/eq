@@ -210,7 +210,7 @@ xfile_fprintf (xfile *  xf, const char * fmt, ...)
 	  va_end (ap);
 
 	  /* In case the process succeeded.  */
-	  if (ret > -1 && ret < n)
+	  if (ret > -1 && (size_t)ret < n)
 	    {
 	      XFILE_INDEX (xf) += ret;
 	      return ret;

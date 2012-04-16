@@ -57,7 +57,7 @@ static inline size_t
 buf_idx_inc (const size_t idx, const ssize_t inc, const size_t size)
 {
   ssize_t diff = ((ssize_t) idx + inc) % size;
-  return diff < 0 ? size - diff : diff;
+  return diff < 0 ? (size_t)(size - diff) : (size_t)diff;
 }
 
 /* Get one token from the lexer or from the token buffer.
@@ -514,8 +514,8 @@ error:
 /* Handle function prototype (declaration). Prototypes are used to instruct
    typechecker not to look for a function definition. In this case, we assume
    that the function is provided by a backend language or it is linked
-   dynamically.  
-   
+   dynamically.
+
    proto:
    \proto { <id> } { [ ext_type ]* } { ext_type } */
 tree
@@ -582,7 +582,7 @@ handle_proto (struct parser * parser)
   /* return type.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
-    
+
   ret = handle_list (parser, handle_stream_or_ext_type, tv_comma);
 
   if (ret == NULL || ret == error_mark_node)
@@ -595,7 +595,7 @@ handle_proto (struct parser * parser)
     goto error;
 
   return make_function (name, NULL, arg_types, ret, NULL, loc);
-  
+
 error:
   free_tree (name);
   free_tree (arg_types);
@@ -787,7 +787,7 @@ handle_functiontype (struct parser *parser)
     goto error;
 
   t = make_type (FUNCTION_TYPE);
-  
+
   TYPE_FUNCTION_ARGS (t) = tmp;
 
   if (!parser_forward_tval (parser, tv_to))
@@ -798,12 +798,12 @@ handle_functiontype (struct parser *parser)
     goto error;
 
   TYPE_FUNCTION_RET (t) = tmp;
-  
+
   if (!parser_forward_tval (parser, tv_rparen))
     goto error;
 
   TREE_LOCATION (t) = loc;
-  
+
   tmp = types_assign_type (t);
   if (t != tmp)
     free_tree_type (t, false);
@@ -823,7 +823,7 @@ handle_type (struct parser * parser)
 {
   tree t, ret;
   struct token *tok;
-  
+
   if (!parser_forward_tval (parser, tv_type))
     return error_mark_node;
 
@@ -909,11 +909,11 @@ handle_sexpr_or_ldots (struct parser *parser)
   else
     {
       parser_unget (parser);
-      return handle_sexpr (parser);  
+      return handle_sexpr (parser);
     }
 }
 
-/* 
+/*
    arraytype:
    \arraytype { sexpr | \ldots [ , sexpr | \ldots ]* }{Z|N|R|N}
  */
@@ -930,12 +930,12 @@ handle_arraytype (struct parser * parser)
 
   if (!parser_forward_tval (parser, tv_lbrace))
     return error_mark_node;
-  
+
   shape = handle_list (parser, handle_sexpr_or_ldots, tv_comma);
 
   if (shape == error_mark_node)
     return shape;
-  
+
   if (!parser_forward_tval (parser, tv_rbrace))
     goto error;
 
@@ -973,8 +973,8 @@ handle_arraytype (struct parser * parser)
 	shape_undef = true;
       dim++;
     }
-  
-  
+
+
   if (shape_undef)
     {
       free_tree (shape);
@@ -1125,7 +1125,7 @@ handle_indexes (struct parser * parser, tree prefix)
 		  parser_unget (parser);
 		  up = make_tree (CIRCUMFLEX);
 		  TREE_OPERAND_SET (up, 0, prefix);
-		  TREE_OPERAND_SET (up, 1, handle_sexpr (parser)); 
+		  TREE_OPERAND_SET (up, 1, handle_sexpr (parser));
 		  TREE_CIRCUMFLEX_INDEX_STATUS (up) = true;
 		  parser_forward_tval (parser, tv_rsquare);
 		  parser_forward_tval (parser, tv_rbrace);
@@ -1149,7 +1149,7 @@ handle_indexes (struct parser * parser, tree prefix)
     }
   else
     parser_unget (parser);
-  
+
   if (!up || !TREE_CIRCUMFLEX_INDEX_STATUS (up))
     {
       if (token_is_operator (parser_get_token (parser), tv_lower_index))
@@ -1377,7 +1377,7 @@ handle_instr_list (struct parser * parser)
 
       /* this one allows instructions separated by comma.  */
       t = handle_list (parser, handle_instr, tv_semicolon);
-     
+
      if (t == error_mark_node)
       {
 	free_tree (instrs);
@@ -1520,7 +1520,7 @@ handle_function (struct parser * parser)
   /* return type.  */
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
- 
+
   ret = handle_list (parser, handle_stream_or_ext_type, tv_comma);
 
   if (ret == NULL || ret == error_mark_node)
@@ -1722,7 +1722,7 @@ handle_linear (struct parser * parser, tree prefix)
   struct token *tok;
   struct location loc;
   tree t = NULL, circumflex = make_tree (CIRCUMFLEX);
-  
+
   TREE_CIRCUMFLEX_INDEX_STATUS (circumflex) = true;
   TREE_OPERAND_SET (circumflex, 0, prefix);
   TREE_OPERAND_SET (circumflex, 1, NULL);
@@ -1737,14 +1737,14 @@ handle_linear (struct parser * parser, tree prefix)
     {
       tree id;
       loc = token_location (tok);
-      if (token_class (tok) != tok_keyword 
+      if (token_class (tok) != tok_keyword
 	  || token_value (tok) != tv_iter)
 	{
 	  error_loc (token_location (tok), "only `%s' identifier can be "
 		     "occured in recurrent expression, `%s' found",
 		     token_kind_name[tv_iter],
 		     token_as_string (tok));
-	  
+
 	  goto error;
 	}
       id = make_identifier_tok (tok);
@@ -1785,7 +1785,7 @@ handle_linear (struct parser * parser, tree prefix)
 
   if (!parser_forward_tval (parser, tv_rsquare))
     goto error;
-  
+
   if (!parser_forward_tval (parser, tv_rbrace))
     return error_mark_node;
 
@@ -2919,12 +2919,12 @@ handle_assign (struct parser * parser, tree prefix_id)
       id = handle_list (parser, handle_idx, tv_comma);
   else
     id = prefix_id;
- 
+
   if (!parser_forward_tval (parser, tv_gets))
     goto error;
 
   expr = handle_list (parser, handle_expr, tv_comma);
-  
+
   return make_binary_op (ASSIGN_STMT, id, expr);
 
 error:
@@ -3230,18 +3230,18 @@ parse (struct parser *parser)
 	      if (function_exists (
 		TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t)))))
 		{
-		  error_loc (TREE_LOCATION (t), 
+		  error_loc (TREE_LOCATION (t),
 			"function `%s' is defined already",
-			TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+			TREE_STRING_CST (TREE_ID_SOURCE_NAME
 					 (TREE_FUNC_NAME (t))));
 		  free_tree (t);
 		}
 	      else if (function_proto_exists (
 		TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (t)))))
 		{
-		  error_loc (TREE_LOCATION (t), 
+		  error_loc (TREE_LOCATION (t),
 			"prototype `%s' is defined already",
-			TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+			TREE_STRING_CST (TREE_ID_SOURCE_NAME
 					 (TREE_FUNC_NAME (t))));
 		  free_tree (t);
 		}
@@ -3261,9 +3261,9 @@ parse (struct parser *parser)
 		tree_list_append (function_list, t);
 	      else
 		{
-		  error_loc (TREE_LOCATION (t), 
+		  error_loc (TREE_LOCATION (t),
 			"function `%s' is defined already",
-			TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+			TREE_STRING_CST (TREE_ID_SOURCE_NAME
 					  (TREE_FUNC_NAME (t))));
 		}
 	    }

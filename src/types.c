@@ -32,7 +32,7 @@ get_tree_from_key (char *keyptr)
 /* The key used in the type hash-table have a fixed length which can
    be obtained by calling this function.  */
 static inline size_t
-hash_key_length ()
+hash_key_length (void)
 {
   struct tree_type_node x;
   return offsetof (struct tree_type_node, is_stream) + sizeof (x.is_stream)
@@ -90,7 +90,7 @@ types_add_type (tree el)
 {
   enum tree_code code = TREE_CODE (el);
   assert (TREE_CODE_CLASS (code) == tcl_type, "code class has to be a type");
-  
+
   if (TREE_CODE (el) != FUNCTION_TYPE)
     {
       HASH_ADD_KEYPTR (hh, type_table, &(el->base.code), hash_key_length (),
@@ -106,7 +106,7 @@ types_add_type (tree el)
 	{
 	  TYPE_LIST (el) = make_tree_list ();
 	  tree_list_append (TYPE_LIST (el), el);
-	  HASH_ADD_KEYPTR (hh, type_table, &(el->base.code), 
+	  HASH_ADD_KEYPTR (hh, type_table, &(el->base.code),
 	      hash_key_length (), (struct tree_type_node *) el);
 	}
       else
@@ -127,7 +127,7 @@ types_find_in_table (tree el)
 
   HASH_FIND (hh, type_table, (char *) &(el->base.code), hash_key_length (),
 	     ret);
- 
+
   /* Function types are stored in a single list in the hash table.  */
   if (ret && TREE_CODE (el) == FUNCTION_TYPE)
     {
@@ -138,7 +138,7 @@ types_find_in_table (tree el)
 	   && tree_compare (TYPE_FUNCTION_RET (type_el->entry),
 			    TYPE_FUNCTION_RET (el)))
 	    return &type_el->entry->type_node;
-	   
+
 	}
     }
   return ret;

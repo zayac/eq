@@ -21,8 +21,8 @@
 /* A global table to store types.  */
 extern struct tree_type_node *type_table;
 
-void types_init ();
+void types_init (void);
 tree types_assign_type (tree);
-void types_finalize ();
+void types_finalize (void);
 
 #endif /* __TYPES_H__  */

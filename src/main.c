@@ -51,14 +51,14 @@ char *const b_opts[] = {
   NULL
 };
 
-void usage ();
-void version ();
+void usage (void);
+void version (void);
 
 static char *progname;
 struct eq_options options;
 
 void
-usage ()
+usage (void)
 {
   fprintf (stderr,
 	   "usage:\n"
@@ -70,7 +70,7 @@ usage ()
 }
 
 void
-version ()
+version (void)
 {
   fprintf (stderr, "%s %s, revision: %s\n", progname, VERSION, COMMIT_DATE);
 }

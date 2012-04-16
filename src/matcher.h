@@ -61,11 +61,11 @@ struct match_table *matches;
 #define MATCHER_REPLACE(id) ((id)->replace)
 #define MATCHER_KEY(id) ((id)->key)
 
-void matcher_init ();
+void matcher_init (void);
 void add_match (const char *, struct token_list_el *, tree);
 void delete_match (struct match_table *);
 struct match_table *find_match (const char *);
 tree perform_transform (struct parser *);
 bool validate_match (struct token_list_el *, tree);
-void matcher_finalize ();
-void print_matches ();
+void matcher_finalize (void);
+void print_matches (void);

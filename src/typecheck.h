@@ -15,7 +15,7 @@
 #ifndef __TYPECHECK_H__
 #define __TYPECHECK_H__
 
-int typecheck ();
+int typecheck (void);
 int typecheck_function (tree);
 int typecheck_stmt_list (tree, tree, tree, tree);
 int typecheck_stmt (tree, tree, tree, tree);

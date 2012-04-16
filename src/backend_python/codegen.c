@@ -53,7 +53,7 @@ static int codegen_get_gen_last_value_function (FILE*);
 static int codegen_genar_function (FILE*);
 
 /* These parameters specify options for code generating.  */
-static struct 
+static struct
 codegen_options
 {
   /* in a function for recurrent expression variables are stored in a
@@ -70,7 +70,7 @@ codegen_options
       CIRC_LOCALS -- access to a *recurrent window* from a recurrent expression
       generator function.
   */
-enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCAL_VAR, CIRC_LOCALS } 
+enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCAL_VAR, CIRC_LOCALS }
 	  circumflex_state;
 /* `\iter' can be occured in the right part of recurrent expression in place
      of index and as a regular variable as well. The implementation in code
@@ -81,7 +81,7 @@ enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCAL_VAR, CIRC_LOCALS }
 extern tree iter_var_list;
 
 static void
-init_codegen_options ()
+init_codegen_options (void)
 {
   codegen_options.is_var_in_arg = false;
   codegen_options.circumflex_state = CIRC_LOCAL_VAR;
@@ -89,7 +89,7 @@ init_codegen_options ()
 }
 
 int
-codegen ()
+codegen (void)
 {
   struct tree_list_element *tl;
   int function_error = 0;
@@ -220,7 +220,7 @@ codegen_iterative (FILE* f, tree var)
   struct tree_list_element *el = NULL;
   fprintf (f, "def __recur_");
   codegen_expression (f, var);
-  fprintf (f, "(_iter, __local_vars):\n"); 
+  fprintf (f, "(_iter, __local_vars):\n");
   fprintf (f, "\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
   fprintf (f, "\t__i = __start\n");
   fprintf (f, "\t__window = [");
@@ -229,7 +229,7 @@ codegen_iterative (FILE* f, tree var)
       fprintf (f, "__local_vars['__");
       codegen_expression (f, var);
       fprintf (f, "_%li']", TREE_INTEGER_CST (TREE_OPERAND (el->entry, 0)));
-      if (el->next == NULL 
+      if (el->next == NULL
 	|| TREE_CODE (TREE_OPERAND (el->next->entry, 0)) != INTEGER_CST)
 	break;
       else
@@ -242,7 +242,7 @@ codegen_iterative (FILE* f, tree var)
   fprintf (f, "\t\t\tyield __window[__i - __start]\n");
   fprintf (f, "\t\telse:\n");
   fprintf (f, "\t\t\tyield __window[__size - 1]\n");
-  if (el != NULL 
+  if (el != NULL
       && (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node))
     {
       fprintf (f, "\t\tif __i >= __size-1:\n");
@@ -265,7 +265,7 @@ codegen_iterative (FILE* f, tree var)
   return error;
 }
 
-static int 
+static int
 codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
 {
   int error = 0;
@@ -278,7 +278,7 @@ codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
   return error;
 }
 
-static int 
+static int
 codegen_zero_function (FILE* f, tree function)
 {
   fprintf (f, "lambda ");
@@ -349,7 +349,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    if (!recurrence_is_constant_expression (rel->entry))
 	      {
 		if (TYPE_SHAPE (TREE_TYPE (rel->entry)) != NULL)
-		  codegen_zero_array (f, 
+		  codegen_zero_array (f,
 		      TREE_LIST (TYPE_SHAPE (TREE_TYPE (rel->entry))),
 		      TREE_CODE (rel->entry));
 		else
@@ -391,7 +391,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    if (TREE_ID_ITER (el->entry) == NULL)
 	      {
 		enum tree_code code = TREE_CODE (TREE_TYPE (el->entry));
-		
+
 		if (code == FUNCTION_TYPE)
 		  {
 		    error += codegen_expression (f, el->entry);
@@ -403,7 +403,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		    /* shortcuts. */
 		    tree shape = TYPE_SHAPE (TREE_TYPE (el->entry));
 		    tree dim = TYPE_DIM (TREE_TYPE (el->entry));
-		    
+
 		    /* a vector type.  */
 		    if (shape != NULL)
 		      {
@@ -468,7 +468,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    codegen_expression (f, id);
 	    DL_FOREACH (TREE_LIST (gen_id_list), tel)
 	      {
-		if (i++ == counter)
+		if ((unsigned)i++ == counter)
 		  break;
 		fprintf (f, "[%d]", counter-1);
 	      }
@@ -486,7 +486,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	if (TREE_CODE (TREE_OPERAND (stmt, 1)) == GENERATOR)
 	  {
 	    fprintf (f, "if ");
-	    error += codegen_expression (f, 
+	    error += codegen_expression (f,
 		TREE_OPERAND (TREE_OPERAND (stmt, 1), 1));
 	    fprintf (f, ":\n");
 	    level++;
@@ -543,7 +543,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    codegen_expression (f, el->entry);
 	    if (el->next != NULL)
 	      fprintf (f, ", ");
-	  }	
+	  }
 	fprintf (f, ")");
       }
       break;
@@ -664,7 +664,7 @@ codegen_expression (FILE* f, tree expr)
 	/* in functions related to recurrent expressions local variables are
 	   passed in `vars' list variable. However, variable `\iter' has to be
 	   accessed in a usual way.  */
-	
+
 	if (expr == iter_var_node)
 	  {
 	    if (codegen_options.iter_as_index)
@@ -673,10 +673,10 @@ codegen_expression (FILE* f, tree expr)
 		break;
 	      }
 	  }
-	
+
 	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "__local_vars['");
-	
+
 	if (*c == '\\')
 	  {
 	    fprintf (f, "_");
@@ -709,7 +709,7 @@ codegen_expression (FILE* f, tree expr)
     case MATRIX_EXPR:
       {
 	struct tree_list_element *eli, *elj;
-	
+
 	fprintf (f, "array([");
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), eli)
 	  {
@@ -788,7 +788,7 @@ codegen_expression (FILE* f, tree expr)
 	      {
 		fprintf (f, "__get_gen_last_value (__recur_");
 		codegen_expression (f, TREE_OPERAND (expr, 0));
-		fprintf (f, "("); 
+		fprintf (f, "(");
 		error += codegen_expression (f, TREE_OPERAND (expr, 1));
 		fprintf (f, ", locals()");
 		fprintf (f, "))");
