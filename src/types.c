@@ -35,7 +35,7 @@ static inline size_t
 hash_key_length ()
 {
   struct tree_type_node x;
-  return offsetof (struct tree_type_node, size) + sizeof (x.size)
+  return offsetof (struct tree_type_node, is_stream) + sizeof (x.is_stream)
 	 - (offsetof (struct tree_type_node, base)
 	    + offsetof (struct tree_base, code));
 }

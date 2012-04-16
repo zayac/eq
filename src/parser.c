@@ -563,7 +563,7 @@ handle_proto (struct parser * parser)
   if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     {
       parser_unget (parser);
-      arg_types = handle_list (parser, handle_ext_type, tv_comma);
+      arg_types = handle_list (parser, handle_stream_or_ext_type, tv_comma);
       if (arg_types == error_mark_node)
 	goto error;
     }
@@ -583,7 +583,7 @@ handle_proto (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
     
-  ret = handle_list (parser, handle_ext_type, tv_comma);
+  ret = handle_list (parser, handle_stream_or_ext_type, tv_comma);
 
   if (ret == NULL || ret == error_mark_node)
     {
@@ -782,7 +782,7 @@ handle_functiontype (struct parser *parser)
   if (token_is_keyword (tok, tv_to))
     tmp = make_tree_list ();
   else
-    tmp = handle_list (parser, handle_ext_type, tv_comma);
+    tmp = handle_list (parser, handle_stream_or_ext_type, tv_comma);
   if (tmp == error_mark_node)
     goto error;
 
@@ -793,7 +793,7 @@ handle_functiontype (struct parser *parser)
   if (!parser_forward_tval (parser, tv_to))
     goto error;
 
-  tmp = handle_list (parser, handle_ext_type, tv_comma);
+  tmp = handle_list (parser, handle_stream_or_ext_type, tv_comma);
   if (tmp == error_mark_node)
     goto error;
 
@@ -1020,6 +1020,37 @@ handle_ext_type (struct parser * parser)
     }
   else
     return error_mark_node;
+}
+
+/*
+  stream_or_ext_type:
+  \overline { ext_type }
+  | ext_type
+  */
+tree
+handle_stream_or_ext_type (struct parser * parser)
+{
+  tree t = NULL;
+
+  if (token_is_keyword (parser_get_token (parser), tv_overline))
+    {
+      if (!parser_forward_tval (parser, tv_lbrace))
+	return error_mark_node;
+
+      t = handle_ext_type (parser);
+      if (t != error_mark_node)
+	t = change_stream_prop (t);
+
+      if (!parser_forward_tval (parser, tv_rbrace))
+	return error_mark_node;
+    }
+  else
+    {
+      parser_unget (parser);
+      return handle_ext_type (parser);
+    }
+
+  return t;
 }
 
 tree
@@ -1473,7 +1504,7 @@ handle_function (struct parser * parser)
   if (!token_is_operator (parser_get_token (parser), tv_rbrace))
     {
       parser_unget (parser);
-      arg_types = handle_list (parser, handle_ext_type, tv_comma);
+      arg_types = handle_list (parser, handle_stream_or_ext_type, tv_comma);
       if (arg_types == error_mark_node)
 	goto error;
     }
@@ -1490,7 +1521,7 @@ handle_function (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
  
-  ret = handle_list (parser, handle_ext_type, tv_comma);
+  ret = handle_list (parser, handle_stream_or_ext_type, tv_comma);
 
   if (ret == NULL || ret == error_mark_node)
     goto error;
@@ -2919,7 +2950,7 @@ handle_declare (struct parser * parser, tree prefix_id)
   if (!parser_forward_tval (parser, tv_in))
     goto error;
 
-  type = handle_list (parser, handle_ext_type, tv_comma);
+  type = handle_list (parser, handle_stream_or_ext_type, tv_comma);
 
   return make_binary_op (DECLARE_STMT, id, type);
 

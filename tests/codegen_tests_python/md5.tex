@@ -46,7 +46,7 @@
 
 \comment{"Circular shift of a number"}
 \begin{eqcode}{rol}{val, s}{\type{Z}, \type{Z}}{\type{Z}}
-  r \in \type{Z} \lend
+  r \in \overline{\type{Z}} \lend
   r^{[0]} \gets val \lend
   r^{[\iter]} \gets (r^{[\iter - 1]} \ll 1) +
   ((r^{[\iter - 1]} \land \hex{80000000}) \gg 31) \lend

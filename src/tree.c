@@ -550,6 +550,22 @@ tree_list_append (tree list, tree elem)
   return true;
 }
 
+/* Safely change `is_stream' property.  */
+tree change_stream_prop (tree type)
+{
+  enum tree_code code = TREE_CODE (type);
+  tree ret, tmp;
+  assert (TREE_CODE_CLASS (code) == tcl_type, "%s called with %s tree code",
+	  __func__, TREE_CODE_NAME (code));
+
+  tmp = tree_copy (type);
+  TYPE_IS_STREAM (tmp) = !TYPE_IS_STREAM (tmp);
+  ret = types_assign_type (tmp);
+  if (ret != tmp)
+    free (tmp);
+  return ret;
+}
+
 tree
 make_type (enum tree_code code)
 {
@@ -568,7 +584,6 @@ make_type (enum tree_code code)
     TYPE_SIZE (t) = 8 * sizeof (double);
   TYPE_SHAPE (t) = NULL;
   TYPE_DIM (t) = NULL;
-
   return t;
 }
 
@@ -806,10 +821,20 @@ tree_compare (tree left, tree right)
 
   /* types comparision.  */
   if (TREE_CODE_CLASS (TREE_CODE (left)) == tcl_type)
-    return TYPE_SIZE (left) == TYPE_SIZE (right)
-	   && tree_compare (TYPE_DIM (left), TYPE_DIM (right))
-	   && tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right));
-
+    {
+      if (TYPE_SIZE (left) != TYPE_SIZE (right))
+	return false;
+      if (TYPE_IS_STREAM (left) != TYPE_IS_STREAM (right))
+	return false;
+      if (TREE_CODE (left) == FUNCTION_TYPE)
+	return tree_compare (TREE_FUNC_ARG_TYPES (left),
+			     TREE_FUNC_ARG_TYPES (right))
+	    && tree_compare (TREE_FUNC_RET_TYPE (left),
+			     TREE_FUNC_RET_TYPE (right));
+      else 
+	return tree_compare (TYPE_DIM (left), TYPE_DIM (right))
+	    && tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right));
+    }
   /* circumflex comparision.  */
   if (TREE_CODE (left) == CIRCUMFLEX)
     return TREE_CIRCUMFLEX_INDEX_STATUS (left)

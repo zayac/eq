@@ -365,7 +365,10 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	}
       TREE_ID_DEFINED (id) = true;
 
-      TREE_TYPE (lhs) = TREE_TYPE (TREE_OPERAND (lhs, 0));
+      /* set the same type for circumflex as left operand has, but with
+	 disabled `is_stream' flag.  */
+      TREE_TYPE (lhs) = change_stream_prop (TREE_TYPE (TREE_OPERAND (lhs, 0)));
+
     }
   else if (TREE_CODE (lhs) == LOWER)
     {
@@ -1672,7 +1675,8 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 		free (rhs_type);
 		return 1;
 	      }
-	    TREE_TYPE (expr) = TREE_TYPE (lhs);
+	    TREE_TYPE (expr) = change_stream_prop (TREE_TYPE (lhs));
+	  
 	  }
 	else
 	  {

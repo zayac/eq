@@ -82,6 +82,7 @@ bool parser_expect_tclass (struct parser *, enum token_class);
 tree handle_type (struct parser *);
 tree handle_arraytype (struct parser *);
 tree handle_ext_type (struct parser *);
+tree handle_stream_or_ext_type (struct parser *);
 tree handle_list (struct parser *, tree (*)(struct parser *),
 		  enum token_kind);
 tree handle_id (struct parser *);

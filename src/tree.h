@@ -106,6 +106,7 @@ struct tree_type_node
 {
   struct tree_base base;
   size_t size;
+  bool is_stream;
   union type_properties properties;
   UT_hash_handle hh;
   tree list;
@@ -220,6 +221,7 @@ enum tree_global_code
 #define TYPE_FUNCTION_RET(node) \
   ((node)->type_node.properties.functional.ret_types)
 #define TYPE_LIST(node) ((node)->type_node.list)
+#define TYPE_IS_STREAM(node) ((node)->type_node.is_stream)
 
 #define TREE_ARGSET(node) ((node)->typed.argset)
 #define TREE_ARG(node) ((node)->typed.arg)
@@ -332,6 +334,7 @@ tree make_tree_list ();
 bool tree_list_append (tree, tree);
 tree make_function (tree, tree, tree, tree, tree, struct location);
 tree make_type (enum tree_code);
+tree change_stream_prop (tree);
 tree make_binary_op (enum tree_code, tree, tree);
 tree make_unary_op (enum tree_code, tree, struct location);
 tree make_matrix (tree, struct location);
