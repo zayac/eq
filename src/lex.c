@@ -626,7 +626,7 @@ lexer_get_token (struct lexer *lex)
     }
 
 
-  /* if nothing was found, we construct an unknown token  */
+  /* if nothing was found, we construct an unknown token.  */
   assert (buf == NULL, "buf was used, but token_class is missing");
   buf = (char *) malloc (2 * sizeof (char));
   buf[0] = c;
@@ -634,8 +634,8 @@ lexer_get_token (struct lexer *lex)
   tok->tok_class = tok_unknown;
 
 return_token:
-  assert (tok->tok_class >= tok_keyword
-	  && tok->tok_class <= tok_unknown, "token type was not provided");
+  /* All tokens are valid except `tok_class_length'.  */
+  assert (tok->tok_class <= tok_unknown, "token type was not provided");
 
   if (buf != NULL)
     {

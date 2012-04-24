@@ -44,7 +44,6 @@ tree add_user_type (tree type);
 tree function_exists (const char *);
 tree constant_exists (const char *);
 tree function_proto_exists (const char *);
-bool type_lists_eq (tree, tree);
 tree is_var_in_list (tree, tree);
 tree is_int_in_list (tree, tree);
 

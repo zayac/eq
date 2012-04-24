@@ -128,35 +128,6 @@ is_valid_type (tree type)
   return t == B_TYPE || t == N_TYPE || t == Z_TYPE || t == R_TYPE;
 }
 
-bool
-type_lists_eq (tree tal, tree tar)
-{
-/*  tree *  lptr = NULL;
-  tree *  rptr = NULL;
-
-  assert (TREE_CODE (tal) == LIST
-          && TREE_CODE (tar) == LIST, 0);
-
-	while ( (lptr = (tree*) utarray_next (TREE_LIST(tal), lptr)) &&
-					(rptr = (tree*) utarray_next (TREE_LIST(tal), rptr)))
-	{
-		if (lpt
-	}
-	lptr = TAILQ_FIRST (&TREE_LIST_QUEUE (tal));
-  TAILQ_FOREACH (rptr, &TREE_LIST_QUEUE (tar), entries)
-    {
-      if (lptr->element != rptr->element)
-        return false;
-
-      if ((TAILQ_NEXT (lptr, entries) == NULL)
-          != (TAILQ_NEXT (rptr, entries) == NULL))
-        return false;
-
-      lptr = TAILQ_NEXT (lptr, entries);
-    }
-*/
-  return true;
-}
 static inline tree
 function_or_proto_exists (tree list, const char *str)
 {

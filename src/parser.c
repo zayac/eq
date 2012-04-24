@@ -134,7 +134,7 @@ parser_get_lexer_token (struct parser *parser)
 	      "parser buffer holds only up to %i values.", parser->buf_size);
 
       s = parser->buf_end - parser->unget_idx;
-      s = s < 0 ? parser->buf_size + s : s;
+      s = s < 0 ? parser->buf_size + s : (unsigned) s;
       parser->unget_idx--;
 
       tok = parser->token_buffer[s];
@@ -3081,13 +3081,13 @@ handle_index_loop (struct parser * parser, tree prefix_id)
       tree_list_append (tlist,
 			make_binary_op (CASE_EXPR, expr,
 					make_tree (OTHERWISE_EXPR)));
-      t = make_index_loop (idx, cond, tlist, false);
+      t = make_index_loop (idx, cond, tlist);
     }
   else
     {
       parser_unget (parser);
       expr = handle_index_loop_cases (parser);
-      t = make_index_loop (idx, cond, expr, true);
+      t = make_index_loop (idx, cond, expr);
     }
   return t;
 error:
