@@ -245,7 +245,7 @@ codegen_iterative (FILE* f, tree var)
   if (el != NULL
       && (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node))
     {
-      fprintf (f, "\t\tif __i >= __size-1:\n");
+      fprintf (f, "\t\tif __i - __start >= __size-1:\n");
       fprintf (f, "\t\t\t__new = ");
       codegen_options.is_var_in_arg = true;
       codegen_options.circumflex_state = CIRC_LOCALS;
