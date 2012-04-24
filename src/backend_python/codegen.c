@@ -78,6 +78,9 @@ enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCAL_VAR, CIRC_LOCALS }
   bool iter_as_index;
 } codegen_options;
 
+/* In this list we store variables that are ready to be constructed.  */
+static tree rec_construct_list;
+
 extern tree iter_var_list;
 
 static void
@@ -98,6 +101,7 @@ codegen (void)
   level = 0;
 
   init_codegen_options ();
+  rec_construct_list = make_tree_list ();
 
   /* File to write files to.  */
   if ((f = fopen (filename, "w")) == NULL)
@@ -130,6 +134,8 @@ codegen (void)
   fprintf (f, "\nif __name__ == '__main__':\n\t__main()\n");
   fclose (f);
   printf ("note: finished generating code.\n");
+
+  free_tree (rec_construct_list);
 
   return function_error;
 }
@@ -218,12 +224,12 @@ codegen_iterative (FILE* f, tree var)
 {
   int error = 0;
   struct tree_list_element *el = NULL;
-  fprintf (f, "def __recur_");
+  fprintf (f, "class __recur_");
   codegen_expression (f, var);
-  fprintf (f, "(_iter, __local_vars):\n");
-  fprintf (f, "\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
-  fprintf (f, "\t__i = __start\n");
-  fprintf (f, "\t__window = [");
+  fprintf (f, ":\n");
+  /* class constuctor __init__.  */
+  fprintf (f, "\tdef __init__(self, __local_vars):\n");
+  fprintf (f, "\t\tself.window = [");
   DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (var))), el)
     {
       fprintf (f, "__local_vars['__");
@@ -236,17 +242,22 @@ codegen_iterative (FILE* f, tree var)
 	fprintf (f, ", ");
     }
   fprintf (f, "]\n");
-  fprintf (f, "\t__size = len(__window)\n");
-  fprintf (f, "\twhile __i <= _iter:\n");
-  fprintf (f, "\t\tif __i < __start + __size:\n");
-  fprintf (f, "\t\t\tyield __window[__i - __start]\n");
-  fprintf (f, "\t\telse:\n");
-  fprintf (f, "\t\t\tyield __window[__size - 1]\n");
+  fprintf (f, "\t\tself.size = len(self.window)\n");
+  fprintf (f, "\t\tself.locals = __local_vars\n");
+  fprintf (f, "\tdef generate(self, _iter):\n");
+  fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
+  fprintf (f, "\t\t__i = __start\n");
+  fprintf (f, "\t\t__window = self.window\n");
+  fprintf (f, "\t\twhile __i <= _iter:\n");
+  fprintf (f, "\t\t\tif __i < __start + self.size:\n");
+  fprintf (f, "\t\t\t\tyield __window[__i - __start]\n");
+  fprintf (f, "\t\t\telse:\n");
+  fprintf (f, "\t\t\t\tyield __window[self.size - 1]\n");
   if (el != NULL
       && (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node))
     {
-      fprintf (f, "\t\tif __i - __start >= __size-1:\n");
-      fprintf (f, "\t\t\t__new = ");
+      fprintf (f, "\t\t\tif __i - __start >= self.size-1:\n");
+      fprintf (f, "\t\t\t\t__new = ");
       codegen_options.is_var_in_arg = true;
       codegen_options.circumflex_state = CIRC_LOCALS;
       if (el->next == NULL)
@@ -256,12 +267,12 @@ codegen_iterative (FILE* f, tree var)
       codegen_options.is_var_in_arg = false;
       codegen_options.circumflex_state = CIRC_LOCAL_VAR;
       fprintf (f, "\n");
-      fprintf (f, "\t\t\t__deq = deque(__window)\n");
-      fprintf (f, "\t\t\t__deq.rotate(-1)\n");
-      fprintf (f, "\t\t\t__window = list (__deq)\n");
-      fprintf (f, "\t\t\t__window[__size - 1] = __new\n");
+      fprintf (f, "\t\t\t\t__deq = deque(__window)\n");
+      fprintf (f, "\t\t\t\t__deq.rotate(-1)\n");
+      fprintf (f, "\t\t\t\t__window = list (__deq)\n");
+      fprintf (f, "\t\t\t\t__window[self.size - 1] = __new\n");
     }
-  fprintf (f, "\t\t__i += 1\n");
+  fprintf (f, "\t\t\t__i += 1\n");
   return error;
 }
 
@@ -311,10 +322,26 @@ codegen_zero_function (FILE* f, tree function)
   return 0;
 }
 
+static inline void append_construct_list (tree lel)
+{
+  if ((TREE_CODE (lel) == CIRCUMFLEX)
+   && (TYPE_IS_STREAM (TREE_TYPE (TREE_OPERAND (lel, 0))))
+   && (TREE_OPERAND (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (
+	    TREE_OPERAND (lel,
+	    0))))->prev->entry, 0)
+	== TREE_OPERAND (lel, 1)))
+  {
+    tree_list_append (rec_construct_list, TREE_OPERAND (lel,
+    0));
+  }
+  return;
+}
+
 int
 codegen_stmt (FILE* f, tree stmt, char* func_name)
 {
   int error = 0;
+  struct tree_list_element *el, *tmp;
   indent (f, level);
   switch (TREE_CODE (stmt))
     {
@@ -332,6 +359,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    if (TREE_CODE (TREE_TYPE (rel->entry)) != LIST)
 	      {
 		codegen_expression (f, lel->entry);
+		append_construct_list (lel->entry);
 		lel = lel->next;
 	      }
 	    else
@@ -341,9 +369,12 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		    codegen_expression (f, lel->entry);
 		    if (el->next != NULL)
 		      fprintf (f, ", ");
+		    append_construct_list (lel->entry);
 		    lel = lel->next;
 		  }
 	      }
+
+
 	    fprintf (f, " = ");
 
 	    if (!recurrence_is_constant_expression (rel->entry))
@@ -591,6 +622,17 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
     }
 
   fprintf (f, "\n");
+  DL_FOREACH_SAFE (TREE_LIST (rec_construct_list), el, tmp)
+    {
+      indent (f, level);
+      codegen_expression (f, el->entry);
+      fprintf (f, " = __recur_");
+      codegen_expression (f, el->entry);
+      fprintf (f, "(locals())\n");
+      DL_DELETE (TREE_LIST (rec_construct_list), el);
+      free (el);
+    }
+
   return error;
 }
 
@@ -669,13 +711,13 @@ codegen_expression (FILE* f, tree expr)
 	  {
 	    if (codegen_options.iter_as_index)
 	      {
-		fprintf (f, "__size");
+		fprintf (f, "self.size");
 		break;
 	      }
 	  }
 
 	if (codegen_options.is_var_in_arg && expr != iter_var_node)
-	  fprintf (f, "__local_vars['");
+	  fprintf (f, "self.locals['");
 
 	if (*c == '\\')
 	  {
@@ -786,11 +828,10 @@ codegen_expression (FILE* f, tree expr)
 	      }
 	    else if (codegen_options.circumflex_state == CIRC_LOCAL_VAR)
 	      {
-		fprintf (f, "__get_gen_last_value (__recur_");
+		fprintf (f, "__get_gen_last_value (");
 		codegen_expression (f, TREE_OPERAND (expr, 0));
-		fprintf (f, "(");
+		fprintf (f, ".generate(");
 		error += codegen_expression (f, TREE_OPERAND (expr, 1));
-		fprintf (f, ", locals()");
 		fprintf (f, "))");
 	      }
 	    else
