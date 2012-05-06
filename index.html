@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Eq : A stream-based functional programming language" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Eq</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/zayac/eq">View on GitHub</a>
+
+          <h1 id="project_title">Eq</h1>
+          <h2 id="project_tagline">A stream-based functional programming language</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/zayac/eq/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/zayac/eq/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h3>Key Concepts</h3>
+
+<p>Eq is a stream-based functional language designed for solving numerical tasks. The lanugage key concepts are:</p>
+
+<ul>
+<li>
+<strong>Explicit separation of concurrent and data-dependent parts of a program.</strong> This allows us to generate an effective parallel code. </li>
+<li>
+<strong>Introduction of streams</strong>. This allows to design programs using stream networks. It provides a full dataflow network for a compiler. Thus the compiler is able to analyse dataflow and to perform useful optimisations.</li>
+<li>
+<strong>The usage of LaTeX as a front-end language.</strong> Our goal is to provide language which uses natural mathematical terms for algorithm description.</li>
+</ul><h3>Compiler Details</h3>
+
+<p>At the moment the Eq compiler is under active development. The compiler's front-end is being maintained at the moment. Currently we use Python as a back-end language, however we aim to support multiple backends and to work out performance issues.</p>
+
+<h3>Build Instructions</h3>
+
+<p>In order to build the compiler do the following:</p>
+
+<pre><code> $ cd build/
+ $ cmake ..
+ $ make
+</code></pre>
+
+<p>Compiler supports several build options.
+CMake cache variables can be defined:</p>
+
+<ul>
+<li>Select either to build the lexer only
+<code>
+-DBUILD_LEXER=[ON|&lt;OFF&gt;]
+</code>
+</li>
+<li>Select compiler's backend
+<code>
+-DBACKEND_LANG=[&lt;python&gt;|haskell]
+</code>
+</li>
+<li>Enable or disable functions as a first-class objects
+<code>
+-DFIRST_CLASS_FUNCTIONS=[&lt;ON&gt;|OFF]
+</code>
+</li>
+</ul><h3>Compiler Test Execution</h3>
+
+<p>In case you want to run a test bundle:</p>
+
+<pre><code>$ ctest
+</code></pre>
+
+<p>or</p>
+
+<pre><code>$ make test
+</code></pre>
+
+<p>A verbose output of the build is supported:</p>
+
+<pre><code>make VERBOSE=1
+</code></pre>
+
+<p>It's possible to execute tests separately:</p>
+
+<ul>
+<li>Tests compilation of a correct syntax on different stages (parser, type checking and code generating).
+<code>
+ctest -R run_test
+</code>
+</li>
+<li>Tests invalid syntax processing and error handling
+<code>
+$ ctest -R fail_test
+</code>
+</li>
+<li>Looks for memory leaks in the compiler
+<code>
+ctest -R memory_test
+</code>
+</li>
+</ul><h3>Examples</h3>
+
+<ul>
+<li>MD5 hash generation can be found in <code>tests/md5/md5.tex</code> file.</li>
+</ul><h3>Authors and Contributors</h3>
+
+<p>The idea belongs to the <a href="http://ctca.feis.herts.ac.uk/">Compiler Technology and Computer Architecture Group</a> of the <a href="http://www.herts.ac.uk/">University of Hertfordshire</a>.</p>
+
+<p>Currently the compiler is developed by:</p>
+
+<ul>
+<li>Pavel Zaichenkov (<a href="https://github.com/zayac" class="user-mention">@zayac</a>)</li>
+<li>Artem Shinkarov (<a href="https://github.com/ashinkarov" class="user-mention">@ashinkarov</a>)</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Eq maintained by <a href="https://github.com/zayac">zayac</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-31469785-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+
+  </body>
+</html>
