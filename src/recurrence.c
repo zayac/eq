@@ -132,10 +132,11 @@ recurrence_find_max_shift (tree t)
 }
 
 int
-recurrence_validate_indexes (tree t, tree left, int min, int range)
+recurrence_validate_indexes (tree t, tree left, tree var, int min, int range)
 {
   int ret = 0, i;
-  if (TREE_CODE (t) == CIRCUMFLEX && TREE_CIRCUMFLEX_INDEX_STATUS (t))
+  if (TREE_CODE (t) == CIRCUMFLEX && TREE_CIRCUMFLEX_INDEX_STATUS (t) 
+    && TREE_OPERAND (t, 0) == var)
     {
       tree index = TREE_OPERAND (t, 1);
       if (TREE_CODE (index) == INTEGER_CST && left == iter_var_node)
@@ -153,7 +154,7 @@ recurrence_validate_indexes (tree t, tree left, int min, int range)
 	}
     }
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
-    ret +=  recurrence_validate_indexes (TREE_OPERAND (t, i), left, min, range);
+    ret +=  recurrence_validate_indexes (TREE_OPERAND (t, i), left, var, min, range);
   return ret;
 }
 
@@ -235,6 +236,7 @@ recurrence_validate (tree t)
     {
       ret += recurrence_validate_indexes (TREE_OPERAND (el->entry, 1),
 			       TREE_OPERAND (el->entry, 0),
+			       t,
 			       min,
 			       max_shift);
     }

@@ -64,19 +64,25 @@ codegen_options
      CIRC_TMP_VAR -- a temporary variable that corresponds for recurrent
      expression (i.e. __a_0).
 
-     CIRC_LOCAL_VAR -- inside a recurrency function we are to pass
-     `__local_vars' variable recursively (i.e. __window[0]).
+      CIRC_LOCALS -- 
+	if `active_circumflex' variable equals to circumflex variable then
+	    access to a *recurrent window* from a recurrent expression
+	    generator function.
+	else
+	    inside a recurrency function we are to pass `__local_vars' variable
+	    recursively (i.e. __window[0]).
 
-      CIRC_LOCALS -- access to a *recurrent window* from a recurrent expression
-      generator function.
   */
-enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCAL_VAR, CIRC_LOCALS }
+enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCALS }
 	  circumflex_state;
 /* `\iter' can be occured in the right part of recurrent expression in place
      of index and as a regular variable as well. The implementation in code
      generator differs in these cases.  */
   bool iter_as_index;
 } codegen_options;
+
+/* a pointer to recurrent variable to resolve generation conflicts.  */
+static tree active_circumflex;
 
 /* In this list we store variables that are ready to be constructed.  */
 static tree rec_construct_list;
@@ -87,7 +93,8 @@ static void
 init_codegen_options (void)
 {
   codegen_options.is_var_in_arg = false;
-  codegen_options.circumflex_state = CIRC_LOCAL_VAR;
+  codegen_options.circumflex_state = CIRC_LOCALS;
+  active_circumflex = NULL;
   codegen_options.iter_as_index = false;
 }
 
@@ -110,7 +117,7 @@ codegen (void)
       return 1;
     }
 
-  fprintf (f, "from  sys import version_info\n");
+  fprintf (f, "from sys import version_info\n");
   fprintf (f, "from collections import deque\n");
   fprintf (f, "from itertools import product\n");
   fprintf (f, "from numpy import array\n");
@@ -144,7 +151,7 @@ static int
 codegen_get_gen_last_value_function (FILE* f)
 {
   indent (f, 0);
-  fprintf (f, "def __get_gen_last_value (__gen):\n"
+  fprintf (f, "def _get_gen_last_value (__gen):\n"
 	      "\t__ret = None\n"
 	      "\tfor __ret in __gen:\n"
 	      "\t\tpass\n"
@@ -227,7 +234,7 @@ codegen_iterative (FILE* f, tree var)
   /* a list shortcut.  */
   struct tree_list_element *first_list_element = 
 			  TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (var)));
-  fprintf (f, "class __recur_");
+  fprintf (f, "class _recur_");
   codegen_expression (f, var);
   fprintf (f, ":\n");
   /* class constuctor __init__.  */
@@ -261,10 +268,10 @@ codegen_iterative (FILE* f, tree var)
     {
       fprintf (f, "\t\t\tyield ");
       codegen_options.is_var_in_arg = true;
-      codegen_options.circumflex_state = CIRC_LOCALS;
-	error += codegen_expression (f, TREE_OPERAND (first_list_element->entry, 1));
+      active_circumflex = var;
+      error += codegen_expression (f, TREE_OPERAND (first_list_element->entry, 1));
       codegen_options.is_var_in_arg = false;
-      codegen_options.circumflex_state = CIRC_LOCAL_VAR;
+      active_circumflex = NULL;
       fprintf (f, "\n");
     }
   /* a general case with base cases.  */
@@ -279,6 +286,8 @@ codegen_iterative (FILE* f, tree var)
 	{
 	  fprintf (f, "\t\t\tif __i - __start >= self.size-1:\n");
 	  fprintf (f, "\t\t\t\t__new = ");
+	  
+	  active_circumflex = var;
 	  codegen_options.is_var_in_arg = true;
 	  codegen_options.circumflex_state = CIRC_LOCALS;
 	  if (el->next == NULL)
@@ -286,7 +295,7 @@ codegen_iterative (FILE* f, tree var)
 	  else
 	    error += codegen_expression (f, TREE_OPERAND (el->next->entry, 1));
 	  codegen_options.is_var_in_arg = false;
-	  codegen_options.circumflex_state = CIRC_LOCAL_VAR;
+	  active_circumflex = NULL;
 	  fprintf (f, "\n");
 	  fprintf (f, "\t\t\t\t__deq = deque(__window)\n");
 	  fprintf (f, "\t\t\t\t__deq.rotate(-1)\n");
@@ -429,7 +438,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		indent (f, level);
 	      }
 	  }
-	codegen_options.circumflex_state = CIRC_LOCAL_VAR;
+	codegen_options.circumflex_state = CIRC_LOCALS;
       }
       break;
     case DECLARE_STMT:
@@ -648,7 +657,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
     {
       indent (f, level);
       codegen_expression (f, el->entry);
-      fprintf (f, " = __recur_");
+      fprintf (f, " = _recur_");
       codegen_expression (f, el->entry);
       fprintf (f, "(locals())\n");
       DL_DELETE (TREE_LIST (rec_construct_list), el);
@@ -842,19 +851,22 @@ codegen_expression (FILE* f, tree expr)
 	  {
 	    if (codegen_options.circumflex_state == CIRC_LOCALS)
 	      {
-		fprintf (f, "__window[");
-		codegen_options.iter_as_index = true;
-		error += codegen_expression (f, TREE_OPERAND (expr, 1));
-		codegen_options.iter_as_index = false;
-		fprintf (f, "]");
-	      }
-	    else if (codegen_options.circumflex_state == CIRC_LOCAL_VAR)
-	      {
-		fprintf (f, "__get_gen_last_value (");
-		codegen_expression (f, TREE_OPERAND (expr, 0));
-		fprintf (f, ".generate(");
-		error += codegen_expression (f, TREE_OPERAND (expr, 1));
-		fprintf (f, "))");
+		if (tree_compare (active_circumflex, TREE_OPERAND (expr, 0)))
+		  {
+		    fprintf (f, "__window[");
+		    codegen_options.iter_as_index = true;
+		    error += codegen_expression (f, TREE_OPERAND (expr, 1));
+		    codegen_options.iter_as_index = false;
+		    fprintf (f, "]");
+		  }
+		else
+		  {
+		    fprintf (f, "_get_gen_last_value (");
+		    codegen_expression (f, TREE_OPERAND (expr, 0));
+		    fprintf (f, ".generate(");
+		    error += codegen_expression (f, TREE_OPERAND (expr, 1));
+		    fprintf (f, "))");
+		  }
 	      }
 	    else
 	      {

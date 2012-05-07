@@ -835,6 +835,12 @@ tree_compare (tree left, tree right)
 	return tree_compare (TYPE_DIM (left), TYPE_DIM (right))
 	    && tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right));
     }
+
+  /* Operand comparision.  */
+  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (left)); i++)
+    if (!tree_compare (TREE_OPERAND (left, i), TREE_OPERAND (right, i)))
+      return false;
+
   /* circumflex comparision.  */
   if (TREE_CODE (left) == CIRCUMFLEX)
     return TREE_CIRCUMFLEX_INDEX_STATUS (left)
@@ -843,6 +849,9 @@ tree_compare (tree left, tree right)
   if (TREE_CODE (left) == STRING_TYPE)
     return TREE_STRING_CST_LENGTH (left) == TREE_STRING_CST_LENGTH (right)
 	   && !strcmp (TREE_STRING_CST (left), TREE_STRING_CST (right));
+
+  if (TREE_CODE (left) == STRING_CST)
+    return !strcmp (TREE_STRING_CST (left), TREE_STRING_CST (right));
 
   if (TREE_CODE (left) == INTEGER_CST)
     return TREE_INTEGER_CST (left) == TREE_INTEGER_CST (right);
@@ -853,10 +862,6 @@ tree_compare (tree left, tree right)
   if (TREE_CODE (left) == IDENTIFIER)
     return tree_compare (TREE_ID_NAME (left), TREE_ID_NAME (right));
 
-  /* Operand comparision.  */
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (left)); i++)
-    if (!tree_compare (TREE_OPERAND (left, i), TREE_OPERAND (right, i)))
-      return false;
 
   return true;
 }
