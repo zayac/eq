@@ -185,6 +185,12 @@ foreach (test ${fail_tests})
   fail_test (${test} ${opt})
 endforeach ()
 
+# include files for error-testing
+file (GLOB_RECURSE fail_tests "tests/codegen_tests_python/fail_tests/*.tex")
+foreach (test ${fail_tests})
+  fail_test (${test} "")
+endforeach ()
+
 # include files for codegen testing
 file (GLOB run_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex")
 foreach (test ${run_tests})

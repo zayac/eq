@@ -410,11 +410,13 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 					    TREE_OPERAND (lel->entry, 0)))
 		      {
 			error_loc (TREE_LOCATION (lel->entry),
-			  "it is forbidden to define several different"
-			  "recurrent expressions in one statement. `%s' and"
+			  "it is forbidden to define several different "
+			  "recurrent expressions in one statement. `%s' and "
 			  "`%s' variables conflict occured.",
-			  TREE_STRING_CST (tmp_active_circumflex),
-			  TREE_STRING_CST (TREE_OPERAND (lel->entry, 0)));
+			  TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+					(tmp_active_circumflex)),
+			  TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+				  (TREE_OPERAND (lel->entry, 0))));
 		      }
 		  }
 		append_construct_list (lel->entry);
