@@ -59,22 +59,27 @@ codegen_options
   /* in a function for recurrent expression variables are stored in a
      dictionary which is passed as an argument.  */
   bool is_var_in_arg;
-  /* a way how to generate code for circumflex node (i.e. a^{[0]}):
 
-     CIRC_TMP_VAR -- a temporary variable that corresponds for recurrent
-     expression (i.e. __a_0).
-
-      CIRC_LOCALS -- 
-	if `active_circumflex' variable equals to circumflex variable then
-	    access to a *recurrent window* from a recurrent expression
-	    generator function.
-	else
-	    inside a recurrency function we are to pass `__local_vars' variable
-	    recursively (i.e. __window[0]).
-
+  /* state flags.  */
+  /* we are generating code inside recurrent
+				   expression code:
+				   def class _recur ... :
+				     ...
+				     def generate ... :
+				       ...
+				       < we are here if flag is set >
+				       ...  
   */
-enum circumflex_var_type { CIRC_TMP_VAR, CIRC_LOCALS }
-	  circumflex_state;
+  bool inside_generator;
+  /* set if we are generating code for the left part of the statement
+     (assignment statement).
+     If we are generating code for the right part of the assignment or
+     expression in any other statement, set false.  */ 
+  bool is_left_assign;
+  /* the following expression in the right part of the statement depends on the
+     expression in the left one (used mostly in the assignment).  */
+  bool is_dependant;
+
 /* `\iter' can be occured in the right part of recurrent expression in place
      of index and as a regular variable as well. The implementation in code
      generator differs in these cases.  */
@@ -93,9 +98,12 @@ static void
 init_codegen_options (void)
 {
   codegen_options.is_var_in_arg = false;
-  codegen_options.circumflex_state = CIRC_LOCALS;
   active_circumflex = NULL;
   codegen_options.iter_as_index = false;
+  
+  codegen_options.inside_generator = false;
+  codegen_options.is_left_assign = false;
+  codegen_options.is_dependant = false;
 }
 
 int
@@ -258,6 +266,8 @@ codegen_iterative (FILE* f, tree var)
   fprintf (f, "\t\tself.size = len(self.window)\n");
   fprintf (f, "\t\tself.locals = __local_vars\n");
   fprintf (f, "\tdef generate(self, _iter):\n");
+  /* set `inside_generator' flag.  */
+  codegen_options.inside_generator = true;
   fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
   fprintf (f, "\t\t__i = __start\n");
   fprintf (f, "\t\t__window = self.window\n");
@@ -289,7 +299,6 @@ codegen_iterative (FILE* f, tree var)
 	  
 	  active_circumflex = var;
 	  codegen_options.is_var_in_arg = true;
-	  codegen_options.circumflex_state = CIRC_LOCALS;
 	  if (el->next == NULL)
 	    error += codegen_expression (f, TREE_OPERAND (el->entry, 1));
 	  else
@@ -304,6 +313,8 @@ codegen_iterative (FILE* f, tree var)
 	}
     }
   fprintf (f, "\t\t\t__i += 1\n");
+  /* unset `inside_generator' flag.  */
+  codegen_options.inside_generator = false;
   return error;
 }
 
@@ -379,17 +390,33 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
     case ASSIGN_STMT:
       {
 	struct tree_list_element *lel, *rel, *el;
+	tree tmp_active_circumflex = NULL;
 	lel = TREE_LIST (TREE_OPERAND (stmt, 0));
-	codegen_options.circumflex_state = CIRC_TMP_VAR;
 	/* we split a list of variable declarations into a list of detached
 	   atomic declarations, as Python doesn't support the assignment that
 	   is valid in Eq.  */
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 1)), rel)
 	  {
+	    codegen_options.is_left_assign = true;
 	    /* codegen left part of the declaration.  */
 	    if (TREE_CODE (TREE_TYPE (rel->entry)) != LIST)
 	      {
 		codegen_expression (f, lel->entry);
+		if (TREE_CODE (lel->entry) == CIRCUMFLEX)
+		  {
+		    if (tmp_active_circumflex == NULL)
+		      tmp_active_circumflex = TREE_OPERAND (lel->entry, 0);
+		    else if (!tree_compare (active_circumflex,
+					    TREE_OPERAND (lel->entry, 0)))
+		      {
+			error_loc (TREE_LOCATION (lel->entry),
+			  "it is forbidden to define several different"
+			  "recurrent expressions in one statement. `%s' and"
+			  "`%s' variables conflict occured.",
+			  TREE_STRING_CST (tmp_active_circumflex),
+			  TREE_STRING_CST (TREE_OPERAND (lel->entry, 0)));
+		      }
+		  }
 		append_construct_list (lel->entry);
 		lel = lel->next;
 	      }
@@ -405,9 +432,10 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		  }
 	      }
 
-
+	    active_circumflex = tmp_active_circumflex;
+	    codegen_options.is_left_assign = false;
 	    fprintf (f, " = ");
-
+	    
 	    if (!recurrence_is_constant_expression (rel->entry))
 	      {
 		if (TYPE_SHAPE (TREE_TYPE (rel->entry)) != NULL)
@@ -438,7 +466,8 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		indent (f, level);
 	      }
 	  }
-	codegen_options.circumflex_state = CIRC_LOCALS;
+	active_circumflex = NULL;
+	tmp_active_circumflex = NULL;
       }
       break;
     case DECLARE_STMT:
@@ -849,32 +878,62 @@ codegen_expression (FILE* f, tree expr)
 	  }
 	else
 	  {
-	    if (codegen_options.circumflex_state == CIRC_LOCALS)
+	    codegen_options.is_dependant = tree_compare (active_circumflex,
+		TREE_OPERAND (expr, 0));
+
+	    /* We choose the code to generate which is dependant of
+	       `inside_generator', `is_left_assign' and `is_dependant' flags:
+	    
+	    `inside_generator' | `is_left_assign' | `is_dependant' |  code
+
+		    0	       |	0	  |	  0	   |  GENERATE
+		    0	       |	0	  |	  1	   |  VAR
+		    0	       |	1	  |	  0	   |  VAR
+		    0	       |	1	  |	  1	   |  VAR
+		    1	       |	0	  |	  0	   |  GENERATE
+		    1	       |	0	  |	  1	   |  WINDOW
+		    1	       |	1	  |	  0	   |  <invalid>
+		    1	       |	1	  |	  1	   |  <invalid>
+	    */
+
+	    /* GENERATE code.  */
+	    if ((!codegen_options.inside_generator
+		  && !codegen_options.is_left_assign
+		  && !codegen_options.is_dependant)
+		|| (codegen_options.inside_generator
+		 && !codegen_options.is_dependant
+		 && !codegen_options.is_left_assign))
 	      {
-		if (tree_compare (active_circumflex, TREE_OPERAND (expr, 0)))
-		  {
-		    fprintf (f, "__window[");
-		    codegen_options.iter_as_index = true;
-		    error += codegen_expression (f, TREE_OPERAND (expr, 1));
-		    codegen_options.iter_as_index = false;
-		    fprintf (f, "]");
-		  }
-		else
-		  {
-		    fprintf (f, "_get_gen_last_value (");
-		    codegen_expression (f, TREE_OPERAND (expr, 0));
-		    fprintf (f, ".generate(");
-		    error += codegen_expression (f, TREE_OPERAND (expr, 1));
-		    fprintf (f, "))");
-		  }
+		fprintf (f, "_get_gen_last_value (");
+		codegen_expression (f, TREE_OPERAND (expr, 0));
+		fprintf (f, ".generate(");
+		error += codegen_expression (f, TREE_OPERAND (expr, 1));
+		fprintf (f, "))");
 	      }
-	    else
+	    /* WINDOW code.  */
+	    else if (codegen_options.inside_generator
+	          && codegen_options.is_dependant
+		  && !codegen_options.is_left_assign)
+	      {
+		fprintf (f, "__window[");
+		codegen_options.iter_as_index = true;
+		error += codegen_expression (f, TREE_OPERAND (expr, 1));
+		codegen_options.iter_as_index = false;
+		fprintf (f, "]");
+	      }
+	    /* VAR code.  */
+	    else if (!codegen_options.inside_generator
+	       && (codegen_options.is_left_assign
+	        || (!codegen_options.is_left_assign && codegen_options.is_dependant)))
 	      {
 		fprintf (f, "__");
 		codegen_expression (f, TREE_OPERAND (expr, 0));
 		fprintf (f, "_");
 		codegen_expression (f, TREE_OPERAND (expr, 1));
 	      }
+	    else
+	      assert (0, "unexpected state");
+	    codegen_options.is_dependant = false;
 	  }
       }
       break;

@@ -1,0 +1,13 @@
+\begin{eqcode}{f}{s}{\overline{\type{Z}}}{\overline{\type{Z}}}
+  t \in \overline{\type{Z}} \lend
+  t^{[\iter]} \gets  s^{[7]} \lend
+  \return {t} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
+  a \in \overline{\type{Z}} \lend
+  b \gets 2 \lend
+  a^{[\iter]} \gets \iter \cdot \iter \cdot b \lend
+  \print {\call{f}{a}^{[5]}} \lend
+% eq-exec: 98
+\end{eqcode}
