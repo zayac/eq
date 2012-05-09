@@ -90,13 +90,10 @@ typecheck (void)
   /* sort recurrent expressions by initial values.  */
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     {
-      /* avoid warnings in `utlist' library.  */
-      #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
       DL_SORT (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (tl->entry))),
 	       recurrence_sort);
-      #pragma GCC diagnostic pop
     }
-  
+
   /* validate recurrent expressions.  */
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     recurrence_validate (tl->entry);
