@@ -52,6 +52,7 @@ static int level;
 static int codegen_get_gen_last_value_function (FILE*);
 static int codegen_genar_function (FILE*);
 
+enum circumflex_type { UNKNOWN, GENERATE, VAR, WINDOW };
 /* These parameters specify options for code generating.  */
 static struct
 codegen_options
@@ -84,6 +85,9 @@ codegen_options
      of index and as a regular variable as well. The implementation in code
      generator differs in these cases.  */
   bool iter_as_index;
+
+  /* Choose circumflex representation.  */
+  enum circumflex_type circumflex_type;
 } codegen_options;
 
 /* a pointer to recurrent variable to resolve generation conflicts.  */
@@ -104,6 +108,8 @@ init_codegen_options (void)
   codegen_options.inside_generator = false;
   codegen_options.is_left_assign = false;
   codegen_options.is_dependant = false;
+
+  codegen_options.circumflex_type = UNKNOWN;
 }
 
 int
@@ -125,6 +131,7 @@ codegen (void)
       return 1;
     }
 
+  fprintf (f, "from __future__ import division\n");
   fprintf (f, "from sys import version_info\n");
   fprintf (f, "from collections import deque\n");
   fprintf (f, "from itertools import product\n");
@@ -290,7 +297,7 @@ codegen_iterative (FILE* f, tree var)
       fprintf (f, "\t\t\tif __i < __start + self.size:\n");
       fprintf (f, "\t\t\t\tyield __window[__i - __start]\n");
       fprintf (f, "\t\t\telse:\n");
-      fprintf (f, "\t\t\t\tyield __window[self.size - 1]\n");
+      fprintf (f, "\t\t\t\tyield __window[-1]\n");
       if (el != NULL
 	  && (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node))
 	{
@@ -309,7 +316,7 @@ codegen_iterative (FILE* f, tree var)
 	  fprintf (f, "\t\t\t\t__deq = deque(__window)\n");
 	  fprintf (f, "\t\t\t\t__deq.rotate(-1)\n");
 	  fprintf (f, "\t\t\t\t__window = list (__deq)\n");
-	  fprintf (f, "\t\t\t\t__window[self.size - 1] = __new\n");
+	  fprintf (f, "\t\t\t\t__window[-1] = __new\n");
 	}
     }
   fprintf (f, "\t\t\t__i += 1\n");
@@ -776,6 +783,11 @@ codegen_expression (FILE* f, tree expr)
 		fprintf (f, "self.size");
 		break;
 	      }
+	    else if (codegen_options.circumflex_type == GENERATE)
+	      {
+		fprintf (f, "__i + 1");
+		break;
+	      }
 	  }
 
 	if (codegen_options.is_var_in_arg && expr != iter_var_node)
@@ -906,6 +918,7 @@ codegen_expression (FILE* f, tree expr)
 		 && !codegen_options.is_dependant
 		 && !codegen_options.is_left_assign))
 	      {
+		codegen_options.circumflex_type = GENERATE;
 		fprintf (f, "_get_gen_last_value (");
 		codegen_expression (f, TREE_OPERAND (expr, 0));
 		fprintf (f, ".generate(");
@@ -917,6 +930,7 @@ codegen_expression (FILE* f, tree expr)
 	          && codegen_options.is_dependant
 		  && !codegen_options.is_left_assign)
 	      {
+		codegen_options.circumflex_type = WINDOW;
 		fprintf (f, "__window[");
 		codegen_options.iter_as_index = true;
 		error += codegen_expression (f, TREE_OPERAND (expr, 1));
@@ -928,6 +942,7 @@ codegen_expression (FILE* f, tree expr)
 	       && (codegen_options.is_left_assign
 	        || (!codegen_options.is_left_assign && codegen_options.is_dependant)))
 	      {
+		codegen_options.circumflex_type = VAR;
 		fprintf (f, "__");
 		codegen_expression (f, TREE_OPERAND (expr, 0));
 		fprintf (f, "_");
@@ -935,6 +950,7 @@ codegen_expression (FILE* f, tree expr)
 	      }
 	    else
 	      assert (0, "unexpected state");
+	    codegen_options.circumflex_type = UNKNOWN;
 	    codegen_options.is_dependant = false;
 	  }
       }

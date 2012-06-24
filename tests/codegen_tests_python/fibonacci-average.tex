@@ -1,0 +1,31 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+\begin{document}
+
+\begin{eqcode}{sum}{fib}{\overline{\type{Z}}}{\overline{\type{Z}}}
+  s \in \overline{\type{Z}} \lend
+  s^{[0]} \gets 0 \lend
+  s^{[\iter]} \gets s^{[\iter - 1]} + fib^{[\iter]} \lend
+  \return {s} \lend
+\end{eqcode}
+
+\begin{eqcode}{avg}{sum}{\overline{\type{Z}}}{\overline{\type{R}}}
+  n \in \overline{\type{Z}} \lend
+  n^{[\iter]} \gets \iter \lend
+  avg \in \overline{\type{R}} \lend
+  avg^{[\iter]} \gets \frac{sum^{[\iter]}}{n^{[\iter]}} \lend
+  \return {avg} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{\ }{\ }{\type{R}}
+  fib \in \overline{\type{Z}} \lend
+  fib^{[1]} \gets 1; fib^{[2]} \gets 1 \lend
+  fib^{[\iter]} \gets fib^{[\iter-1]} + fib^{[\iter-2]} \lend
+  res \in \overline{\type{R}} \lend
+  res \gets \call{avg}{\call{sum}{fib}} \lend
+  % eq-exec: 6.75
+  \print {res^{[7]}} \lend
+  \return {res^{[7]}} \lend
+\end{eqcode}
+
+\end{document}
