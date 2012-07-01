@@ -788,6 +788,11 @@ codegen_expression (FILE* f, tree expr)
 		fprintf (f, "__i + 1");
 		break;
 	      }
+	    else if (codegen_options.circumflex_type == UNKNOWN)
+	      {
+		fprintf (f, "__i");
+		break;
+	      }
 	  }
 
 	if (codegen_options.is_var_in_arg && expr != iter_var_node)
