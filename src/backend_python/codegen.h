@@ -22,4 +22,5 @@ int codegen_stmt (FILE*, tree, char*);
 int codegen_expression (FILE*, tree);
 int codegen_genar (FILE*, tree, struct tree_list_element*);
 int codegen_iterative (FILE*, tree);
+int codegen_stream (FILE*, tree);
 #endif /* __CODEGEN_H__ */

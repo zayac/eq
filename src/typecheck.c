@@ -25,6 +25,7 @@
 static int associate_variables (tree, tree, tree);
 
 extern tree iter_var_list;
+extern tree stream_list;
 
 static struct
 typecheck_options
@@ -424,6 +425,29 @@ typecheck_assign_index (tree lhs, tree rhs)
   return ret;
 }
 
+/* A stream typed expression assignment.  */
+int
+typecheck_assign_stream (tree lhs, tree rhs)
+{
+  assert (TYPE_IS_STREAM (TREE_TYPE (rhs)), "right part of the statement"
+					    " is not a stream");
+  assert (TREE_CODE (lhs) == IDENTIFIER, "left part of the statement "
+					 "is not an identifier");
+  if (TREE_ID_ITER (lhs) == NULL)
+    {
+      TREE_ID_ITER (lhs) = rhs;
+      tree_list_append (stream_list, lhs);
+    }
+  else
+    {
+      error_loc (TREE_LOCATION (lhs),
+		  "stream `%s' is defined already",
+			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (lhs)));
+      return 1;
+    }
+  return 0;
+}
+
 int
 typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 {
@@ -452,6 +476,8 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	    /* Assign index information to identifier.  */
 	    if (TREE_CODE (lhs) == CIRCUMFLEX)
 	      ret += typecheck_assign_index (lhs, rhs);
+	    else if (TYPE_IS_STREAM (TREE_TYPE (rhs)))
+	      ret += typecheck_assign_stream (lhs, rhs);
 
 	    if (ret)
 	      return ret;
@@ -1719,7 +1745,25 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	tree_list_combine (ext_vars, vars);
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), el)
 	  {
+	    tree var = NULL;
 	    tree index = NULL;
+	    tree id = TREE_OPERAND (el->entry, 0);
+	    add_prefix_to_var (id, TREE_STRING_CST (TREE_ID_NAME
+				      (TREE_OPERAND (func_ref, 0))));
+
+	    if ((var = is_var_in_list (id, iter_var_list)) != NULL)
+	      {
+		free_tree (id);
+		TREE_OPERAND_SET (el->entry, 0, var);
+		id = var;
+	      }
+	    else
+	      {
+		error_loc (TREE_LOCATION (id),
+			   "stream `%s' used without previous definition",
+			   TREE_STRING_CST (TREE_ID_SOURCE_NAME (id)));
+		return 1;
+	      }
 
 	    if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == IDENTIFIER)
 	      index = is_var_in_list (TREE_OPERAND (el->entry, 1), new_scope);

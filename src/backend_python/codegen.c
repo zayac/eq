@@ -97,6 +97,7 @@ static tree active_circumflex;
 static tree rec_construct_list;
 
 extern tree iter_var_list;
+extern tree stream_list;
 
 static void
 init_codegen_options (void)
@@ -144,7 +145,13 @@ codegen (void)
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     {
       level = 0;
-      codegen_iterative (f, (tree) tl->entry);
+      codegen_iterative (f, tl->entry);
+    }
+
+  DL_FOREACH (TREE_LIST (stream_list), tl)
+    {
+      level = 0;
+      codegen_stream (f, tl->entry);
     }
 
   DL_FOREACH (TREE_LIST (function_list), tl)
@@ -325,6 +332,50 @@ codegen_iterative (FILE* f, tree var)
   return error;
 }
 
+int 
+codegen_stream (FILE* f, tree var)
+{
+  int error = 0;
+  assert (TREE_ID_ITER (var) != NULL, "variable is not a stream");
+  switch (TREE_CODE (TREE_ID_ITER (var)))
+    {
+    case FILTER_EXPR:
+      {
+	tree filter = TREE_ID_ITER (var);
+	tree parent = TREE_OPERAND (TREE_LIST 
+		     (TREE_OPERAND (filter, 0))->entry, 0);
+	tree index = TREE_OPERAND (TREE_LIST 
+		     (TREE_OPERAND (filter, 0))->entry, 1);
+	fprintf (f, "class _recur_");
+	codegen_expression (f, var);
+	fprintf (f, "(_recur_");
+	// TODO list of variables in filter is not supported
+	codegen_expression (f, parent);
+	fprintf (f, "):\n");
+	fprintf (f, "\tdef generate(self, _iter):\n");
+	fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (parent)));
+	fprintf (f, "\t\t");
+	codegen_expression (f, index);
+	fprintf (f, " = __start\n");
+	fprintf (f, "\t\tfor __el in _recur_");
+	codegen_expression (f, parent);
+	fprintf (f, ".generate(self, _iter):\n"); 
+	fprintf (f, "\t\t\tif "); 
+	codegen_expression (f, TREE_OPERAND (TREE_OPERAND (filter, 1), 1));
+	fprintf (f, ":\n");
+	fprintf (f, "\t\t\t\tyield __el\n");
+	fprintf (f, "\t\t\t\t");
+	codegen_expression (f, index);
+	fprintf (f, " += 1\n");
+      }
+      break;
+    /* Here could be more stream types.  */
+    default:
+      ;
+    }
+  return error;
+}
+
 static int
 codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
 {
@@ -465,6 +516,21 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		  copy_list = true;
 		if (copy_list)
 		  fprintf (f, " list(");
+		if (TREE_CODE (rel->entry) == FILTER_EXPR)
+		  {
+		    struct tree_list_element *el;
+		    /* a bruteforce solution to find a corresponding to filter
+		       expression variable.  */
+		    DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
+		      {
+			if (TREE_CODE (el->entry) == IDENTIFIER
+			 && TREE_ID_ITER (el->entry) == rel->entry)
+			  fprintf (f, "_recur_");
+			  codegen_expression (f, el->entry);
+			  fprintf (f, "(locals())\n");
+		      }
+		  }
+		else
 		codegen_expression (f, rel->entry);
 		if (copy_list)
 		  fprintf (f, ")");
