@@ -279,12 +279,14 @@ codegen_iterative (FILE* f, tree var)
   fprintf (f, "]\n");
   fprintf (f, "\t\tself.size = len(self.window)\n");
   fprintf (f, "\t\tself.locals = __local_vars\n");
-  fprintf (f, "\tdef generate(self, _iter):\n");
+  fprintf (f, "\tdef generate(self, _iter=None):\n");
   /* set `inside_generator' flag.  */
   codegen_options.inside_generator = true;
   fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
   fprintf (f, "\t\t__i = __start\n");
   fprintf (f, "\t\t__window = self.window\n");
+  fprintf (f, "\t\tif _iter == None:\n");
+  fprintf (f, "\t\t\t_iter = float(\"inf\")\n");
   fprintf (f, "\t\twhile __i <= _iter:\n");
   /* a separate case with absent base cases, 
      i.e. only expression for `\iter' index is defined.  */
@@ -352,21 +354,27 @@ codegen_stream (FILE* f, tree var)
 	// TODO list of variables in filter is not supported
 	codegen_expression (f, parent);
 	fprintf (f, "):\n");
-	fprintf (f, "\tdef generate(self, _iter):\n");
+	fprintf (f, "\tdef generate(self, _iter=None):\n");
 	fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (parent)));
 	fprintf (f, "\t\t");
 	codegen_expression (f, index);
 	fprintf (f, " = __start\n");
+	fprintf (f, "\t\t__i = 0\n");
+	fprintf (f, "\t\tif _iter == None:\n");
+	fprintf (f, "\t\t\t_iter = float(\"inf\")\n");
 	fprintf (f, "\t\tfor __el in _recur_");
 	codegen_expression (f, parent);
-	fprintf (f, ".generate(self, _iter):\n"); 
+	fprintf (f, ".generate(self):\n"); 
 	fprintf (f, "\t\t\tif "); 
 	codegen_expression (f, TREE_OPERAND (TREE_OPERAND (filter, 1), 1));
 	fprintf (f, ":\n");
 	fprintf (f, "\t\t\t\tyield __el\n");
-	fprintf (f, "\t\t\t\t");
+	fprintf (f, "\t\t\t\t__i += 1\n");
+	fprintf (f, "\t\t\t");
 	codegen_expression (f, index);
 	fprintf (f, " += 1\n");
+	fprintf (f, "\t\t\tif __i > _iter:\n");
+	fprintf (f, "\t\t\t\tbreak\n");
       }
       break;
     /* Here could be more stream types.  */
