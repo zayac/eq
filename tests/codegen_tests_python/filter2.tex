@@ -1,7 +1,7 @@
 \begin{eqcode}{\mu}{\ }{\ }{\overline{\type{Z}}}
   b \in \overline{\type{Z}} \lend
   b^{[\iter]} \gets \iter \cdot \iter \lend
-  c \gets {\filter{b | \iter \mod 2 = 0}} \lend
+  c \gets {\filter{b | b^{[\iter]} \mod 2 = 0}} \lend
   % eq-exec: 144
   \print {c^{[6]}} \lend
   \return {c} \lend

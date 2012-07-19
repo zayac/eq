@@ -135,6 +135,9 @@ conversion_possible (tree from, tree to)
     || (from == n_type_node && to == z_type_node))
     return true;
 
+  if ( (TYPE_IS_STREAM (from) && !TYPE_IS_STREAM (to))
+   || (!TYPE_IS_STREAM (from) &&  TYPE_IS_STREAM (to)))
+    return false;
 
   if (TYPE_DIM (from) != NULL
       && TYPE_DIM (to) != NULL)
@@ -665,7 +668,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	  goto finalize_withloop;
 
 	/* check generator.  */
-	ret += typecheck_generator (gen, ext_vars, new_scope, func_ref);
+	ret += typecheck_generator (gen, ext_vars, new_scope, func_ref, false);
 	if (ret)
 	  goto finalize_withloop;
 
@@ -675,7 +678,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	    ret += typecheck_expression (exp, ext_vars, new_scope, func_ref);
 	    if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == GENERATOR)
 	      ret += typecheck_generator (TREE_OPERAND (el->entry, 1),
-					  ext_vars, new_scope, func_ref);
+					  ext_vars, new_scope, func_ref, false);
 
 	    if (!tree_compare (TREE_TYPE (var), TREE_TYPE (exp)))
 	      {
@@ -955,8 +958,11 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
      generator expression. Then 'lhs' must be an identifier.  */
   if (generator)
     {
-      /* FIXME: Should not be in assert.  */
-      assert (TREE_CODE (lhs) == IDENTIFIER, "only identifier is valid here");
+      if (TREE_CODE (lhs) != IDENTIFIER)
+	{
+	  error_loc (TREE_LOCATION (lhs), "identifier expected here");
+	  return 1;
+	}	
     }
 
   ret += typecheck_expression (lhs, ext_vars, vars, func_ref);
@@ -1071,6 +1077,9 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
   TYPE_SHAPE (tmp_type) = shape;
 
   TREE_TYPE (expr) = types_assign_type (tmp_type);
+  
+  /* an array element can not be a stream.  */
+  TYPE_IS_STREAM (TREE_TYPE (expr)) = false;
 
   if (TREE_TYPE (expr) != tmp_type)
     free_tree_type (tmp_type, true);
@@ -1109,7 +1118,8 @@ associate_variables (tree t, tree ext_vars, tree vars)
 }
 
 int
-typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref)
+typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref,
+		     bool decls_allowed)
 {
   int ret = 0;
   struct tree_list_element *el;
@@ -1132,31 +1142,43 @@ typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref)
 	  ret += 1;
 
 	}
+
+
       /* add function prefix to the identifier.  */
       add_prefix_to_var (el->entry, TREE_STRING_CST (TREE_ID_NAME (
 				    TREE_OPERAND (func_ref, 0))));
 
-
-      if ((var = is_var_in_list (el->entry, vars)) == NULL)
+      /* `decls_allowed' defines if a list of variables 
+	 defines a new scope.  */
+      if (decls_allowed)
 	{
-	  error_loc (TREE_LOCATION (el->entry),
-		     "variable `%s' is undefined",
-		     TREE_STRING_CST (TREE_ID_SOURCE_NAME (el->entry)));
-	  ret += 1;
+	  TREE_TYPE (el->entry) = z_type_node;
+	  tree_list_append (vars, el->entry);
 	}
       else
 	{
-	  free_tree (el->entry);
-	  el->entry = var;
-	  if (TREE_TYPE (el->entry) != z_type_node
-	      && TREE_TYPE (el->entry) != n_type_node)
+	  if ((var = is_var_in_list (el->entry, vars)) == NULL)
 	    {
 	      error_loc (TREE_LOCATION (el->entry),
-			 "variable `%s' invalid type",
+			 "variable `%s' is undefined",
 			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (el->entry)));
 	      ret += 1;
 	    }
+	  else
+	    {
+	      free_tree (el->entry);
+	      el->entry = var;
+	      if (TREE_TYPE (el->entry) != z_type_node
+		  && TREE_TYPE (el->entry) != n_type_node)
+		{
+		  error_loc (TREE_LOCATION (el->entry),
+			     "variable `%s' invalid type",
+			     TREE_STRING_CST (TREE_ID_SOURCE_NAME (el->entry)));
+		  ret += 1;
+		}
+	    }
 	}
+
     }
 
   if (TREE_CODE (expr) == GENERATOR)
@@ -1731,30 +1753,27 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 
     case GENERATOR:
       {
-	ret += typecheck_generator (expr, ext_vars, vars, func_ref);
+	ret += typecheck_generator (expr, ext_vars, vars, func_ref, false);
       }
       break;
 
     case FILTER_EXPR:
       {
-	struct tree_list_element *el, *tmp;
-	tree gen = TREE_OPERAND (expr, 1);
-      	tree new_scope = make_tree_list ();
+	struct tree_list_element *el;
+	tree cond = TREE_OPERAND (expr, 1);
 	unsigned var_counter = 0;
 
-	tree_list_combine (ext_vars, vars);
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (expr, 0)), el)
 	  {
 	    tree var = NULL;
-	    tree index = NULL;
-	    tree id = TREE_OPERAND (el->entry, 0);
+	    tree id = el->entry;
 	    add_prefix_to_var (id, TREE_STRING_CST (TREE_ID_NAME
 				      (TREE_OPERAND (func_ref, 0))));
 
 	    if ((var = is_var_in_list (id, iter_var_list)) != NULL)
 	      {
 		free_tree (id);
-		TREE_OPERAND_SET (el->entry, 0, var);
+		el->entry = var;
 		id = var;
 	      }
 	    else
@@ -1765,40 +1784,22 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 		return 1;
 	      }
 
-	    if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == IDENTIFIER)
-	      index = is_var_in_list (TREE_OPERAND (el->entry, 1), new_scope);
-
-	    assert (TREE_CODE (el->entry) == CIRCUMFLEX,
-		    "only operations with upper indexes are supported in filter");
-
-	    ret += typecheck_expression (TREE_OPERAND (el->entry, 0),
-					 ext_vars, new_scope, func_ref);
-
-	    if (index == NULL)
+	    if (!TYPE_IS_STREAM (TREE_TYPE (el->entry)))
 	      {
-		if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == IDENTIFIER)
-		  {
-		    index = TREE_OPERAND (el->entry, 1);
-		    /* add function prefix to the identifier.  */
-		    add_prefix_to_var (index, TREE_STRING_CST (TREE_ID_NAME
-					      (TREE_OPERAND (func_ref, 0))));
-
-		    tree_list_append (new_scope, index);
-		  }
-		else
-		  ret += typecheck_expression (index, ext_vars,
-						      new_scope, func_ref);
-
-		TREE_TYPE (index) = z_type_node;
+		error_loc (TREE_LOCATION (el->entry),
+			   "variable `%s' is not a stream",
+			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (id)));
+		return 1;
 	      }
-
-	    TREE_TYPE (el->entry) = TREE_TYPE (TREE_OPERAND (el->entry, 0));
+	  
 	    var_counter++;
 	  }
 	TREE_TYPE (expr) = TREE_TYPE (TREE_OPERAND (expr, 0));
-
-	ret += typecheck_generator (gen, ext_vars, new_scope, func_ref);
-
+	
+	typecheck_options.iter_index = true;	
+	ret += typecheck_expression (cond, ext_vars, vars, func_ref);
+	typecheck_options.iter_index = false;
+	
 	/* if we filter multiple variables, the type of filter expression will
 	   be the list of types.  */
 	if (var_counter == 1)
@@ -1810,15 +1811,6 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	      tree_list_append (TREE_TYPE (expr), TREE_TYPE (el->entry));
 	  }
 
-	DL_FOREACH_SAFE (TREE_LIST (new_scope), el, tmp)
-	  {
-	    DL_DELETE (TREE_LIST (new_scope), el);
-	    free (el);
-	  }
-	free_tree (new_scope);
-
-	/* split combined lists back.  */
-	tree_list_split (ext_vars, vars);
 	return ret;
      }
       break;

@@ -199,10 +199,8 @@
 
 \newcommand{\BnfFilter}{
 \bHead{filter}
-  \bToken{\bs filter} \bSymb{\{} \bSpecial{id} \bSymb{\^} \bSpecial{\{}
-  \bSymb{[} \bSpecial{id} \bSymb{]} \bSpecial{\}} \bSkip \bStar{\bSymb{,}
-  \bSpecial{id} \bSymb{\^} \bSpecial{\{} \bSymb{[} \bSpecial{id} \bSymb{]}
-  \bSpecial{\}}} \bSkip \bSymb{|} generator \bSymb{\}}
+  \bToken{\bs filter} \bSymb{\{} \bSpecial{id} \bStar{\bSymb{,}
+  \bSpecial{id}} \bSkip \bSymb{|} cond\_block \bSymb{\}}
 \bEnd
 }
 

@@ -35,7 +35,7 @@ exceed four million, find the sum of the even-valued terms.}
   \qif {a^{[\iter]} \mod 2 = 0}
     x^{[\iter]} \gets x^{[\iter-1]} + a^{[\iter]} \lend
   \qendif
-  \return {\filter {x^{[\iter]} | a : a^{[\iter]} > 4 \cdot 10^6 }} \lend
+  \return {\filter {x | a^{[\iter]} > 4 \cdot 10^6 }} \lend
 
 \end{eqcode}
 

@@ -2638,62 +2638,13 @@ error:
 }
 
 /*
-   filter_op:
-   <id> ^ { [ <id> ] }
-
-*/
-tree
-handle_filter_op (struct parser * parser)
-{
-  tree id = NULL, pow = NULL, ret = NULL;
-  struct token *tok;
-  if (!is_id (tok = parser_get_token (parser), true))
-    goto error;
-  else
-    id = make_identifier_tok (tok);
-
-  if (!parser_forward_tval (parser, tv_circumflex))
-    goto error;
-  if (!parser_forward_tval (parser, tv_lbrace))
-    goto error;
-  if (!parser_forward_tval (parser, tv_lsquare))
-    goto error;
-
-  if (!is_id (tok = parser_get_token (parser), true))
-    goto error;
-  else
-    pow = make_identifier_tok (tok);
-
-  if (!parser_forward_tval (parser, tv_rsquare))
-    goto error;
-  if (!(parser_forward_tval (parser, tv_rbrace)))
-    {
-      parser_unget (parser);
-      goto error;
-    }
-
-  ret = make_tree (CIRCUMFLEX);
-  TREE_OPERAND_SET (ret, 0, id);
-  TREE_OPERAND_SET (ret, 1, pow);
-  TREE_CIRCUMFLEX_INDEX_STATUS (ret) = true;
-  return ret;
-
-error:
-  free_tree (id);
-  free_tree (pow);
-  free_tree (ret);
-  parser_get_until_tval (parser, tv_rbrace);
-  return error_mark_node;
-}
-
-/*
    filter:
-   \filter { <id> ^ { [ <id> ] } [ , <id> ^ { [ <id> ] } ]* | generator }
+   \filter { <id> | sexpr [ comp sexpr ]+ [set_op sexpr [ comp sexpr ]+ ]* }
 */
 tree
 handle_filter (struct parser * parser)
 {
-  tree ids = NULL, gen = NULL, ret = NULL;
+  tree ids = NULL, cond = NULL, ret = NULL;
 
   if (!(parser_forward_tval (parser, tv_filter)))
     goto error;
@@ -2701,13 +2652,14 @@ handle_filter (struct parser * parser)
   if (!parser_forward_tval (parser, tv_lbrace))
     goto error;
   else
-    ids = handle_list (parser, handle_filter_op, tv_comma);
+    ids = handle_list (parser, handle_id, tv_comma);
 
   if (!parser_forward_tval (parser, tv_vertical))
     goto error;
 
-  gen = handle_generator (parser);
-  if (gen == error_mark_node)
+  cond = handle_cond_block (parser);
+  
+  if (cond == error_mark_node)
     goto error;
 
   if (!parser_forward_tval (parser, tv_rbrace))
@@ -2716,14 +2668,14 @@ handle_filter (struct parser * parser)
       goto error;
     }
 
-  ret = make_binary_op (FILTER_EXPR, ids, gen);
+  ret = make_binary_op (FILTER_EXPR, ids, cond);
 
   return ret;
 error:
   parser_get_until_tval (parser, tv_rbrace);
   free_tree (ret);
   free_tree (ids);
-  free_tree (gen);
+  free_tree (cond);
   return error_mark_node;
 }
 

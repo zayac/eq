@@ -1,6 +1,6 @@
 \begin{eqcode}{e}{a }{\arraytype{5,1,1}{Z}}{\type{Z}}
-  b \in \arraytype{\ldots}{Z} \lend
+  b \in \overline{\arraytype{\ldots}{Z}} \lend
   b^{[0]} \gets \begin{tmatrix} 2 \lend 3 \lend \end{tmatrix} \lend
-  c \gets \filter{b^{[i]} | i: i = 0} \lend 
+  c \gets \filter{b | \iter = 0} \lend 
   \return {c_1} \lend 
 \end{eqcode}

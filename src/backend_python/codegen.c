@@ -80,6 +80,9 @@ codegen_options
   /* the following expression in the right part of the statement depends on the
      expression in the left one (used mostly in the assignment).  */
   bool is_dependant;
+  
+  /* if expression represents a conditional statement in filter.  */
+  bool inside_filter;
 
 /* `\iter' can be occured in the right part of recurrent expression in place
      of index and as a regular variable as well. The implementation in code
@@ -109,6 +112,8 @@ init_codegen_options (void)
   codegen_options.inside_generator = false;
   codegen_options.is_left_assign = false;
   codegen_options.is_dependant = false;
+
+  codegen_options.inside_filter = false;
 
   codegen_options.circumflex_type = UNKNOWN;
 }
@@ -344,10 +349,7 @@ codegen_stream (FILE* f, tree var)
     case FILTER_EXPR:
       {
 	tree filter = TREE_ID_ITER (var);
-	tree parent = TREE_OPERAND (TREE_LIST 
-		     (TREE_OPERAND (filter, 0))->entry, 0);
-	tree index = TREE_OPERAND (TREE_LIST 
-		     (TREE_OPERAND (filter, 0))->entry, 1);
+	tree parent = TREE_LIST (TREE_OPERAND (filter, 0))->entry;
 	fprintf (f, "class _recur_");
 	codegen_expression (f, var);
 	fprintf (f, "(_recur_");
@@ -356,24 +358,26 @@ codegen_stream (FILE* f, tree var)
 	fprintf (f, "):\n");
 	fprintf (f, "\tdef generate(self, _iter=None):\n");
 	fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (parent)));
+	fprintf (f, "\t\t__count = 0\n");
 	fprintf (f, "\t\t");
-	codegen_expression (f, index);
+	codegen_expression (f, iter_var_node);
 	fprintf (f, " = __start\n");
-	fprintf (f, "\t\t__i = 0\n");
 	fprintf (f, "\t\tif _iter == None:\n");
 	fprintf (f, "\t\t\t_iter = float(\"inf\")\n");
 	fprintf (f, "\t\tfor __el in _recur_");
 	codegen_expression (f, parent);
 	fprintf (f, ".generate(self):\n"); 
 	fprintf (f, "\t\t\tif "); 
-	codegen_expression (f, TREE_OPERAND (TREE_OPERAND (filter, 1), 1));
+	codegen_options.inside_filter = true;
+	codegen_expression (f, TREE_OPERAND (filter, 1));
+	codegen_options.inside_filter = false;
 	fprintf (f, ":\n");
 	fprintf (f, "\t\t\t\tyield __el\n");
-	fprintf (f, "\t\t\t\t__i += 1\n");
+	fprintf (f, "\t\t\t\t__count += 1\n");
 	fprintf (f, "\t\t\t");
-	codegen_expression (f, index);
+	codegen_expression (f, iter_var_node);
 	fprintf (f, " += 1\n");
-	fprintf (f, "\t\t\tif __i > _iter:\n");
+	fprintf (f, "\t\t\tif _iter < __count:\n");
 	fprintf (f, "\t\t\t\tbreak\n");
       }
       break;
@@ -504,7 +508,8 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    codegen_options.is_left_assign = false;
 	    fprintf (f, " = ");
 	    
-	    if (!recurrence_is_constant_expression (rel->entry))
+	    if (!recurrence_is_constant_expression (rel->entry) 
+	      && TREE_CODE (rel->entry) != FILTER_EXPR)
 	      {
 		if (TYPE_SHAPE (TREE_TYPE (rel->entry)) != NULL)
 		  codegen_zero_array (f,
@@ -859,7 +864,10 @@ codegen_expression (FILE* f, tree expr)
 	      }
 	    else if (codegen_options.circumflex_type == GENERATE)
 	      {
-		fprintf (f, "__i + 1");
+		if (codegen_options.inside_filter)
+		  fprintf (f, "__i");
+		else
+		  fprintf (f, "__i + 1");
 		break;
 	      }
 	    else if (codegen_options.circumflex_type == UNKNOWN)
@@ -999,8 +1007,12 @@ codegen_expression (FILE* f, tree expr)
 	      {
 		codegen_options.circumflex_type = GENERATE;
 		fprintf (f, "_get_gen_last_value (");
+		if (codegen_options.inside_filter)
+		  fprintf (f, "_recur_");
 		codegen_expression (f, TREE_OPERAND (expr, 0));
 		fprintf (f, ".generate(");
+		if (codegen_options.inside_filter)
+		  fprintf (f, "self, ");
 		error += codegen_expression (f, TREE_OPERAND (expr, 1));
 		fprintf (f, "))");
 	      }
