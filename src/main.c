@@ -21,6 +21,7 @@
 #include "typecheck.h"
 #include "print.h"
 #include "matcher.h"
+#include "dataflow.h"
 #include "codegen.h"
 
 #include <stdlib.h>
@@ -205,6 +206,9 @@ main (int argc, char *argv[])
       printf ("\n####### Transforms ########\n");
       print_matches ();
     }
+  
+  /* TODO Options for choosing either to execute dataflow analysis.  */
+  dataflow ();
 
   if (options.break_option != break_typecheck
       && options.break_option != break_parser && !ret)

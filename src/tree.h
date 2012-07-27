@@ -57,6 +57,7 @@ struct tree_base
 {
   struct location loc;
   enum tree_code code;
+  tree parent;
 };
 
 /* Base tree with operands pointer */
@@ -210,6 +211,7 @@ enum tree_global_code
 #define TREE_CONSTANT(node) ((node)->typed.is_constant)
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
+#define TREE_PARENT(node) ((node)->base.parent)
 
 #define TREE_TYPE(node) ((node)->typed.type)
 #define TYPE_HASH(node) ((node)->type_node)
@@ -272,6 +274,8 @@ set_tree_operand (tree node, int idx, tree value)
 	node->typed_op.operands[idx] = value;
       else
 	node->base_op.operands[idx] = value;
+      if (value)
+	TREE_PARENT (value) = node;
     }
   else
     unreachable ("node `%s` does not have operands", TREE_CODE_NAME (code));

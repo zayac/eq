@@ -13,15 +13,24 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
-#ifndef __CODEGEN_H__
-#define __CODEGEN_H__
+#include <stdio.h>
+#include "tree.h"
+#include "global.h"
+#include "dataflow.h"
 
-int codegen (void);
-int codegen_function (FILE*, tree);
-int codegen_stmt_list (FILE*, tree, char*);
-int codegen_stmt (FILE*, tree, char*);
-int codegen_expression (FILE*, tree);
-int codegen_genar (FILE*, tree, struct tree_list_element*);
-int codegen_iterative (FILE*, tree);
-int codegen_stream (FILE*, tree);
-#endif /* __CODEGEN_H__ */
+int
+dataflow (void)
+{
+  struct tree_list_element *tl;
+  DL_FOREACH (TREE_LIST (function_list), tl)
+    {
+      dataflow_function (tl->entry);
+    }
+  return 0;
+}
+
+tree
+dataflow_function (tree func)
+{
+  return NULL;
+}

@@ -86,7 +86,16 @@ typecheck (void)
 
   /* check functions types.  */
   DL_FOREACH (TREE_LIST (function_list), tl)
-    function_check += typecheck_function (tl->entry);
+    {
+      function_check += typecheck_function (tl->entry);
+      /* each function has to have a return statement.  */
+      if (!TREE_PARENT (tl->entry))
+	{
+	  error_loc (TREE_LOCATION (tl->entry), 
+	    "function `%s' doesn't have any return statement",
+	    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (tl->entry, 0))));
+	}
+    }
 
   /* sort recurrent expressions by initial values.  */
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
@@ -112,12 +121,16 @@ int
 typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
 {
   struct tree_list_element *tle;
+  tree prev;
   int ret = 0;
 
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
 
+  prev = stmt_list;
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     {
+      TREE_PARENT (tle->entry) = prev;
+      prev = tle->entry;
       ret += typecheck_stmt (tle->entry, ext_vars, vars, func_ref);
       if (ret)
 	return ret;
@@ -795,6 +808,9 @@ finalize_withloop:
 	      "definition");
 	    return 1;
 	  }
+	/* Assign return statement to a function parent node to have a fast
+	   access to return statement.  */
+	TREE_PARENT (func_ref) = stmt;
       }
       break;
     case PRINT_MARK:
