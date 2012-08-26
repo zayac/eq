@@ -93,6 +93,8 @@ get_tree_size (enum tree_code code)
     case tcl_misc:
       if (code == IDENTIFIER)
 	return ops + sizeof (struct tree_identifier_node);
+      else if (code == FUNCTION)
+	return ops + sizeof (struct tree_function_node);
       else if (code == LIST)
 	return ops + sizeof (struct tree_list_node);
       else if (code == ITER_EXPR)

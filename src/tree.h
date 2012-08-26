@@ -57,7 +57,6 @@ struct tree_base
 {
   struct location loc;
   enum tree_code code;
-  tree parent;
 };
 
 /* Base tree with operands pointer */
@@ -125,6 +124,13 @@ struct tree_list_node
   struct tree_list_element *list;
 };
 
+struct tree_function_node
+{
+  struct tree_type_base typed;
+  struct control_flow_graph* cfg;
+  tree operands[];
+};
+
 struct tree_circumflex_op_node
 {
   struct tree_type_base typed;
@@ -177,6 +183,7 @@ union tree_node
   struct tree_type_base typed;
   struct tree_type_base_op typed_op;
   struct tree_type_node type_node;
+  struct tree_function_node function_node;
   struct tree_identifier_node identifier_node;
   struct tree_list_node list_node;
   struct tree_int_cst_node int_cst_node;
@@ -211,7 +218,6 @@ enum tree_global_code
 #define TREE_CONSTANT(node) ((node)->typed.is_constant)
 #define TREE_LOCATION(node) ((node)->base.loc)
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
-#define TREE_PARENT(node) ((node)->base.parent)
 
 #define TREE_TYPE(node) ((node)->typed.type)
 #define TYPE_HASH(node) ((node)->type_node)
@@ -274,8 +280,6 @@ set_tree_operand (tree node, int idx, tree value)
 	node->typed_op.operands[idx] = value;
       else
 	node->base_op.operands[idx] = value;
-      if (value)
-	TREE_PARENT (value) = node;
     }
   else
     unreachable ("node `%s` does not have operands", TREE_CODE_NAME (code));
@@ -301,11 +305,13 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ITER_SIZE(node) ((node)->rec_expr_node.size)
 #define TREE_ITER_LIST(node) ((node)->rec_expr_node.list)
 
-#define TREE_FUNC_NAME(node) ((node)->typed_op.operands[0])
-#define TREE_FUNC_ARGS(node) ((node)->typed_op.operands[1])
-#define TREE_FUNC_ARG_TYPES(node) ((node)->typed_op.operands[2])
-#define TREE_FUNC_RET_TYPE(node) ((node)->typed_op.operands[3])
-#define TREE_FUNC_INSTRS(node) ((node)->typed_op.operands[4])
+#define TREE_FUNC(node) ((node)->function_node)
+#define TREE_FUNC_CFG(node) ((node)->function_node.cfg)
+#define TREE_FUNC_NAME(node) ((node)->function_node.operands[0])
+#define TREE_FUNC_ARGS(node) ((node)->function_node.operands[1])
+#define TREE_FUNC_ARG_TYPES(node) ((node)->function_node.operands[2])
+#define TREE_FUNC_RET_TYPE(node) ((node)->function_node.operands[3])
+#define TREE_FUNC_INSTRS(node) ((node)->function_node.operands[4])
 
 #define TREE_IS_FUNCTION_PROTO (TREE_FUNC_INSTRS(node) == NULL)
 
