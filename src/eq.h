@@ -152,7 +152,8 @@ enum break_options
 {
   break_nothing,
   break_parser,
-  break_typecheck
+  break_typecheck,
+  break_controlflow
 };
 
 struct eq_options

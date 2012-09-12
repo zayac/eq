@@ -36,7 +36,8 @@ enum
 enum
 {
   OPT_BREAK_PARSER = 0,
-  OPT_BREAK_TYPECHECK
+  OPT_BREAK_TYPECHECK,
+  OPT_BREAK_CONTROLFLOW
 };
 
 char *const p_opts[] = {
@@ -49,6 +50,7 @@ char *const p_opts[] = {
 char *const b_opts[] = {
   [OPT_BREAK_PARSER] = "parser",
   [OPT_BREAK_TYPECHECK] = "typecheck",
+  [OPT_BREAK_CONTROLFLOW] = "controlflow",
   NULL
 };
 
@@ -135,6 +137,9 @@ main (int argc, char *argv[])
 	    case OPT_BREAK_TYPECHECK:
 	      options.break_option = break_typecheck;
 	      break;
+	    case OPT_BREAK_CONTROLFLOW:
+	      options.break_option = break_controlflow;
+	      break;
 	    default:
 	      fprintf (stderr, "unknown -B suboption `%s'\n", value);
 	      goto cleanup;
@@ -207,11 +212,13 @@ main (int argc, char *argv[])
       print_matches ();
     }
  
-  /* TODO Options for choosing either to execute controlflow analysis.  */
-  controlflow ();
-
   if (options.break_option != break_typecheck
-      && options.break_option != break_parser && !ret)
+   && options.break_option != break_parser && !ret)
+    controlflow ();
+
+  if (options.break_option != break_controlflow
+   && options.break_option != break_typecheck
+   && options.break_option != break_parser && !ret)
     codegen ();
   printf ("note: finished compiling.\n");
 cleanup:

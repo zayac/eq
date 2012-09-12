@@ -19,6 +19,7 @@
 #include "global.h"
 #include "print.h"
 #include "types.h"
+#include "controlflow.h"
 
 #define DEF_TREE_CODE(code, desc, class, operands, typed) class,
 enum tree_code_class tree_code_type[] =
@@ -232,6 +233,10 @@ free_tree (tree node)
 	  free_tree (TREE_ID_ITER (node));
 	  free_tree (TREE_ID_NAME (node));
 	  free_tree (TREE_ID_SOURCE_NAME (node));
+	}
+      else if (code == FUNCTION)
+	{
+	  free_cfg (TREE_FUNC_CFG (node));
 	}
       else if (code == LIST)
 	{
