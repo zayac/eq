@@ -22,19 +22,8 @@ project (eq C)
 # makefile. It is useful for debugging. 
 # set (CMAKE_VERBOSE_MAKEFILE ON)
 
-option (BUILD_LEXER "compiling lexer")
-option (DEBUG_ENABLE "set debugging flag")
-option (FIRST_CLASS_FUNCTIONS "functions as first-class objects")
-
-# Set BUILD_LEXER variable value to ON if you want to compile the lexer only
-if (BUILD_LEXER-NOTFOUND)
-  set (BUILD_LEXER OFF)
-endif()
-
-# First-class objects functions are set ON by default
-if (FIRST_CLASS_FUNCTIONS-NOTFOUND)
-  set (FIRST_CLASS_FUNCTIONS ON)
-endif()
+option (BUILD_LEXER "compiling lexer" OFF)
+option (FIRST_CLASS_FUNCTIONS "functions as first-class objects" ON)
 
 # A list of available backends
 set (BACKENDS python haskell)
