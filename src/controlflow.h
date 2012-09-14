@@ -23,7 +23,7 @@ typedef struct edge_def {
   struct basic_block_def *src;
   struct basic_block_def *dest;
 
-  /* Previous and next blocks in the chain.  */
+  /* Previous and next edges in the chain.  */
   struct edge_def *prev;
   struct edge_def *next;
 } *edge;
@@ -35,8 +35,8 @@ typedef struct basic_block_def
   tree tail;
 
   /* The edges into and out of the block.  */
-  struct edge_def *preds;
-  struct edge_def *succs;
+  edge preds;
+  edge succs;
 
   /* Previous and next blocks in the chain.  */
   struct basic_block_def *prev;

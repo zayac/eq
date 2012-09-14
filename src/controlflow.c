@@ -23,9 +23,10 @@ edge
 link_blocks (struct control_flow_graph *cfg, basic_block src, basic_block dest)
 {
   edge new_edge = (edge) malloc (sizeof (struct edge_def));
+  memset (new_edge, 0, sizeof (struct edge_def));
   CFG_N_EDGES (cfg)++;
   DL_APPEND (src->succs, new_edge);
-  DL_APPEND (dest->preds, new_edge);
+  //DL_APPEND (dest->preds, new_edge);
   new_edge->src = src;
   new_edge->dest = dest;
   return new_edge;
@@ -43,27 +44,26 @@ make_cfg (void)
 void
 free_cfg (struct control_flow_graph* cfg)
 {
+  basic_block bb = NULL, tmp = NULL;
   if (cfg == NULL)
     return;
-  basic_block bb = CFG_ENTRY_BLOCK (cfg);
-  edge ed = bb->succs;
-  while (bb != NULL)
+
+  DL_FOREACH_SAFE (CFG_ENTRY_BLOCK (cfg), bb, tmp)
     {
-      basic_block next = bb->next;
+      edge ed = NULL, ed_tmp = NULL;
+      DL_FOREACH_SAFE (bb->succs, ed, ed_tmp)
+	{
+	  DL_DELETE (bb->succs, ed);
+	  free (ed);
+	}
+      DL_DELETE (CFG_ENTRY_BLOCK (cfg), bb);
       free (bb);
-      bb = next;
-    }
-  while (ed != NULL)
-    {
-      edge next_edge = ed->next;
-      free (ed);
-      ed = next_edge;
     }
   free (cfg);
 }
 
 basic_block 
-make_bb(struct control_flow_graph* cfg, tree head) {
+make_bb (struct control_flow_graph* cfg, tree head) {
   basic_block bb = (basic_block) malloc (sizeof (struct basic_block_def));
   memset (bb, 0, sizeof (struct basic_block_def));
   DL_APPEND (CFG_ENTRY_BLOCK (cfg), bb);
@@ -86,11 +86,17 @@ controlflow (void)
 int
 controlflow_function (tree func)
 {
+  //printf ("digraph %s { ", 
+  //  TREE_STRING_CST (TREE_ID_SOURCE_NAME (TREE_FUNC_NAME (func))));
   basic_block bb;
   TREE_FUNC_CFG (func) = make_cfg ();
   bb = make_bb (TREE_FUNC_CFG (func), TREE_OPERAND (func, 4));
+  //printf ("%u; ", (unsigned) bb);
   CFG_ENTRY_BLOCK (TREE_FUNC_CFG (func)) = bb;
   controlflow_pass_block (TREE_FUNC_CFG (func), bb, TREE_OPERAND (func, 4));
+  CFG_EXIT_BLOCK (TREE_FUNC_CFG (func)) = bb->prev;
+
+  //printf (" }\n");
   return 0;
 }
 
@@ -98,21 +104,50 @@ int controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
     tree head)
 {
   int i;
+  static basic_block join_tail1 = NULL, join_tail2 = NULL;
   if (head == NULL)
     return 0;
   if (TREE_CODE (head) == IF_STMT)
     {
-      basic_block bb_a = make_bb (cfg, TREE_OPERAND (head, 0));
-      basic_block bb_b = make_bb (cfg, TREE_OPERAND (head, 1));
+      basic_block bb_a = make_bb (cfg, TREE_OPERAND (head, 1));
+      basic_block bb_b = NULL;
       link_blocks (cfg, bb, bb_a);
-      link_blocks (cfg, bb, bb_b);
+      join_tail1 = bb_a;
+      //printf ("%u->%u; ", (unsigned) bb, (unsigned) bb_a);
+      if (TREE_OPERAND (head, 2) != NULL)
+	{
+	  bb_b = make_bb (cfg, TREE_OPERAND (head, 2));
+	  link_blocks (cfg, bb, bb_b);
+	  join_tail2 = bb_b;
+	  //printf ("%u->%u; ", (unsigned) bb, (unsigned) bb_b);
+	}
       bb->tail = head;
     }
   else if (TREE_CODE (head) == LIST)
     {
       struct tree_list_element *el;
-      DL_FOREACH (TREE_LIST (head), el)
+      DL_FOREACH (TREE_LIST (head), el) {
+	if (join_tail1 != NULL)
+	  {
+	    basic_block join_bb = make_bb (cfg, el->entry);
+	    link_blocks (cfg, join_tail1, join_bb);
+	    //printf ("%u->%u; ", (unsigned) join_tail1, (unsigned) join_bb);
+	    join_tail1 = NULL;
+	    if (join_tail2 != NULL)
+	      {
+		link_blocks (cfg, join_tail2, join_bb);
+		//printf ("%u->%u; ", (unsigned) join_tail2, (unsigned) join_bb);
+	      }
+	    else
+	      {
+		link_blocks (cfg, bb, join_bb);
+		 //printf ("%u->%u; ", (unsigned) bb, (unsigned) join_bb);
+	      }
+	    join_tail2 = NULL;
+	    bb = join_bb;
+	  }
 	controlflow_pass_block (cfg, bb, el->entry);
+      }
     }
   
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (head)); i++)
