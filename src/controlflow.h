@@ -16,16 +16,14 @@
 #ifndef __CONTROLFLOW_H__
 #define __CONTROLFLOW_H__
 
+#include "utarray.h"
+
 struct basic_block_def;
 
 typedef struct edge_def {
   /* Source and destination blocks connected by the edge.  */
   struct basic_block_def *src;
   struct basic_block_def *dest;
-
-  /* Previous and next edges in the chain.  */
-  struct edge_def *prev;
-  struct edge_def *next;
 } *edge;
 
 typedef struct basic_block_def
@@ -35,8 +33,8 @@ typedef struct basic_block_def
   tree tail;
 
   /* The edges into and out of the block.  */
-  edge preds;
-  edge succs;
+  UT_array *preds;
+  UT_array *succs;
 
   /* Previous and next blocks in the chain.  */
   struct basic_block_def *prev;
@@ -50,17 +48,18 @@ struct control_flow_graph
   basic_block entry_block_ptr;
   basic_block exit_block_ptr;
 
+  
   /* Number of basic blocks in this flow graph.  */
   int n_basic_blocks;
 
-  /* Number of edges in this flow graph.  */
-  int n_edges;
+  /* A list of edges in this flow graph.  */
+  UT_array *edge_list;
 };
 
 #define CFG_ENTRY_BLOCK(cfg) ((cfg)->entry_block_ptr)
 #define CFG_EXIT_BLOCK(cfg) ((cfg)->exit_block_ptr)
 #define CFG_N_BASIC_BLOCKS(cfg) ((cfg)->n_basic_blocks)
-#define CFG_N_EDGES(cfg) ((cfg)->n_edges)
+#define CFG_N_EDGES(cfg) (utarray_len ((cfg)->n_edges))
 #define CFG_LAST_BASIC_BLOCK(cfg) ((cfg)->last_basic_block)
 
 edge link_blocks (struct control_flow_graph *, basic_block, basic_block);
