@@ -28,9 +28,13 @@ typedef struct edge_def {
 
 typedef struct basic_block_def
 {
+#ifdef CFG_OUTPUT
+  unsigned id;
+#endif
+
   /* Head and tail instructions pointers.  */
-  tree head;
-  tree tail;
+  struct tree_list_element *head;
+  struct tree_list_element *tail;
 
   /* The edges into and out of the block.  */
   UT_array *preds;
@@ -65,10 +69,10 @@ struct control_flow_graph
 edge link_blocks (struct control_flow_graph *, basic_block, basic_block);
 struct control_flow_graph* make_cfg (void);
 void free_cfg (struct control_flow_graph*);
-basic_block make_bb(struct control_flow_graph*, tree);
+basic_block make_bb(struct control_flow_graph*, struct tree_list_element*);
 
 int controlflow (void);
 int controlflow_function (tree);
-int controlflow_pass_block (struct control_flow_graph*, basic_block, tree);
+int controlflow_pass_block (struct control_flow_graph*, basic_block, struct tree_list_element *el);
 
 #endif /* __CONTROLFLOW_H__ */

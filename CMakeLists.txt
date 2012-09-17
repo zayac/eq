@@ -24,6 +24,7 @@ project (eq C)
 
 option (BUILD_LEXER "compiling lexer" OFF)
 option (FIRST_CLASS_FUNCTIONS "functions as first-class objects" ON)
+option (CFG_OUTPUT "output Control Flow Graph" ON)
 
 # A list of available backends
 set (BACKENDS python haskell)
@@ -59,7 +60,9 @@ if (BUILD_LEXER)
   message(STATUS "Only lexer is being built")
 endif()
 
-message(STATUS "`${BACKEND_LANG}' as a backend is used")
+message(STATUS "Control Flow Graph output is ${CFG_OUTPUT}")
+
+message(STATUS "${BACKEND_LANG} as a backend is used")
 
 include (cmake/version.cmake)
 
@@ -71,6 +74,10 @@ configure_file (
 if (NOT FIRST_CLASS_FUNCTIONS)
   message (STATUS "First-class functions are disabled")
   add_definitions(-DDISABLE_FCF)
+endif()
+
+if (CFG_OUTPUT)
+  add_definitions(-DCFG_OUTPUT)
 endif()
 
 include_directories ("${PROJECT_BINARY_DIR}")
@@ -86,7 +93,6 @@ else()
   add_executable (eq src/main.c)
   target_link_libraries (eq eqlib)
 endif()
-
 # Testing routines
 enable_testing ()
 
