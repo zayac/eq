@@ -150,7 +150,8 @@ controlflow_function (tree func)
 }
 
 /* A recursive pass extracting new blocks.  */
-int controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
+basic_block
+controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
     struct tree_list_element *head)
 {
   /* If at least one of these blocks is not NULL, then we need to create a new
@@ -158,8 +159,7 @@ int controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
      If `join_tail2' is NULL, then { bb, join_tail1 } => new_block,
 		      else { join_tail1, join_tail2 } => new_block.  */
   static basic_block join_tail1 = NULL, join_tail2 = NULL;
-  if (head->entry == NULL)
-    return 0;
+  basic_block ret = bb;
   /* `if' statement is an indicator of a `branch node'.
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
@@ -171,9 +171,8 @@ int controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       printf ("%u->%u; ", bb->id, bb_a->id);
 #endif
       link_blocks (cfg, bb, bb_a);
-      controlflow_pass_block (cfg, bb_a, 
+      join_tail1 = controlflow_pass_block (cfg, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
-      join_tail1 = bb_a;
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
 	  bb_b = make_bb (cfg, TREE_LIST (TREE_OPERAND (head->entry, 2)));
@@ -181,9 +180,8 @@ int controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 #ifdef CFG_OUTPUT
         printf ("%u->%u; ", bb->id, bb_b->id);
 #endif
-	  controlflow_pass_block (cfg, bb_b, 
+	  join_tail2 = controlflow_pass_block (cfg, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
-	  join_tail2 = bb_b;
 	}
       bb->tail = head;
     }
@@ -193,6 +191,7 @@ int controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	{
 	  basic_block join_bb = make_bb (cfg, head);
 	  link_blocks (cfg, join_tail1, join_bb);
+	  ret = join_bb;
 #ifdef CFG_OUTPUT
           printf ("%u->%u; ", join_tail1->id, join_bb->id);
 #endif
@@ -215,10 +214,9 @@ int controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	  bb = join_bb;
 	}
     }
-    if (head->next != NULL)
-      controlflow_pass_block (cfg, bb, head->next);
-    else
-      bb->tail = head;
-
-  return 0;
+  if (head->next != NULL)
+    ret = controlflow_pass_block (cfg, bb, head->next);
+  else
+    bb->tail = head;
+  return ret;
 }

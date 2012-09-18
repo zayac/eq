@@ -73,6 +73,6 @@ basic_block make_bb(struct control_flow_graph*, struct tree_list_element*);
 
 int controlflow (void);
 int controlflow_function (tree);
-int controlflow_pass_block (struct control_flow_graph*, basic_block, struct tree_list_element *el);
+basic_block controlflow_pass_block (struct control_flow_graph*, basic_block, struct tree_list_element *el);
 
 #endif /* __CONTROLFLOW_H__ */

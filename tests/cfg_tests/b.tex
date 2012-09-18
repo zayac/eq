@@ -1,0 +1,10 @@
+\begin{eqcode}{test}{\ }{\ }{\type{Z}}
+  c \gets 1 \lend % 0
+  \qif {4 > 0}
+    \return {1} \lend % 1
+    a \gets 3 \lend
+  \qendif
+  \return {1} \lend % 2
+  b \gets 1 \lend
+\end{eqcode}
+% eq-cfg: digraph test { 0; 1; 0->1; 2; 1->2; 0->2;  }

@@ -1,0 +1,7 @@
+\begin{eqcode}{test}{\ }{\ }{\type{Z}}
+  \qif {4 > 0} % 0
+    \return {1} \lend % 1
+  \qendif
+  \return {1} \lend % 2
+\end{eqcode}
+% eq-cfg: digraph test { 0; 1; 0->1; 2; 1->2; 0->2;  }

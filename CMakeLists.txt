@@ -24,7 +24,7 @@ project (eq C)
 
 option (BUILD_LEXER "compiling lexer" OFF)
 option (FIRST_CLASS_FUNCTIONS "functions as first-class objects" ON)
-option (CFG_OUTPUT "output Control Flow Graph" ON)
+option (CFG_OUTPUT "output control flow graph" ON)
 
 # A list of available backends
 set (BACKENDS python haskell)
@@ -60,7 +60,7 @@ if (BUILD_LEXER)
   message(STATUS "Only lexer is being built")
 endif()
 
-message(STATUS "Control Flow Graph output is ${CFG_OUTPUT}")
+message(STATUS "Control flow graph output is ${CFG_OUTPUT}")
 
 message(STATUS "${BACKEND_LANG} as a backend is used")
 
@@ -144,6 +144,13 @@ macro (fail_test arg opt)
     PASS_REGULAR_EXPRESSION ${out})
 endmacro(fail_test)
 
+macro (cfg_test arg opt)
+  add_test (cfg_test_${arg} ${PROJECT_SOURCE_DIR}/tests/eq-cfg.sh ${arg})
+  set_tests_properties (cfg_test_${arg}
+  PROPERTIES
+    PASS_REGULAR_EXPRESSION ".*${arg} passed.*")
+endmacro(cfg_test)
+
 macro (exec_test arg opt)
   add_test (exec_test_${arg} ${PROJECT_SOURCE_DIR}/tests/eq-exec.sh ${arg}
   ${BACKEND_LANG})
@@ -186,6 +193,12 @@ foreach (test ${fail_tests})
   fail_test (${test} "")
 endforeach ()
 
+# include files for flow graph testing
+file (GLOB cfg_tests "tests/cfg_tests/*.tex")
+foreach (test ${cfg_tests})
+  cfg_test (${test} "")
+endforeach ()
+
 # include files for codegen testing
 file (GLOB run_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex")
 foreach (test ${run_tests})
@@ -198,7 +211,6 @@ foreach (test ${exec_tests})
   exec_test (${test} "")
 endforeach ()
 
-
 # include files for memory testing
 if (${VALGRIND_EXISTS} EQUAL 1)
   file (GLOB_RECURSE memory_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex"
@@ -208,5 +220,3 @@ if (${VALGRIND_EXISTS} EQUAL 1)
     memory_test (${test} "")
   endforeach ()
 endif()
-
-
