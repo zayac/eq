@@ -16,8 +16,8 @@
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 # This file is a part of Eq testing routine.
-# The script below reads the input file matching the lines with `eq-exec'
-# prefix and compares an expected output with an actual one. In case of match
+# The script below reads the input file matching the lines with `eq-cfg'
+# prefix and compares an expected cfg representation with an actual one. In case of match
 # pring return `passed' string, otherwise -- `failed ' string.
 
 texOutput=`cat $1 | \
