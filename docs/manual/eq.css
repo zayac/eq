@@ -1,0 +1,96 @@
+body {
+  font-size: 10pt;
+  margin-left: 10%;
+  margin-right: 10%;
+}
+
+hr {
+  font-size: 1px;
+  line-height: 0px;
+  border: none;
+  border-top: 1px solid #ddd;
+}
+
+.settitle, h1 {
+  font-size: 16pt;
+  text-decoration: underline;
+  text-align: center;
+}
+
+h2 {
+  font-size: 13pt;
+}
+
+div.node+h2, div.node+h3 {
+  padding-top: 0;
+  margin-top:0;
+}
+
+h3 {
+  font-size: 12pt;
+}
+
+h4 {
+  font-size: 11pt;
+}
+
+/*li dl {
+  padding: 0;
+}
+
+li dl dt {
+  position: relative;
+  left:0;
+  top: 1.2em;
+  width: 4em;
+  background-color: #936;
+}
+
+li dl dd {
+  margin: 0 0 0 5em;
+  background-color: yellow;
+  border: 1px dotted black;
+}*/
+
+li dl {
+  margin-left: 30px;
+  font-size: 8pt;
+}
+
+li dl dl {
+  margin-left: 0;
+}
+
+li dl > dd {
+  margin-left: 60px;
+}
+
+dt {
+  display: inline;
+  position: relative;
+  margin: none;
+}
+
+dd {
+  margin: none;
+  margin-left: 100px;
+}
+
+div.node {
+  text-align: right;
+  font-family: monospace;
+  font-size: 8pt;
+  color: #999;
+  padding:none;
+  margin-top: 60px;
+}
+
+div.node a {
+  color: #336699;
+  text-decoration: none;
+}
+
+div.node * {
+  margin: none;
+  padding: none;
+}

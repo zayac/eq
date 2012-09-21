@@ -1,0 +1,36 @@
+@macro tabopt{body}
+@code{\body\}
+@end macro
+
+@macro optlist{body}
+@smallexample
+\body\
+@end smallexample
+@end macro
+
+@c Makeinfo handles the above macro OK, TeX needs manual line breaks;
+@c they get lost at some point in handling the macro.  But if @macro is
+@c used here rather than @alias, it produces double line breaks.
+@iftex
+@alias gol = *
+@end iftex
+@ifnottex
+@macro gol
+@end macro
+@end ifnottex
+
+@macro eq {}
+@sc{Eq}
+@end macro
+
+@c Index for options
+@defcodeindex op
+
+@macro xempty {}
+@end macro
+
+@macro fixme{txt}
+@quotation FIXME
+@i{\txt\}
+@end quotation
+@end macro

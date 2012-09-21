@@ -1,0 +1,260 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename eq.info
+@include macros.texi
+@settitle Using the @eq{} language
+@c %**end of header
+
+@copying
+@c man begin COPYRIGHT
+Copyright @copyright{} 2011,2012 
+        Artem Shinkarov @email{artyom.shinkaroff@@gimail.com}
+        Pavel Zaichenkov @email{zaichenkov@@gmail.com}
+
+Permission to use, copy, modify, and distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+@c man end
+@end copying
+
+@titlepage
+@title Using the @eq{} language
+@author Pavel Zaichenkov, Artem Shinkarov
+
+@page
+@vskip 0pt plus 1filll
+
+@c Published by ...
+@end titlepage
+
+@c This is a raw html options to control the generated html with jquery.
+@html
+<script src="jquery.js"></script>
+<script src="fixes.js"></script>
+@end html
+
+
+@c So the toc is printed at the start.
+@contents
+
+@node Top, Eq -- big picture
+@top Introduction
+
+This manual describes how to use @eq{} compiler and tools, their
+features and incompatibilities.
+
+@menu
+* Eq -- big picture::  Eq is a high performance stream processing language.
+* Language specification:: Eq programming language specification.
+* Compiler usage::   Compiling progrmans with eq2c.
+* Implementation details::  Anatomy of the compiler.
+* Known problems::   Problems with Eq compiler.
+* Reporting bugs::   How to report a bug.
+* Getting help::     How to get help regarding Eq.
+* Contributing to Eq:: How to contribute to the project.
+* Keyword index::    Index of symbol names.
+* Option index::     Index of the options of the compiler.
+@end menu
+
+@node Eq -- big picture
+@chapter Eq -- big picture
+
+@cindex Eq
+@cindex functional language
+@cindex stream processing
+Eq is a stream-based functional language designed for solving numerical tasks.
+The syntax of the Eq programming language is based on a document preparation
+system LaTeX. It follows that source files of the Eq can be interpreted by any
+LaTeX conversion tool (i.e. pdflatex, latex2html, etc).
+
+
+@ignore
+@c man begin SYNOPSIS
+@eq{} [@option{-help}] [@option{-I}@var{dir}@dots{}]
+
+The most useful options are listed here; see below for the remainder.
+@c man end
+
+@c man begin SEEALSO
+gcc(1) cpp(1) ld(1) as(1)
+@c man end
+
+@c man begin BUGS
+For more details on reporting bugs, see
+@w{@uref{http://github.com/zayac/eq/issues}}
+@c man end BUGS
+
+@c man begin AUTHOR
+The language is currently developed by Pavel Zaichenkov and Artem
+Shinkarov.
+@c man end AUTHOR
+@end ignore
+
+
+
+@node Language specification
+@chapter Language specification
+
+@fixme{Describe eq syntax and semantics}
+
+
+@node Compiler usage
+@chapter Compiling with @eq{}
+
+@menu
+* Option Summary::	Summarizes the options available.
+* Overall options::	General options to set-up compilation environment.
+* Print options::	General options to print a state of AST.
+* Break options::	Options to break the compiler.
+@end menu
+
+@c man begin DESCRIPTION
+The @eq compiler compiles from a latex-based syntax files into the
+executables.
+
+Blah blah..
+
+@c man end
+
+
+@c man begin OPTIONS
+@node Option Summary
+@section Option Summary
+
+@table @emph
+@item Overall options
+@xref{Overall options,,General options}.
+@optlist{-V}
+
+
+@item Print options
+@xref{Print options}.
+@optlist{-P @r{[}@var{program types matches}@r{]}}
+
+@item Break options
+@xref{Break options}.
+@optlist{-B @var{spec}}
+
+@end table
+
+
+
+@node Overall options
+@section General options
+
+When one of the following options is called @eq{} does not perform
+any compilation.
+
+@cindex overall optiona
+@table @tabopt
+
+@item -V
+@opindex V
+Print the version of the compiler.
+
+@end table
+
+
+@node Print options
+@section Print options
+These options are used to print a state of the program after a certain
+phase of the compiler.
+
+@table @tabopt
+
+@item -P @var{phase}
+@opindex P
+
+
+@var{phase} is a name of the phase after which compiler would stop
+its execution and print the state of the abstract syntax tree to 
+standard output.
+
+@itemize
+@item @b{program}
+stop after the parsing phase.
+@item @b{types}
+stop after the type-checking phase.
+@item @b{matches}
+stop after used-defined matches resolution.
+@end itemize
+@end table
+
+
+@node Break options
+@section Break options
+Break options allow you to stop the compilation process after a
+particular phase.
+
+@cindex break options
+@table @tabopt
+
+@item -B @var{phase}
+@opindex B 
+Break after a phase defined by @var{phase}, which can have the following
+values.
+
+@itemize
+@item @b{parser}
+Stop after the parsing phase.
+@end itemize
+@end table
+@c man end
+
+
+@node Implementation details
+@chapter Implementation details
+
+
+@node Known problems
+@chapter Known problems
+
+
+
+@node Reporting bugs
+@chapter Reporting bugs
+If you found a bug or inconsistency in the documentation, please open a new
+issue on the github.  In order to do so, pleae use the following web-page:
+@url{https://github.com/zayac/eq/issues/}.
+
+
+@node Getting help
+@chapter Getting help
+In case you are stuck, please contact one of the authors of the project by
+means of github messaging, or by e-mails.  The e-mails are available at the
+front page of the project.
+
+
+@node Contributing to Eq
+@chapter Contributing to Eq
+If you wish to contribute to the project, then the easiest way would be to
+obtain the code, implementa a certain feature, and make a pull-request.
+
+The code is hosted on the github.  In order to just get the code, you can run:
+@smallexample
+        git clone git@@github.com:zayac/eq.git
+@end smallexample
+
+In order to do a pull request, you have to fork a repository, make some
+changes on your forked branch, and commit it via pull-request.  The
+procedure is well described in git-help:
+@url{https://help.github.com/articles/fork-a-repo}.
+
+@node Keyword index
+@unnumbered Keyword index
+@printindex cp
+
+
+@node Option index
+@unnumbered Option index
+@printindex op
+
+@bye
