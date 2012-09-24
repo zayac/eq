@@ -734,6 +734,8 @@ handle_print (struct parser * parser)
 {
   tree t, ret;
   struct token *tok = parser_get_token (parser);
+  struct location loc = token_location (tok);
+  
   if (!token_is_keyword (tok, tv_print))
     {
       parser_unget (parser);
@@ -749,7 +751,7 @@ handle_print (struct parser * parser)
 
   ret = make_tree (PRINT_MARK);
   TREE_OPERAND_SET (ret, 0, t);
-  TREE_LOCATION (ret) = token_location (tok);
+  TREE_LOCATION (ret) = loc;
   if (!parser_forward_tval (parser, tv_rbrace))
     {
       free_tree (ret);
