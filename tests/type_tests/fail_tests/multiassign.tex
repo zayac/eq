@@ -1,0 +1,9 @@
+\begin{eqcode}{\alpha}{\ }{\ }{\type{Z}, \type{Z}}
+  \return {1, 2} \lend
+\end{eqcode}
+
+\begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
+  a \in \overline{\type{Z}} \lend
+  a^{[0]} \gets \call{\alpha}{\ } \lend % eq-error-loc: The number of variables in the left part of the assignment doesn't match expression in the right part
+  \return {a^{[0]}} \lend
+\end{eqcode}

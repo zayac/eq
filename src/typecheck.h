@@ -27,4 +27,6 @@ int typecheck_function_call_args (tree, tree, tree, tree, tree);
 int typecheck_function_call (tree, tree, tree, tree);
 int typecheck_genarray (tree, tree, tree, tree);
 int typecheck_lower (tree, tree, tree, tree, bool);
+
+void ssa_register_new_var (tree);
 #endif /* __TYPECHECK_H__ */

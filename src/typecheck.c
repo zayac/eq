@@ -14,6 +14,7 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #include <stdio.h>
+
 #include "eq.h"
 #include "tree.h"
 #include "global.h"
@@ -33,6 +34,31 @@ typecheck_options
   bool iter_index;
   bool return_found;
 } typecheck_options;
+
+/* We store defined variables in a hash table.
+   If static single assignment is on, we throw errors in case the same variables
+   are defined one more time.
+   If static single assignment is off, we are redefining every variable redefinition.  */
+struct id_defined
+{
+  const char *id;	   /* An original name of the redefined variable.  
+			      Used as a key in a hash table.  */
+#ifndef SSA 
+  int counter;		   /* A number whose string representation is appended 
+			      to a varaible on every redifinition.  Then this 
+			      number is incremented.  */
+  unsigned counter_length; /* The number of digits in `counter' number. We need
+			      this while allocating memory for string 
+			      representation.  */
+  unsigned divider;	    /* A helper field for fast `counter_length'
+			       variable track. divider = 10^counter_length.  */
+  char* id_new;		    /* A new name for redefined variable.  */
+#endif
+  UT_hash_handle hh;
+};
+
+/* A hash table for tracking variable redefinitions.  */
+struct id_defined *id_definitions = NULL;
 
 static void
 init_typecheck_options (void)
@@ -89,9 +115,19 @@ typecheck (void)
   /* check functions types.  */
   DL_FOREACH (TREE_LIST (function_list), tl)
     {
+      struct id_defined *id_el, *tmp;
       function_check += typecheck_function (tl->entry);
-      /* each function has to have a return statement.  */
-      if (!typecheck_options.return_found)
+      /* free identifiers in the hash table.  */
+      HASH_ITER (hh, id_definitions, id_el, tmp)
+	{
+	  HASH_DEL (id_definitions, id_el);
+	  free (id_el);
+	}
+
+      /* Each function has to have a return statement.  
+	 However, we check this only if there were no errors inside the
+	 function.  */
+      if (!typecheck_options.return_found && !function_check)
 	{
 	  error_loc (TREE_LOCATION (tl->entry), 
 	    "function `%s' doesn't have any return statement",
@@ -267,7 +303,7 @@ typecheck_recurrent (tree expr)
       if (TREE_OPERAND (expr, 0) != iter_var_node
        || TREE_CODE (TREE_OPERAND (expr, 1)) != INTEGER_CST)
 	goto error;
-      /* `\iter' node is global. Therfore the type is assigned globally.  */
+      /* `\iter' node is global. Therefore, the type is assigned globally.  */
       TREE_TYPE (TREE_OPERAND (expr, 1)) = z_type_node;
     }
   else if (TREE_CODE (expr) != INTEGER_CST
@@ -296,6 +332,29 @@ typecheck_stmt_assign_right (struct tree_list_element *el,
   return ret;
 }
 
+/* Add new element to a table where we store variable versions for ssa
+   replacement.  */
+void 
+ssa_register_new_var (tree var)
+{
+  char* s;
+  struct id_defined *id_el = NULL;
+  assert (TREE_CODE (var) == IDENTIFIER, "identifier expected");
+  s = TREE_STRING_CST (TREE_ID_NAME (var));
+  id_el = (struct id_defined*) malloc (sizeof (struct id_defined));
+  /* Initialization.  */
+  id_el->id = s;
+#ifndef SSA
+  id_el->counter = 0;
+  id_el->counter_length = 1;
+  id_el->divider = 10;
+  /* if `id_new' is NULL, then variable wasn't yet redefined.  */
+  id_el->id_new = NULL;
+#endif
+  HASH_ADD_KEYPTR (hh, id_definitions, 
+		   id_el->id, strlen (id_el->id), id_el);
+}
+
 /* typecheck the left part( only one identifier) of the assignment.  */
 int
 typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
@@ -317,10 +376,59 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       if ((var = is_var_in_list (lhs, vars)) != NULL
 	  || (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	{
+	  struct id_defined *id_el = NULL;
+	  HASH_FIND_STR (id_definitions, 
+			 TREE_STRING_CST (TREE_ID_NAME (var)), id_el);
+#ifdef SSA
+	  /* Perform error reporting if single assignment form is enabled.  */
+	  if (id_el == NULL)
+	    {
+	      id_el = (struct id_defined*) malloc (sizeof (struct id_defined));
+	      id_el->id = TREE_STRING_CST (TREE_ID_NAME (var));
+	      HASH_ADD_KEYPTR (hh, id_definitions, 
+		    id_el->id, strlen (id_el->id), id_el);
+	    }
+	  else
+	      error_loc (TREE_LOCATION (lhs),
+			 "variable `%s' is defined somewhere else already",
+			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (lhs)));
+	      /* We could interrupt type checking here because of the error,
+		 but this error shouldn't break forward check.  */
 	  /* Replace the variable with a variable from the list. */
 	  free_tree (lhs);
 	  el->entry = var;
 	  lhs = var;
+#else
+	  if (id_el != NULL)
+	    {
+	      /* Create a new string for variable.  */
+	      char* new_name = (char*) malloc (sizeof (char) 
+					    * (id_el->counter_length 
+					    + strlen (TREE_STRING_CST
+					      (TREE_ID_NAME (var))) + 1));
+	      sprintf (new_name, "%s%d", 
+		    TREE_STRING_CST (TREE_ID_NAME (var)), id_el->counter);
+	      free (TREE_STRING_CST (TREE_ID_NAME (lhs)));
+	      TREE_STRING_CST (TREE_ID_NAME (lhs)) = new_name;
+	      TREE_TYPE (lhs) = TREE_TYPE (var);
+	      tree_list_append (ext_vars, lhs);
+
+	      /* Update the relevant entry in the hash table.  */
+	      id_el->id_new = new_name;
+	      if (!(++(id_el->counter) % id_el->divider))
+		{
+		  id_el->counter_length++;
+		  id_el->divider *= 10;
+		}
+	    }
+	  else
+	    {
+	      /* Replace the variable with a variable from the list. */
+	      free_tree (lhs);
+	      el->entry = var;
+	      lhs = var;
+	    }
+#endif 
 	}
       else if ((var = function_exists (TREE_STRING_CST (TREE_ID_NAME (lhs))))
 	|| (var = function_proto_exists (TREE_STRING_CST (TREE_ID_NAME (lhs)))))
@@ -330,7 +438,12 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	  return ret;
 	}
       else
-	tree_list_append (ext_vars, lhs);
+	{
+	  tree_list_append (ext_vars, lhs);
+#ifndef SSA
+	  ssa_register_new_var (lhs);
+#endif
+	}
       TREE_ID_DEFINED (lhs) = true;
     }
   else if (TREE_CODE (lhs) == CIRCUMFLEX)
@@ -360,7 +473,10 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       tmp_ret = typecheck_expression (TREE_OPERAND (lhs, 0), ext_vars,
 				      vars, func_ref);
       if (tmp_ret)
-	return ret + 1;
+	{
+	  ret += 1;
+	  goto finalize;
+	}
 
       assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER,
 	      "identifier expected");
@@ -379,13 +495,15 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	{
 	  error_loc (TREE_LOCATION (id),
 		    "it is impossible to assign to a function");
-	  return ret;
+	  goto finalize;
 	}
       TREE_ID_DEFINED (id) = true;
 
       /* set the same type for circumflex as left operand has, but with
 	 disabled `is_stream' flag.  */
       TREE_TYPE (lhs) = change_stream_prop (TREE_TYPE (TREE_OPERAND (lhs, 0)));
+      finalize:
+	typecheck_options.iter_index = false;
 
     }
   else if (TREE_CODE (lhs) == LOWER)
@@ -479,9 +597,8 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	while (lel != NULL && rel != NULL)
 	  {
 	    tree lhs, rhs;
-	    ret += typecheck_stmt_assign_left (lel, ext_vars, vars, func_ref);
 	    ret += typecheck_stmt_assign_right (rel, ext_vars, vars, func_ref);
-
+	    ret += typecheck_stmt_assign_left (lel, ext_vars, vars, func_ref);
 	    if (ret)
 	      return ret;
 
@@ -553,14 +670,22 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 			    return ret + 1;
 			  }
 		      }
-		      if (el->next != NULL)
-			{
-			  lel = lel->next;
-			  ret += typecheck_stmt_assign_left (lel, ext_vars,
-							     vars, func_ref);
-			  if (TREE_CODE (lel->entry) == CIRCUMFLEX)
-			    ret += typecheck_assign_index (lel->entry, rhs);
-			}
+		    if (el->next != NULL)
+		      {
+			if (lel->next == NULL)
+			  {
+			    error_loc (TREE_LOCATION (lel->entry),
+				  "The number of variables in the left part of"
+				  " the assignment doesn't match expression "
+				  "in the right part");
+			    return ret + 1;
+			  }
+			lel = lel->next;
+			ret += typecheck_stmt_assign_left (lel, ext_vars,
+							   vars, func_ref);
+			if (TREE_CODE (lel->entry) == CIRCUMFLEX)
+			  ret += typecheck_assign_index (lel->entry, rhs);
+		      }
 		  }
 	      }
 	    lel = lel->next;
@@ -1338,6 +1463,7 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
 	TREE_TYPE (expr) = TREE_LIST (TREE_FUNC_RET_TYPE (t))->entry;
       else
 	TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (t);
+  
       /* We suppose that function calls aren't constant expressions.
 	 so we can't predict the return value statically.  */
     }
@@ -1519,6 +1645,19 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	/* add function prefix to the identifier.  */
 	id_name = add_prefix_to_var (expr, TREE_STRING_CST (TREE_ID_NAME (
 					   TREE_OPERAND (func_ref, 0))));
+
+#ifndef SSA
+	/* Redefine variable.  */
+	struct id_defined *id_el = NULL;
+	HASH_FIND_STR (id_definitions, id_name, id_el);
+	/* if id_new == NULL, then variable wasn't yet redefined.  */
+	if (id_el != NULL && id_el->id_new != NULL)
+	  {
+	    TREE_STRING_CST (TREE_ID_NAME (expr)) = id_el->id_new;
+	    free (id_name);
+	    id_name = id_el->id_new;
+	  }
+#endif
 
 	/* The order of checking *is* important.  */
 	if ((var = is_var_in_list (expr, vars)) != NULL
