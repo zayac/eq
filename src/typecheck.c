@@ -1438,9 +1438,12 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
       if (!(t = is_var_in_list (TREE_OPERAND (expr, 0), vars))
 	  &&  !(t = is_var_in_list (TREE_OPERAND (expr, 0), ext_vars)))
 	{
+            assert (TREE_CODE (TREE_ID_SOURCE_NAME (TREE_OPERAND (expr, 0)))
+                    != EMPTY_MARK, "Holy shit, it's empty.  ACHTUNG!!!");
+
 	    error_loc (TREE_LOCATION (expr),
 		       "function `%s' is not defined",
-	       TREE_STRING_CST (TREE_ID_SOURCE_NAME (TREE_OPERAND (expr, 0))));
+		       TREE_STRING_CST (TREE_ID_SOURCE_NAME (TREE_OPERAND (expr, 0))));
 	    return 1;
 	}
       else
