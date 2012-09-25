@@ -608,7 +608,8 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	    /* Assign index information to identifier.  */
 	    if (TREE_CODE (lhs) == CIRCUMFLEX)
 	      ret += typecheck_assign_index (lhs, rhs);
-	    else if (TYPE_IS_STREAM (TREE_TYPE (rhs)))
+	    else if (TREE_CODE (TREE_TYPE (rhs)) != LIST
+		  && TYPE_IS_STREAM (TREE_TYPE (rhs)))
 	      ret += typecheck_assign_stream (lhs, rhs);
 
 	    if (ret)
@@ -1329,7 +1330,7 @@ typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref,
 }
 
 /* A helper function which checks arguments of a function call.
-   The first argument is a function arg types,
+   The first argument is function arg types,
    the second argument is a function call tree. */
 int
 typecheck_function_call_args (tree func_args, tree expr, tree ext_vars,
@@ -1463,7 +1464,7 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
 	TREE_TYPE (expr) = TREE_LIST (TREE_FUNC_RET_TYPE (t))->entry;
       else
 	TREE_TYPE (expr) = TREE_FUNC_RET_TYPE (t);
-  
+
       /* We suppose that function calls aren't constant expressions.
 	 so we can't predict the return value statically.  */
     }
