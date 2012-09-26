@@ -22,6 +22,7 @@
 #include "print.h"
 #include "types.h"
 #include "recurrence.h"
+#include "ssa.h"
 
 static int associate_variables (tree, tree, tree);
 
@@ -34,31 +35,6 @@ typecheck_options
   bool iter_index;
   bool return_found;
 } typecheck_options;
-
-/* We store defined variables in a hash table.
-   If static single assignment is on, we throw errors in case the same variables
-   are defined one more time.
-   If static single assignment is off, we are redefining every variable redefinition.  */
-struct id_defined
-{
-  const char *id;	   /* An original name of the redefined variable.  
-			      Used as a key in a hash table.  */
-#ifndef SSA 
-  int counter;		   /* A number whose string representation is appended 
-			      to a varaible on every redifinition.  Then this 
-			      number is incremented.  */
-  unsigned counter_length; /* The number of digits in `counter' number. We need
-			      this while allocating memory for string 
-			      representation.  */
-  unsigned divider;	    /* A helper field for fast `counter_length'
-			       variable track. divider = 10^counter_length.  */
-  char* id_new;		    /* A new name for redefined variable.  */
-#endif
-  UT_hash_handle hh;
-};
-
-/* A hash table for tracking variable redefinitions.  */
-struct id_defined *id_definitions = NULL;
 
 static void
 init_typecheck_options (void)
@@ -112,14 +88,9 @@ typecheck (void)
   /* check functions types.  */
   DL_FOREACH (TREE_LIST (function_list), tl)
     {
-      struct id_defined *id_el, *tmp;
       function_check += typecheck_function (tl->entry);
       /* free identifiers in the hash table.  */
-      HASH_ITER (hh, id_definitions, id_el, tmp)
-	{
-	  HASH_DEL (id_definitions, id_el);
-	  free (id_el);
-	}
+      ssa_free_id_hash ();
 
       /* Each function has to have a return statement.  
 	 However, we check this only if there were no errors inside the
@@ -329,29 +300,6 @@ typecheck_stmt_assign_right (struct tree_list_element *el,
   return ret;
 }
 
-/* Add new element to a table where we store variable versions for ssa
-   replacement.  */
-void 
-ssa_register_new_var (tree var)
-{
-  char* s;
-  struct id_defined *id_el = NULL;
-  assert (TREE_CODE (var) == IDENTIFIER, "identifier expected");
-  s = TREE_STRING_CST (TREE_ID_NAME (var));
-  id_el = (struct id_defined*) malloc (sizeof (struct id_defined));
-  /* Initialization.  */
-  id_el->id = s;
-#ifndef SSA
-  id_el->counter = 0;
-  id_el->counter_length = 1;
-  id_el->divider = 10;
-  /* if `id_new' is NULL, then variable wasn't yet redefined.  */
-  id_el->id_new = NULL;
-#endif
-  HASH_ADD_KEYPTR (hh, id_definitions, 
-		   id_el->id, strlen (id_el->id), id_el);
-}
-
 /* typecheck the left part( only one identifier) of the assignment.  */
 int
 typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
@@ -373,19 +321,16 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       if ((var = is_var_in_list (lhs, vars)) != NULL
 	  || (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	{
+	  /* check if variable is indexed in the variable hash table.  */
 	  struct id_defined *id_el = NULL;
 	  HASH_FIND_STR (id_definitions, 
 			 TREE_STRING_CST (TREE_ID_NAME (var)), id_el);
 #ifdef SSA
-	  /* Perform error reporting if single assignment form is enabled.  */
 	  if (id_el == NULL)
-	    {
-	      id_el = (struct id_defined*) malloc (sizeof (struct id_defined));
-	      id_el->id = TREE_STRING_CST (TREE_ID_NAME (var));
-	      HASH_ADD_KEYPTR (hh, id_definitions, 
-		    id_el->id, strlen (id_el->id), id_el);
-	    }
+	    ssa_hash_add_var (var);
 	  else
+	      /* Perform error reporting if single assignment form is 
+		 enabled.  */
 	      error_loc (TREE_LOCATION (lhs),
 			 "variable `%s' is defined somewhere else already",
 			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (lhs)));
@@ -397,27 +342,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	  lhs = var;
 #else
 	  if (id_el != NULL)
-	    {
-	      /* Create a new string for variable.  */
-	      char* new_name = (char*) malloc (sizeof (char) 
-					    * (id_el->counter_length 
-					    + strlen (TREE_STRING_CST
-					      (TREE_ID_NAME (var))) + 1));
-	      sprintf (new_name, "%s%d", 
-		    TREE_STRING_CST (TREE_ID_NAME (var)), id_el->counter);
-	      free (TREE_STRING_CST (TREE_ID_NAME (lhs)));
-	      TREE_STRING_CST (TREE_ID_NAME (lhs)) = new_name;
-	      TREE_TYPE (lhs) = TREE_TYPE (var);
-	      tree_list_append (ext_vars, lhs);
-
-	      /* Update the relevant entry in the hash table.  */
-	      id_el->id_new = new_name;
-	      if (!(++(id_el->counter) % id_el->divider))
-		{
-		  id_el->counter_length++;
-		  id_el->divider *= 10;
-		}
-	    }
+	    ssa_reassign_var (id_el, lhs, vars, ext_vars); 
 	  else
 	    {
 	      /* Replace the variable with a variable from the list. */
