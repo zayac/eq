@@ -87,7 +87,8 @@ free_cfg (struct control_flow_graph* cfg)
       /* NOTE: These functions don't remove edges themselves.  */
       utarray_free (bb->succs);
       utarray_free (bb->preds);
-      DL_DELETE (CFG_ENTRY_BLOCK (cfg), bb);
+      if (CFG_ENTRY_BLOCK (cfg) != NULL)
+	DL_DELETE (CFG_ENTRY_BLOCK (cfg), bb);
       free (bb);
     }
   /* This one removes all the edges in CFG.  */

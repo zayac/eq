@@ -77,6 +77,9 @@ connect_nodes (tree t, const struct tree_list_el * list)
 {
   int i;
 
+  if (list == NULL)
+    return error_mark_node;
+
   if (TREE_CODE (t) == LIST)
     {
       struct tree_list_element *el;

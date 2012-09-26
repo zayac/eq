@@ -923,7 +923,7 @@ tree
 handle_arraytype (struct parser * parser)
 {
   struct token *tok = parser_get_token (parser);
-  tree ret, t, shape;
+  tree ret, t = NULL, shape;
   struct tree_list_element *el;
   int dim = 0;
   bool shape_undef = false;

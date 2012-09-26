@@ -296,7 +296,8 @@ codegen_iterative (FILE* f, tree var)
   fprintf (f, "\t\twhile __i <= _iter:\n");
   /* a separate case with absent base cases, 
      i.e. only expression for `\iter' index is defined.  */
-  if (TREE_OPERAND (first_list_element->entry, 0)  == iter_var_node)
+  if (first_list_element != NULL 
+   && TREE_OPERAND (first_list_element->entry, 0)  == iter_var_node)
     {
       fprintf (f, "\t\t\tyield ");
       codegen_options.is_var_in_arg = true;

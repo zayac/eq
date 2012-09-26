@@ -215,7 +215,6 @@ free_tree (tree node)
 {
   int i;
   enum tree_code code;
-
   if (node == NULL
       /* Types are removed separetely.  */
       || node == iter_var_node
@@ -229,7 +228,6 @@ free_tree (tree node)
     case tcl_misc:
       if (code == IDENTIFIER)
 	{
-	  //tree_list_append (delete_list, TREE_ID_NAME (node));
 	  free_tree (TREE_ID_ITER (node));
 	  free_tree (TREE_ID_NAME (node));
 	  free_tree (TREE_ID_SOURCE_NAME (node));
@@ -738,6 +736,7 @@ tree_copy (tree t)
       break;
     case (IDENTIFIER):
       TREE_ID_NAME (tmp) = tree_copy (TREE_ID_NAME (t));
+      TREE_ID_SOURCE_NAME (tmp) = tree_copy (TREE_ID_SOURCE_NAME (t));
       if (TREE_ID_ITER (t) != NULL)
 	TREE_ID_ITER (tmp) = tree_copy (TREE_ID_ITER (t));
       break;

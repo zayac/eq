@@ -89,10 +89,7 @@ add_prefix_to_var (tree expr, char* prefix)
      && !(function_exists (id_name) || function_proto_exists (id_name)))
     {
       id_name_new = (char*) malloc (strlen (id_name) + strlen (prefix) + 2);
-      memcpy (id_name_new, prefix, strlen (prefix));
-      id_name_new[strlen (prefix)] = '_';
-      memcpy (id_name_new + strlen (prefix) + 1, id_name,
-						    strlen (id_name) + 1);
+      sprintf (id_name_new, "%s_%s", prefix, id_name);
       TREE_STRING_CST (TREE_ID_NAME (expr)) = id_name_new;
       free (id_name);
       id_name = id_name_new;
@@ -925,7 +922,8 @@ finalize_withloop:
 	    ret_el = ret_el->next;
 	    type_el = type_el->next;
 	  }
-	if ((ret_el == NULL) ^ (type_el == NULL))
+	if (TREE_OPERAND (stmt, 0) != NULL 
+	  && ((ret_el == NULL) ^ (type_el == NULL)))
 	  {
 	    error_loc (TREE_LOCATION (TREE_LIST(
 		  TREE_OPERAND (stmt, 0))->entry),
@@ -1201,9 +1199,9 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
 	    }
     }
 
-  if (dim > 0 && TYPE_SHAPE (TREE_TYPE (lhs)) != NULL)
+  if (el != NULL && dim > 0 && TYPE_SHAPE (TREE_TYPE (lhs)) != NULL)
     {
-      for (el = el->next; el != NULL ; el = el->next)
+      for (el = el->next; el != NULL; el = el->next)
 	{
 	  if (shape == NULL)
 	    shape = make_tree_list();
@@ -1657,7 +1655,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	/* if id_new == NULL, then variable wasn't yet redefined.  */
 	if (id_el != NULL && id_el->id_new != NULL)
 	  {
-	    TREE_STRING_CST (TREE_ID_NAME (expr)) = id_el->id_new;
+	    TREE_STRING_CST (TREE_ID_NAME (expr)) = strdup (id_el->id_new);
 	    free (id_name);
 	    id_name = id_el->id_new;
 	  }

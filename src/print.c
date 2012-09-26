@@ -30,13 +30,9 @@ static int level = 0;
 int
 print_expression (xfile *  xf, tree exp)
 {
-  /*if (exp != NULL)
-     printf ("-- enter function %s with exp %s\n", __func__,
-     TREE_CODE_NAME (TREE_CODE (exp))); */
-  //printf("%s\n", TREE_CODE_NAME(TREE_CODE(exp)));
-  assert (exp != NULL
-	  && (TREE_CODE (exp) == FUNCTION || TREE_CODE (exp) == LIST
-
+  if (exp == NULL)
+    return 0;
+  assert (TREE_CODE (exp) == FUNCTION || TREE_CODE (exp) == LIST
 	      || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_type
 	      || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_expression
 	      || TREE_CODE_CLASS (TREE_CODE (exp)) == tcl_constant
@@ -46,7 +42,7 @@ print_expression (xfile *  xf, tree exp)
 	      || TREE_CODE (exp) == DECLARE_STMT
 	      || TREE_CODE (exp) == ASSIGN_STMT
 	      || TREE_CODE (exp) == RETURN_STMT
-	      || TREE_CODE (exp) == PRINT_MARK),
+	      || TREE_CODE (exp) == PRINT_MARK,
 	  "attempt to print non-expression tree %s",
 	  TREE_CODE_NAME (TREE_CODE (exp)));
 
