@@ -20,6 +20,7 @@
 #include "print.h"
 #include "types.h"
 #include "controlflow.h"
+#include "ssa.h"
 
 #define DEF_TREE_CODE(code, desc, class, operands, typed) class,
 enum tree_code_class tree_code_type[] =
@@ -234,7 +235,16 @@ free_tree (tree node)
 	}
       else if (code == FUNCTION)
 	{
+	  struct block_variables *el, *tmp;
 	  free_cfg (TREE_FUNC_CFG (node));
+#ifndef SSA
+	  free_tree (TREE_FUNC_VAR_LIST (node));
+	  HASH_ITER (hh, TREE_FUNC_BB_VARS (node), el, tmp) 
+	    {
+	      HASH_DEL (TREE_FUNC_BB_VARS (node), el);
+	      free(el);
+	    }
+#endif
 	}
       else if (code == LIST)
 	{

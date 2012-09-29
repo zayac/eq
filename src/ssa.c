@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+/* Copyright (c) 2012 Artem Shinkarov <artyom.shinkaroff@gmail.com>
 		      Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any
@@ -85,9 +85,72 @@ ssa_reassign_var (struct id_defined *id_el,
 
   tree_list_append (ext_vars, lhs);
 }
-#endif
 
-#ifdef SSA
+void
+ssa_hash_var (struct tree_list_element *el, tree func)
+{
+  struct block_variables *bv_el = (struct block_variables *) 
+			      malloc (sizeof (struct block_variables));
+  assert (TREE_CODE (func) == FUNCTION, "function expected");
+  bv_el->key = el;
+  bv_el->list_end = TREE_LIST (TREE_FUNC_VAR_LIST (func));
+  HASH_ADD_PTR (TREE_FUNC_BB_VARS (func), key, bv_el);
+}
+
+inline void
+ssa_register_var_func_list (tree func, tree var)
+{
+  tree list = TREE_FUNC_VAR_LIST (func);
+  tree_list_append (list, var); 
+}
+
+tree
+ssa_create_phi_node (basic_block bb, tree node)
+{
+  edge e1, e2;
+  assert (TREE_CODE (node) == IDENTIFIER, "phi node can be created "
+    "only from identifier");
+
+  e1 = (edge) utarray_eltptr (bb->preds, 0);
+  e2 = (edge) utarray_eltptr (bb->preds, 1);
+  if (e1 != NULL && e2 != NULL)
+    {
+      struct id_defined_tree *el1 = NULL, *el2 = NULL;
+#if 0
+      HASH_FIND_PTR (e1->var_list, &(TREE_STRING_CST (TREE_ID_SOURCE_NAME
+      (node))), el1);
+      HASH_FIND_PTR (e1->var_list, &(TREE_STRING_CST (TREE_ID_SOURCE_NAME
+      (node))), el2);
+#endif
+    }
+  return NULL;
+}
+
+tree
+ssa_localize_phi_node (basic_block bb, tree node)
+{
+  enum tree_code code = TREE_CODE (node);
+  struct tree_list_element *el;
+  int i;
+
+  if (code == IDENTIFIER)
+    {
+      ssa_create_phi_node (bb, node);
+      return NULL;
+    }
+  else if (code == LIST)
+    {
+      DL_FOREACH (TREE_LIST (node), el)
+	ssa_localize_phi_node (bb, TREE_OPERAND (node, i));
+
+    }
+
+  for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
+    ssa_localize_phi_node (bb, TREE_OPERAND (node, i));
+
+  return NULL;
+}
+#else
 void
 ssa_hash_add_var (tree var)
 {
@@ -97,3 +160,4 @@ ssa_hash_add_var (tree var)
   HASH_ADD_KEYPTR (hh, id_definitions, id_el->id, strlen (id_el->id), id_el);
 }
 #endif
+

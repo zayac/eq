@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+/* Copyright (c) 2012 Artem Shinkarov <artyom.shinkaroff@gmail.com>
 		      Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any
@@ -13,9 +13,13 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
+#ifndef __SSA_H__
+#define __SSA_H__
+
 #include "global.h"
 #include "uthash.h"
 #include "tree.h"
+#include "controlflow.h"
 
 /* We store defined variables in a hash table.
    If static single assignment is on, we throw errors in case the same variables
@@ -38,15 +42,26 @@ struct id_defined
 #endif
   UT_hash_handle hh;
 };
-
 extern struct id_defined *id_definitions;
 
-void ssa_register_new_var (tree);
 #ifndef SSA
+struct block_variables 
+{
+  struct tree_list_element *key;
+  struct tree_list_element *list_end;
+  UT_hash_handle hh;
+};
+
 void ssa_reassign_var (struct id_defined*,
 		       tree, tree, tree);
-#endif
-void ssa_free_id_hash (void);
-#ifdef SSA
+void ssa_hash_var (struct tree_list_element *, tree);
+void ssa_register_new_var (tree);
+tree ssa_create_phi_node (basic_block, tree);
+tree ssa_localize_phi_node (basic_block, tree);
+#else
 void ssa_hash_add_var (tree);
 #endif
+void ssa_free_id_hash (void);
+void ssa_register_var_func_list (tree, tree);
+
+#endif /* __SSA_H__  */

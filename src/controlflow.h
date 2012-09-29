@@ -24,6 +24,10 @@ typedef struct edge_def {
   /* Source and destination blocks connected by the edge.  */
   struct basic_block_def *src;
   struct basic_block_def *dest;
+#ifndef SSA
+  /* A list of variables coming out from the block.  */
+  struct id_defined_tree *var_list;
+#endif
 } *edge;
 
 typedef struct basic_block_def
@@ -71,14 +75,13 @@ void edge_dtor (void*);
 extern UT_icd edge_icd;
 extern UT_icd edge_icd_dtor;
 
-edge link_blocks (struct control_flow_graph *, basic_block, basic_block);
+edge link_blocks (tree, basic_block, basic_block);
 struct control_flow_graph* make_cfg (void);
 void free_cfg (struct control_flow_graph*);
 basic_block make_bb(struct control_flow_graph*, struct tree_list_element*);
 int controlflow (void);
 int controlflow_function (tree);
-basic_block controlflow_pass_block (struct control_flow_graph*, 
-				    basic_block, 
+basic_block controlflow_pass_block (tree, basic_block, 
 				    struct tree_list_element *el);
 
 #endif /* __CONTROLFLOW_H__ */

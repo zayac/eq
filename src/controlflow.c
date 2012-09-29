@@ -18,18 +18,31 @@
 #include "tree.h"
 #include "global.h"
 #include "controlflow.h"
+#include "ssa.h"
 
 /* To output flow graph you need to build the compiler with `-DCFG_OUTPUT'
    flag.
    In order to get a visual representation of the graph run these commands:
 
    $ eq any_source_file.tex | sed -n '/^digraph * /p' > any_dot_file.dot
-   $ ccomps -x any_dot_file.dot | dot | gvpack -array3 | neato -Tpng -n2 -o any_output_file.png
+   $ ccomps -x any_dot_file.dot | dot | gvpack -array3 | neato -Tpng -n2 \
+     -o any_output_file.png
 */
 
 /* `free' function to remove an edge.  */
-void edge_dtor (void *_elt) {
-  edge *elt = (edge*) _elt; 
+void edge_dtor (void *_elt) 
+{
+  struct id_defined_tree *el, *tmp;
+  edge *elt = (edge*) _elt;
+#ifndef SSA
+#if 0
+  HASH_ITER (hh, (*elt)->var_list, el, tmp)
+    {
+      HASH_DEL (el->var_list, el);
+      free (el);
+    }
+#endif
+#endif
   if (*elt != NULL)
     free (*elt);
 }
@@ -42,6 +55,16 @@ UT_icd edge_icd = {sizeof (edge), NULL, NULL, NULL};
    optimizations need an access to all edges in graph.  */
 UT_icd edge_icd_dtor = {sizeof (edge), NULL, NULL, edge_dtor};
 
+/* An id-tree hash table entry.  */
+#ifndef SSA
+struct id_defined_tree
+{
+  char *key;
+  tree var;
+  UT_hash_handle hh;
+};
+#endif
+
 #ifdef CFG_OUTPUT
 /* Basic block counter in order to assign ids for blocks.  */
 static unsigned id_counter = 0;
@@ -49,12 +72,36 @@ static unsigned id_counter = 0;
 
 /* Connect basic blocks with a directed edge.  */
 edge
-link_blocks (struct control_flow_graph *cfg, basic_block src, basic_block dest)
+link_blocks (tree func, basic_block src, basic_block dest)
 {
+#ifndef SSA
+  struct block_variables *el;
+#endif
+  struct control_flow_graph *cfg = TREE_FUNC_CFG (func);
   edge new_edge = (edge) malloc (sizeof (struct edge_def));
   memset (new_edge, 0, sizeof (struct edge_def));
   new_edge->src = src;
   new_edge->dest = dest;
+  new_edge->var_list = NULL;
+#ifndef SSA
+  /* Get the information about variables available in the block.  */
+  HASH_FIND_PTR (TREE_FUNC_BB_VARS (func), &(dest->head), el);
+  if (el != NULL)
+    {
+      struct tree_list_element *var = TREE_LIST (TREE_FUNC_VAR_LIST (func));
+      while (var != el->list_end)
+	{
+	  struct id_defined_tree *el = (struct id_defined_tree *)
+	      malloc (sizeof (struct id_defined_tree));
+	  
+	  el->key = TREE_STRING_CST (TREE_ID_SOURCE_NAME (var->entry));
+	  el->var = var->entry;
+	  HASH_ADD_PTR (new_edge->var_list, key, el); 
+	  var = var->next;
+	}
+    }
+#endif
+
   /* Add an edge to the source basic block.  */
   utarray_push_back (src->succs, &new_edge);
   /* Add an edge to the destination basic block.  */
@@ -134,6 +181,7 @@ int
 controlflow_function (tree func)
 {
   basic_block bb;
+
   TREE_FUNC_CFG (func) = make_cfg ();
 #ifdef CFG_OUTPUT
   printf ("digraph %s { ",
@@ -141,8 +189,8 @@ controlflow_function (tree func)
 #endif
   bb = make_bb (TREE_FUNC_CFG (func), TREE_LIST (TREE_OPERAND (func, 4)));
   CFG_ENTRY_BLOCK (TREE_FUNC_CFG (func)) = bb;
-  controlflow_pass_block (TREE_FUNC_CFG (func), bb, 
-      TREE_LIST (TREE_OPERAND (func, 4)));
+
+  controlflow_pass_block (func, bb, TREE_LIST (TREE_OPERAND (func, 4)));
   CFG_EXIT_BLOCK (TREE_FUNC_CFG (func)) = bb->prev;
 #ifdef CFG_OUTPUT
   printf (" }\n");
@@ -152,9 +200,10 @@ controlflow_function (tree func)
 
 /* A recursive pass extracting new blocks.  */
 basic_block
-controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
+controlflow_pass_block (tree func, basic_block bb,
     struct tree_list_element *head)
 {
+  struct control_flow_graph *cfg = TREE_FUNC_CFG (func);
   /* If at least one of these blocks is not NULL, then we need to create a new
      `join' block.
      If `join_tail2' is NULL, then { bb, join_tail1 } => new_block,
@@ -171,17 +220,17 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 #ifdef CFG_OUTPUT
       printf ("%u->%u; ", bb->id, bb_a->id);
 #endif
-      link_blocks (cfg, bb, bb_a);
-      join_tail1 = controlflow_pass_block (cfg, bb_a, 
+      link_blocks (func, bb, bb_a);
+      join_tail1 = controlflow_pass_block (func, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
 	  bb_b = make_bb (cfg, TREE_LIST (TREE_OPERAND (head->entry, 2)));
-	  link_blocks (cfg, bb, bb_b);
+	  link_blocks (func, bb, bb_b);
 #ifdef CFG_OUTPUT
         printf ("%u->%u; ", bb->id, bb_b->id);
 #endif
-	  join_tail2 = controlflow_pass_block (cfg, bb_b, 
+	  join_tail2 = controlflow_pass_block (func, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
 	}
       bb->tail = head;
@@ -191,7 +240,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       if (join_tail1 != NULL)
 	{
 	  basic_block join_bb = make_bb (cfg, head);
-	  link_blocks (cfg, join_tail1, join_bb);
+	  link_blocks (func, join_tail1, join_bb);
 	  ret = join_bb;
 #ifdef CFG_OUTPUT
           printf ("%u->%u; ", join_tail1->id, join_bb->id);
@@ -202,21 +251,21 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 #ifdef CFG_OUTPUT
               printf ("%u->%u; ", join_tail2->id, join_bb->id);
 #endif
-	      link_blocks (cfg, join_tail2, join_bb);
+	      link_blocks (func, join_tail2, join_bb);
 	    }
 	  else
 	    {
 #ifdef CFG_OUTPUT
               printf ("%u->%u; ", bb->id, join_bb->id);
 #endif
-	      link_blocks (cfg, bb, join_bb);
+	      link_blocks (func, bb, join_bb);
 	    }
 	  join_tail2 = NULL;
 	  bb = join_bb;
 	}
     }
   if (head->next != NULL)
-    ret = controlflow_pass_block (cfg, bb, head->next);
+    ret = controlflow_pass_block (func, bb, head->next);
   else
     bb->tail = head;
   return ret;
