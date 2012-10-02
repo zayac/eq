@@ -34,8 +34,7 @@ typecheck_options
 {
   bool iter_index;
   bool return_found;
-  bool if_found;
-} typecheck_options = {false, false, false};
+} typecheck_options = {false, false};
 
 /* Add a prefix to the string which represents variable name.
    Returns a new string.
@@ -72,7 +71,7 @@ typecheck (void)
 {
   struct tree_list_element *tl;
   int function_check = 0;
-  
+
   /* check prototypes types.  */
   DL_FOREACH (TREE_LIST (function_proto_list), tl)
     function_check += typecheck_function (tl->entry);
@@ -121,33 +120,15 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
 {
   struct tree_list_element *tle;
   int ret = 0;
-#ifndef SSA
-  if (TREE_FUNC_VAR_LIST (func_ref) == NULL)
-    {
-      TREE_FUNC_VAR_LIST (func_ref) = make_tree_list ();
-      DL_FOREACH (TREE_LIST (ext_vars), tle)
-	tree_list_append (TREE_FUNC_VAR_LIST (func_ref), tle->entry); 
-    }
-#endif
 
   assert (TREE_CODE (stmt_list) == LIST, "statement list expected");
 
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     {
-#ifndef SSA
-      if (typecheck_options.if_found)
-	{
-	  ssa_hash_var (tle, func_ref);
-	  typecheck_options.if_found = false;
-	}
-#endif
       ret += typecheck_stmt (tle->entry, ext_vars, vars, func_ref);
       if (ret)
 	return ret;
     }
-#ifndef SSA  
-  ssa_hash_var (TREE_LIST (stmt_list), func_ref);
-#endif
   return ret;
 }
 
@@ -373,7 +354,6 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	{
 	  tree_list_append (vars, lhs);
 #ifndef SSA
-	  ssa_register_var_func_list (func_ref, lhs);
 	  ssa_register_new_var (lhs);
 #endif
 	}
@@ -696,9 +676,6 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 
 	    TREE_TYPE (lhs) = rhs;
 	    tree_list_append (vars, lhs);
-#ifndef SSA
-	    ssa_register_var_func_list (func_ref, lhs);
-#endif
 
 	    lel = lel->next;
 	    rel = rel->next;
@@ -816,8 +793,6 @@ finalize_withloop:
 	  }
 	/* split combined lists back.  */
 	tree_list_split (ext_vars, vars);
-	
-	typecheck_options.if_found = true;
       }
       break;
     case RETURN_STMT:

@@ -42,19 +42,31 @@ struct id_defined
 #endif
   UT_hash_handle hh;
 };
+
+/* An id-tree hash table entry.  */
+#ifndef SSA
+struct id_defined_tree
+{
+  char *key;
+  tree var;
+  UT_hash_handle hh;
+};
+
 extern struct id_defined *id_definitions;
 
-#ifndef SSA
 struct block_variables 
 {
   struct tree_list_element *key;
-  struct tree_list_element *list_end;
+  UT_array *vars;
   UT_hash_handle hh;
 };
 
 void ssa_reassign_var (struct id_defined*,
 		       tree, tree, tree);
-void ssa_hash_var (struct tree_list_element *, tree);
+struct block_variables* ssa_declare_new_block
+		       (struct tree_list_element *,
+		        tree);
+void ssa_create_block_vars (struct tree_list_element *, tree);
 void ssa_register_new_var (tree);
 tree ssa_create_phi_node (basic_block, tree);
 tree ssa_localize_phi_node (basic_block, tree);

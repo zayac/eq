@@ -18,6 +18,8 @@
 /* A hash table for tracking variable redefinitions.  */
 struct id_defined *id_definitions = NULL;
 
+UT_icd tree_icd = {sizeof(tree), NULL, NULL, NULL };
+
 void
 ssa_free_id_hash (void)
 {
@@ -86,24 +88,6 @@ ssa_reassign_var (struct id_defined *id_el,
   tree_list_append (ext_vars, lhs);
 }
 
-void
-ssa_hash_var (struct tree_list_element *el, tree func)
-{
-  struct block_variables *bv_el = (struct block_variables *) 
-			      malloc (sizeof (struct block_variables));
-  assert (TREE_CODE (func) == FUNCTION, "function expected");
-  bv_el->key = el;
-  bv_el->list_end = TREE_LIST (TREE_FUNC_VAR_LIST (func));
-  HASH_ADD_PTR (TREE_FUNC_BB_VARS (func), key, bv_el);
-}
-
-inline void
-ssa_register_var_func_list (tree func, tree var)
-{
-  tree list = TREE_FUNC_VAR_LIST (func);
-  tree_list_append (list, var); 
-}
-
 tree
 ssa_create_phi_node (basic_block bb, tree node)
 {
@@ -111,17 +95,22 @@ ssa_create_phi_node (basic_block bb, tree node)
   assert (TREE_CODE (node) == IDENTIFIER, "phi node can be created "
     "only from identifier");
 
-  e1 = (edge) utarray_eltptr (bb->preds, 0);
-  e2 = (edge) utarray_eltptr (bb->preds, 1);
+  e1 = *((edge*) utarray_eltptr (bb->preds, 0));
+  e2 = *((edge*) utarray_eltptr (bb->preds, 1));
   if (e1 != NULL && e2 != NULL)
     {
       struct id_defined_tree *el1 = NULL, *el2 = NULL;
-#if 0
-      HASH_FIND_PTR (e1->var_list, &(TREE_STRING_CST (TREE_ID_SOURCE_NAME
-      (node))), el1);
-      HASH_FIND_PTR (e1->var_list, &(TREE_STRING_CST (TREE_ID_SOURCE_NAME
-      (node))), el2);
-#endif
+      HASH_FIND_STR (e1->var_list,
+		     TREE_STRING_CST (TREE_ID_SOURCE_NAME (node)), el1);
+      HASH_FIND_STR (e2->var_list, 
+		     TREE_STRING_CST (TREE_ID_SOURCE_NAME (node)), el2);
+      if (el1 != NULL && el2 != NULL)
+	{
+	  tree phi = make_tree (PHI_NODE);
+	  TREE_OPERAND_SET (phi, 0, el1->var);
+	  TREE_OPERAND_SET (phi, 1, el2->var);
+	  return phi;
+	}
     }
   return NULL;
 }
@@ -134,20 +123,31 @@ ssa_localize_phi_node (basic_block bb, tree node)
   int i;
 
   if (code == IDENTIFIER)
-    {
-      ssa_create_phi_node (bb, node);
-      return NULL;
-    }
+    return ssa_create_phi_node (bb, node);
   else if (code == LIST)
     {
       DL_FOREACH (TREE_LIST (node), el)
-	ssa_localize_phi_node (bb, TREE_OPERAND (node, i));
-
+	{
+	  tree phi = ssa_localize_phi_node (bb, el->entry);
+	  if (phi != NULL)
+	    el->entry = phi;
+	}
     }
-
-  for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
-    ssa_localize_phi_node (bb, TREE_OPERAND (node, i));
-
+  else if (code == ASSIGN_STMT)
+    {
+      tree phi = ssa_localize_phi_node (bb, TREE_OPERAND (node, 1));
+      if (phi != NULL)
+	TREE_OPERAND_SET (node, 1, phi);
+    }
+  else if (code != DECLARE_STMT)
+    {
+      for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
+	{
+	  tree phi = ssa_localize_phi_node (bb, TREE_OPERAND (node, i));
+	  if (phi != NULL)
+	    TREE_OPERAND_SET (node, i, phi);
+	}
+    }
   return NULL;
 }
 #else

@@ -17,8 +17,8 @@
 
 #include "tree.h"
 #include "global.h"
-#include "controlflow.h"
 #include "ssa.h"
+#include "controlflow.h"
 
 /* To output flow graph you need to build the compiler with `-DCFG_OUTPUT'
    flag.
@@ -35,13 +35,11 @@ void edge_dtor (void *_elt)
   struct id_defined_tree *el, *tmp;
   edge *elt = (edge*) _elt;
 #ifndef SSA
-#if 0
   HASH_ITER (hh, (*elt)->var_list, el, tmp)
     {
-      HASH_DEL (el->var_list, el);
+      HASH_DEL ((*elt)->var_list, el);
       free (el);
     }
-#endif
 #endif
   if (*elt != NULL)
     free (*elt);
@@ -54,16 +52,6 @@ UT_icd edge_icd = {sizeof (edge), NULL, NULL, NULL};
    NOTE Not sure that we need such a global list. It is helpful if some
    optimizations need an access to all edges in graph.  */
 UT_icd edge_icd_dtor = {sizeof (edge), NULL, NULL, edge_dtor};
-
-/* An id-tree hash table entry.  */
-#ifndef SSA
-struct id_defined_tree
-{
-  char *key;
-  tree var;
-  UT_hash_handle hh;
-};
-#endif
 
 #ifdef CFG_OUTPUT
 /* Basic block counter in order to assign ids for blocks.  */
@@ -84,22 +72,24 @@ link_blocks (tree func, basic_block src, basic_block dest)
   new_edge->dest = dest;
   new_edge->var_list = NULL;
 #ifndef SSA
+#if 0
   /* Get the information about variables available in the block.  */
   HASH_FIND_PTR (TREE_FUNC_BB_VARS (func), &(dest->head), el);
   if (el != NULL)
     {
       struct tree_list_element *var = TREE_LIST (TREE_FUNC_VAR_LIST (func));
-      while (var != el->list_end)
+      while (var != el->list_end->next)
 	{
 	  struct id_defined_tree *el = (struct id_defined_tree *)
 	      malloc (sizeof (struct id_defined_tree));
 	  
 	  el->key = TREE_STRING_CST (TREE_ID_SOURCE_NAME (var->entry));
 	  el->var = var->entry;
-	  HASH_ADD_PTR (new_edge->var_list, key, el); 
+	  HASH_ADD_KEYPTR (hh, new_edge->var_list, el->key, strlen (el->key), el);
 	  var = var->next;
 	}
     }
+#endif
 #endif
 
   /* Add an edge to the source basic block.  */
@@ -214,6 +204,7 @@ controlflow_pass_block (tree func, basic_block bb,
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
     {
+      basic_block tmp_join = NULL;
       basic_block bb_a = make_bb (cfg, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 1)));
       basic_block bb_b = NULL;
@@ -221,7 +212,7 @@ controlflow_pass_block (tree func, basic_block bb,
       printf ("%u->%u; ", bb->id, bb_a->id);
 #endif
       link_blocks (func, bb, bb_a);
-      join_tail1 = controlflow_pass_block (func, bb_a, 
+      tmp_join = controlflow_pass_block (func, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
@@ -232,6 +223,7 @@ controlflow_pass_block (tree func, basic_block bb,
 #endif
 	  join_tail2 = controlflow_pass_block (func, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
+	  join_tail1 = tmp_join;
 	}
       bb->tail = head;
     }
@@ -239,6 +231,7 @@ controlflow_pass_block (tree func, basic_block bb,
     {
       if (join_tail1 != NULL)
 	{
+	  struct tree_list_element *el;
 	  basic_block join_bb = make_bb (cfg, head);
 	  link_blocks (func, join_tail1, join_bb);
 	  ret = join_bb;
@@ -262,6 +255,11 @@ controlflow_pass_block (tree func, basic_block bb,
 	    }
 	  join_tail2 = NULL;
 	  bb = join_bb;
+#if 0
+	  for (el = join_bb->head; el != NULL && el != join_bb->tail; 
+	       el = el->next)
+	    ssa_localize_phi_node (join_bb, el->entry);
+#endif
 	}
     }
   if (head->next != NULL)

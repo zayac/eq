@@ -127,13 +127,6 @@ struct tree_list_node
 struct tree_function_node
 {
   struct tree_type_base typed;
-#ifndef SSA
-  /* A list of all variables in the function.  */
-  tree var_list;
-  /* A hash table where we put active variables during type checking stage for
-   future retrieving in the controlflow stage.  */
-  struct block_variables *bb_vars;
-#endif
   struct control_flow_graph *cfg;
   tree operands[];
 };
@@ -317,7 +310,6 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ITER_LIST(node) ((node)->rec_expr_node.list)
 
 #define TREE_FUNC(node) ((node)->function_node)
-#define TREE_FUNC_VAR_LIST(node) ((node)->function_node.var_list)
 #define TREE_FUNC_BB_VARS(node) ((node)->function_node.bb_vars)
 #define TREE_FUNC_CFG(node) ((node)->function_node.cfg)
 #define TREE_FUNC_NAME(node) ((node)->function_node.operands[0])

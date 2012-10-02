@@ -237,14 +237,6 @@ free_tree (tree node)
 	{
 	  struct block_variables *el, *tmp;
 	  free_cfg (TREE_FUNC_CFG (node));
-#ifndef SSA
-	  free_tree (TREE_FUNC_VAR_LIST (node));
-	  HASH_ITER (hh, TREE_FUNC_BB_VARS (node), el, tmp) 
-	    {
-	      HASH_DEL (TREE_FUNC_BB_VARS (node), el);
-	      free(el);
-	    }
-#endif
 	}
       else if (code == LIST)
 	{
