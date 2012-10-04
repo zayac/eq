@@ -28,6 +28,7 @@ struct id_defined
   int counter;		   /* A number whose string representation is appended 
 			      to a varaible on every redefinition.  Then this 
 			      number is incremented.  */
+  int increment;	   /* A value to increment.  */
   unsigned counter_length; /* The number of digits in `counter' number. We need
 			      this while allocating memory for string 
 			      representation.  */

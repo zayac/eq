@@ -60,31 +60,29 @@ ssa_declare_new_var (basic_block bb, tree var)
 char*
 ssa_reassign_var (basic_block bb, tree var)
 {
-  struct id_defined *id_el = NULL, *tmp = NULL;
+  struct id_defined *id_el = NULL;
   char* source_name = TREE_STRING_CST (TREE_ID_NAME (var));
   HASH_FIND_STR (bb->var_hash, source_name, id_el);
   char* new_name = NULL;
   if (id_el != NULL)
     {
-    /* We do the reassignment in the loop, because we don't want the 
-       name of the new variable coincide with the existing one.
-       We choose the first variable in the form of
-       '<old_variable><some_number>' which a variable list lacks.  */
-      do
-	{
-	  /* Create a new string for variable.  */
-	  new_name = (char*) malloc (sizeof (char) * (id_el->counter_length				      + strlen (id_el->id) + 1));
-	  sprintf (new_name, "%s%d", id_el->id, id_el->counter);
+      /* We do the reassignment in the loop, because we don't want the 
+	 name of the new variable coincide with the existing one.
+	 We choose the first variable in the form of 
+	 '<old_variable><some_number>'.  */
+      /* Create a new string for variable.  */
+      new_name = (char*) malloc (sizeof (char) * (id_el->counter_length
+	+ strlen (id_el->id) + 1));
+      sprintf (new_name, "%s%d", id_el->id, id_el->counter);
 
-	  /* Update the relevant entry in the hash table.  */
-	  id_el->id_new = new_name;
-	  if (!(++(id_el->counter) % id_el->divider))
-	    {
-	      id_el->counter_length++;
-	      id_el->divider *= 10;
-	    }
-	  HASH_FIND_STR (bb->var_hash, new_name, tmp);
-	} while (tmp != NULL);
+      /* Update the relevant entry in the hash table.  */
+      id_el->id_new = new_name;
+      id_el->counter++;
+      while (!(id_el->counter % id_el->divider))
+	{
+	  id_el->counter_length++;
+	  id_el->divider *= 10;
+	}
     }
   else
     ssa_declare_new_var (bb, var);
@@ -148,7 +146,6 @@ ssa_redefine_vars (basic_block bb, tree node)
 	    }
 	}
     }
-
 }
 
 void
@@ -167,8 +164,8 @@ ssa_verify_vars (basic_block bb, tree node)
 	      HASH_FIND_STR (bb->var_hash, 
 		  TREE_STRING_CST (TREE_ID_NAME (el->entry)), id_el);
 	      if (id_el != NULL && id_el->id_new != NULL
-	       && !strcmp (id_el->id_new, 
-			   TREE_STRING_CST (TREE_ID_NAME(el->entry))))
+	       && strcmp (id_el->id_new, 
+			   TREE_STRING_CST (TREE_ID_NAME (el->entry))))
 		{
 		    el->entry = tree_copy (el->entry);
 		    replace_id_str (el->entry, id_el->id_new);
@@ -176,8 +173,8 @@ ssa_verify_vars (basic_block bb, tree node)
 	    }
 	  else
 	    ssa_verify_vars (bb, el->entry);
-	  //if (TREE_CODE (el->entry) == IF_STMT)
-	  //  break;
+	  if (TREE_CODE (el->entry) == IF_STMT)
+	    break;
 	}
     }
   else if (code == ASSIGN_STMT)
@@ -188,8 +185,8 @@ ssa_verify_vars (basic_block bb, tree node)
 	  HASH_FIND_STR (bb->var_hash, 
 	      TREE_STRING_CST (TREE_ID_NAME (node)), id_el);
 	  if (id_el != NULL && id_el->id_new != NULL
-	   && !strcmp (id_el->id_new, 
-		       TREE_STRING_CST (TREE_ID_NAME(TREE_OPERAND (node, 1)))))
+	   && strcmp (id_el->id_new, 
+		       TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, 1)))))
 	    {
 		TREE_OPERAND_SET (node, 1, tree_copy (TREE_OPERAND (node, 1)));
 		replace_id_str (TREE_OPERAND (node, 1), id_el->id_new);
@@ -204,18 +201,18 @@ ssa_verify_vars (basic_block bb, tree node)
       for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
 	{
 	  /* Avoid verifying a new block.  */
-	 // if (code == IF_STMT && i > 0)
-	 //   break;
+	  if (code == IF_STMT && i > 0)
+	    break;
 	  if (TREE_CODE (TREE_OPERAND (node, i)) == IDENTIFIER)
 	    {
 	      struct id_defined *id_el = NULL;
 	      HASH_FIND_STR (bb->var_hash, 
 		  TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i))), id_el);
 	      if (id_el != NULL && id_el->id_new != NULL
-	       && !strcmp (id_el->id_new, 
-		      TREE_STRING_CST (TREE_ID_NAME(TREE_OPERAND (node, i)))))
+	       && strcmp (id_el->id_new, 
+		      TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i)))))
 		{
-		    TREE_OPERAND_SET (node, i, tree_copy (el->entry));
+		    TREE_OPERAND_SET (node, i, TREE_OPERAND (node, i));
 		    replace_id_str (TREE_OPERAND (node, i), id_el->id_new);
 		}
 	    }

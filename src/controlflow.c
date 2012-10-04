@@ -180,7 +180,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
     {
       basic_block bb_a = make_bb (cfg, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 1)));
-      //bb_a->var_hash = ssa_copy_var_hash (bb->var_hash);
+      bb_a->var_hash = ssa_copy_var_hash (bb->var_hash);
       basic_block bb_b = NULL;
 #ifdef CFG_OUTPUT
       printf ("%u->%u; ", bb->id, bb_a->id);
@@ -191,7 +191,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
 	  bb_b = make_bb (cfg, TREE_LIST (TREE_OPERAND (head->entry, 2)));
-	  //bb_b->var_hash = ssa_copy_var_hash (bb->var_hash);
+	  bb_b->var_hash = ssa_copy_var_hash (bb->var_hash);
 	  link_blocks (cfg, bb, bb_b);
 #ifdef CFG_OUTPUT
         printf ("%u->%u; ", bb->id, bb_b->id);
