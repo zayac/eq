@@ -22,7 +22,6 @@
 #include "print.h"
 #include "types.h"
 #include "recurrence.h"
-#include "ssa.h"
 
 static int associate_variables (tree, tree, tree);
 
@@ -89,8 +88,6 @@ typecheck (void)
   DL_FOREACH (TREE_LIST (function_list), tl)
     {
       function_check += typecheck_function (tl->entry);
-      /* free identifiers in the hash table.  */
-      ssa_free_id_hash ();
 
       /* Each function has to have a return statement.  
 	 However, we check this only if there were no errors inside the
@@ -321,14 +318,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       if ((var = is_var_in_list (lhs, vars)) != NULL
 	  || (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	{
-	  /* check if variable is indexed in the variable hash table.  */
-	  struct id_defined *id_el = NULL;
-	  HASH_FIND_STR (id_definitions, 
-			 TREE_STRING_CST (TREE_ID_NAME (var)), id_el);
 #ifdef SSA
-	  if (id_el == NULL)
-	    ssa_hash_add_var (var);
-	  else
 	      /* Perform error reporting if single assignment form is 
 		 enabled.  */
 	      error_loc (TREE_LOCATION (lhs),
@@ -336,21 +326,11 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (lhs)));
 	      /* We could interrupt type checking here because of the error,
 		 but this error shouldn't break forward check.  */
+#endif
 	  /* Replace the variable with a variable from the list. */
 	  free_tree (lhs);
 	  el->entry = var;
 	  lhs = var;
-#else
-	  if (id_el != NULL)
-	    ssa_reassign_var (id_el, lhs, vars, ext_vars); 
-	  else
-	    {
-	      /* Replace the variable with a variable from the list. */
-	      free_tree (lhs);
-	      el->entry = var;
-	      lhs = var;
-	    }
-#endif 
 	}
       else if ((var = function_exists (TREE_STRING_CST (TREE_ID_NAME (lhs))))
 	|| (var = function_proto_exists (TREE_STRING_CST (TREE_ID_NAME (lhs)))))
@@ -361,10 +341,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	}
       else
 	{
-	  tree_list_append (ext_vars, lhs);
-#ifndef SSA
-	  ssa_register_new_var (lhs);
-#endif
+	  tree_list_append (vars, lhs);
 	}
       TREE_ID_DEFINED (lhs) = true;
     }
@@ -1572,20 +1549,6 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	/* add function prefix to the identifier.  */
 	id_name = add_prefix_to_var (expr, TREE_STRING_CST (TREE_ID_NAME (
 					   TREE_OPERAND (func_ref, 0))));
-
-#ifndef SSA
-	/* Redefine variable.  */
-	struct id_defined *id_el = NULL;
-	HASH_FIND_STR (id_definitions, id_name, id_el);
-	/* if id_new == NULL, then variable wasn't yet redefined.  */
-	if (id_el != NULL && id_el->id_new != NULL)
-	  {
-	    TREE_STRING_CST (TREE_ID_NAME (expr)) = strdup (id_el->id_new);
-	    free (id_name);
-	    id_name = id_el->id_new;
-	  }
-#endif
-
 	/* The order of checking *is* important.  */
 	if ((var = is_var_in_list (expr, vars)) != NULL
 	    || (var = is_var_in_list (expr, ext_vars)) != NULL)

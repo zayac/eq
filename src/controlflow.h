@@ -43,6 +43,8 @@ typedef struct basic_block_def
   /* Previous and next blocks in the chain.  */
   struct basic_block_def *prev;
   struct basic_block_def *next;
+  
+  struct id_defined* var_hash;
 } *basic_block;
 
 struct control_flow_graph

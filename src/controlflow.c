@@ -17,6 +17,7 @@
 
 #include "tree.h"
 #include "global.h"
+#include "ssa.h"
 #include "controlflow.h"
 
 /* To output flow graph you need to build the compiler with `-DCFG_OUTPUT'
@@ -84,9 +85,15 @@ free_cfg (struct control_flow_graph* cfg)
     return;
   DL_FOREACH_SAFE (CFG_ENTRY_BLOCK (cfg), bb, tmp)
     {
+      struct id_defined *el, *tmp;
       /* NOTE: These functions don't remove edges themselves.  */
       utarray_free (bb->succs);
       utarray_free (bb->preds);
+      HASH_ITER (hh, bb->var_hash, el, tmp)
+	{
+	  HASH_DEL (bb->var_hash, el);
+	  free (el);
+	}
       if (CFG_ENTRY_BLOCK (cfg) != NULL)
 	DL_DELETE (CFG_ENTRY_BLOCK (cfg), bb);
       free (bb);
@@ -134,12 +141,16 @@ int
 controlflow_function (tree func)
 {
   basic_block bb;
+  struct tree_list_element *el;
   TREE_FUNC_CFG (func) = make_cfg ();
 #ifdef CFG_OUTPUT
   printf ("digraph %s { ",
     TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))));
 #endif
   bb = make_bb (TREE_FUNC_CFG (func), TREE_LIST (TREE_OPERAND (func, 4)));
+  /* Add function argument variables in hash.  */
+  DL_FOREACH (TREE_LIST (TREE_OPERAND (func, 1)), el)
+    ssa_declare_new_var (bb, el->entry);
   CFG_ENTRY_BLOCK (TREE_FUNC_CFG (func)) = bb;
   controlflow_pass_block (TREE_FUNC_CFG (func), bb, 
       TREE_LIST (TREE_OPERAND (func, 4)));
@@ -161,12 +172,15 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 		      else { join_tail1, join_tail2 } => new_block.  */
   static basic_block join_tail1 = NULL, join_tail2 = NULL;
   basic_block ret = bb;
+
+  ssa_verify_vars (bb, head->entry);
   /* `if' statement is an indicator of a `branch node'.
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
     {
       basic_block bb_a = make_bb (cfg, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 1)));
+      //bb_a->var_hash = ssa_copy_var_hash (bb->var_hash);
       basic_block bb_b = NULL;
 #ifdef CFG_OUTPUT
       printf ("%u->%u; ", bb->id, bb_a->id);
@@ -177,6 +191,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
 	  bb_b = make_bb (cfg, TREE_LIST (TREE_OPERAND (head->entry, 2)));
+	  //bb_b->var_hash = ssa_copy_var_hash (bb->var_hash);
 	  link_blocks (cfg, bb, bb_b);
 #ifdef CFG_OUTPUT
         printf ("%u->%u; ", bb->id, bb_b->id);
