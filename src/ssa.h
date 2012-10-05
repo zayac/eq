@@ -28,13 +28,14 @@ struct id_defined
   int counter;		   /* A number whose string representation is appended 
 			      to a varaible on every redefinition.  Then this 
 			      number is incremented.  */
-  int increment;	   /* A value to increment.  */
   unsigned counter_length; /* The number of digits in `counter' number. We need
 			      this while allocating memory for string 
 			      representation.  */
-  unsigned divider;	    /* A helper field for fast `counter_length'
-			       variable track. divider = 10^counter_length.  */
-  char* id_new;		    /* A new name for a redefined variable.  */
+  unsigned divider;	   /* A helper field for fast `counter_length'
+			      variable track. divider = 10^counter_length.  */
+  char* id_new;		   /* A new name for a redefined variable.  */
+
+  UT_array *phi_node;	   /* Information about phi node.  */
   UT_hash_handle hh;
 };
 

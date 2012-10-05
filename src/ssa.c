@@ -60,7 +60,7 @@ ssa_declare_new_var (basic_block bb, tree var)
 char*
 ssa_reassign_var (basic_block bb, tree var)
 {
-  struct id_defined *id_el = NULL;
+  struct id_defined *id_el = NULL, *tmp = NULL;
   char* source_name = TREE_STRING_CST (TREE_ID_NAME (var));
   HASH_FIND_STR (bb->var_hash, source_name, id_el);
   char* new_name = NULL;
@@ -70,19 +70,22 @@ ssa_reassign_var (basic_block bb, tree var)
 	 name of the new variable coincide with the existing one.
 	 We choose the first variable in the form of 
 	 '<old_variable><some_number>'.  */
-      /* Create a new string for variable.  */
-      new_name = (char*) malloc (sizeof (char) * (id_el->counter_length
-	+ strlen (id_el->id) + 1));
-      sprintf (new_name, "%s%d", id_el->id, id_el->counter);
-
-      /* Update the relevant entry in the hash table.  */
-      id_el->id_new = new_name;
-      id_el->counter++;
-      while (!(id_el->counter % id_el->divider))
+      do
 	{
-	  id_el->counter_length++;
-	  id_el->divider *= 10;
-	}
+	  /* Create a new string for variable.  */
+	  new_name = (char*) malloc (sizeof (char) * (id_el->counter_length
+	    + strlen (id_el->id) + 1));
+	  sprintf (new_name, "%s%d", id_el->id, id_el->counter);
+
+	  /* Update the relevant entry in the hash table.  */
+	  id_el->id_new = new_name;
+	  while (!(++id_el->counter % id_el->divider))
+	    {
+	      id_el->counter_length++;
+	      id_el->divider *= 10;
+	    }
+	  HASH_FIND_STR (bb->var_hash, new_name, tmp);
+	} while (tmp != NULL);
     }
   else
     ssa_declare_new_var (bb, var);
@@ -163,12 +166,32 @@ ssa_verify_vars (basic_block bb, tree node)
 	      struct id_defined *id_el = NULL;
 	      HASH_FIND_STR (bb->var_hash, 
 		  TREE_STRING_CST (TREE_ID_NAME (el->entry)), id_el);
-	      if (id_el != NULL && id_el->id_new != NULL
-	       && strcmp (id_el->id_new, 
-			   TREE_STRING_CST (TREE_ID_NAME (el->entry))))
+	      if (id_el != NULL)
 		{
-		    el->entry = tree_copy (el->entry);
-		    replace_id_str (el->entry, id_el->id_new);
+		  /* Check for necessity of phi nodes.  */
+		  if (utarray_len (id_el->phi_node) > 1)
+		    {
+		      tree tmp = NULL;
+		      char* tmpstr = NULL;
+		      tree new_node  = make_tree (PHI_NODE);
+		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
+		      while (tmpstr = (tree) utarray_next (id_el->phi_node, tmpstr))
+			{
+			  tree tmp = tree_copy (el->entry);
+			  replace_id_str (el->entry, tmpstr);
+			  utarray_push_back (TREE_PHI_NODE (new_node),
+					     &tmpstr);
+			}
+		      el->entry = new_node;
+		      //id_el->phi_node = NULL;
+		    }
+		  else if (id_el->id_new != NULL 
+		      && strcmp (id_el->id_new, 
+			       TREE_STRING_CST (TREE_ID_NAME (el->entry))))
+		    {
+			el->entry = tree_copy (el->entry);
+			replace_id_str (el->entry, id_el->id_new);
+		    }
 		}
 	    }
 	  else

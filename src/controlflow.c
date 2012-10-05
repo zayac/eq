@@ -178,9 +178,11 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
     {
+      struct id_defined *el, *tmp;
       basic_block bb_a = make_bb (cfg, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 1)));
       bb_a->var_hash = ssa_copy_var_hash (bb->var_hash);
+      
       basic_block bb_b = NULL;
 #ifdef CFG_OUTPUT
       printf ("%u->%u; ", bb->id, bb_a->id);
@@ -188,6 +190,22 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       link_blocks (cfg, bb, bb_a);
       join_tail1 = controlflow_pass_block (cfg, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
+      /* Merge information about variables defined in outer 
+	 and inner blocks.  */
+      HASH_ITER (hh, bb_a->var_hash, el, tmp)
+	{
+	  struct id_defined *el_orig;
+	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
+	  if (el_orig != NULL)
+	    {
+	      el_orig->counter = el->counter;
+	      el_orig->counter_length = el->counter_length;
+	      el_orig->divider = el->divider;
+	      if (el_orig->phi_node == NULL)
+		utarray_new (el_orig->phi_node, &ut_str_icd);
+	      utarray_push_back (el_orig->phi_node, el->id_new);
+	    }
+	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
 	  bb_b = make_bb (cfg, TREE_LIST (TREE_OPERAND (head->entry, 2)));
@@ -198,6 +216,20 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 #endif
 	  join_tail2 = controlflow_pass_block (cfg, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
+	  /* Merge information about variables defined in outer 
+	     and inner blocks.  */
+	  HASH_ITER (hh, bb_b->var_hash, el, tmp)
+	    {
+	      struct id_defined *el_orig;
+	      HASH_FIND_STR (bb->var_hash, el->id, el_orig);
+	      if (el_orig != NULL)
+		{
+		  el_orig->counter = el->counter;
+		  el_orig->counter_length = el->counter_length;
+		  el_orig->divider = el->divider;
+		  utarray_push_back (el_orig->phi_node, el->id_new);
+		}
+	    }
 	}
       bb->tail = head;
     }

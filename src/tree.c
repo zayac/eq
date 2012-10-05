@@ -250,6 +250,10 @@ free_tree (tree node)
 	{
 	  free_tree (TREE_ITER_LIST (node));
 	}
+      else if (code == PHI_NODE)
+	{
+	  utarray_free (TREE_PHI_NODE (node));
+	}
       break;
 
     case tcl_constant:
