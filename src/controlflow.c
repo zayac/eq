@@ -99,7 +99,8 @@ free_cfg (struct control_flow_graph* cfg)
       free (bb);
     }
   /* This one removes all the edges in CFG.  */
-  utarray_free (cfg->edge_list);
+  if (cfg->edge_list)
+    utarray_free (cfg->edge_list);
   free (cfg);
 }
 
@@ -171,6 +172,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
      If `join_tail2' is NULL, then { bb, join_tail1 } => new_block,
 		      else { join_tail1, join_tail2 } => new_block.  */
   static basic_block join_tail1 = NULL, join_tail2 = NULL;
+  static basic_block jt1 = NULL, jt2 = NULL;
   basic_block ret = bb;
 
   ssa_verify_vars (bb, head->entry);
@@ -188,22 +190,24 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       printf ("%u->%u; ", bb->id, bb_a->id);
 #endif
       link_blocks (cfg, bb, bb_a);
-      join_tail1 = controlflow_pass_block (cfg, bb_a, 
+      jt1 = controlflow_pass_block (cfg, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
       /* Merge information about variables defined in outer 
 	 and inner blocks.  */
       HASH_ITER (hh, bb_a->var_hash, el, tmp)
 	{
 	  struct id_defined *el_orig;
+	  char** p = NULL;
 	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
 	  if (el_orig != NULL)
 	    {
 	      el_orig->counter = el->counter;
 	      el_orig->counter_length = el->counter_length;
 	      el_orig->divider = el->divider;
-	      if (el_orig->phi_node == NULL)
-		utarray_new (el_orig->phi_node, &ut_str_icd);
 	      utarray_push_back (el_orig->phi_node, &el->id_new);
+	      while (el->phi_node 
+		     && (p = (char**) utarray_next (el->phi_node, p)))
+		utarray_push_back (el_orig->phi_node, p);
 	    }
 	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
@@ -214,7 +218,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 #ifdef CFG_OUTPUT
         printf ("%u->%u; ", bb->id, bb_b->id);
 #endif
-	  join_tail2 = controlflow_pass_block (cfg, bb_b, 
+	  jt2 = controlflow_pass_block (cfg, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
 	  /* Merge information about variables defined in outer 
 	     and inner blocks.  */
@@ -231,6 +235,8 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 		}
 	    }
 	}
+      join_tail1 = jt1;
+      join_tail2 = jt2;
       bb->tail = head;
     }
   else
@@ -238,6 +244,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       if (join_tail1 != NULL)
 	{
 	  basic_block join_bb = make_bb (cfg, head);
+	  join_bb->var_hash = ssa_copy_var_hash (bb->var_hash);
 	  link_blocks (cfg, join_tail1, join_bb);
 	  ret = join_bb;
 #ifdef CFG_OUTPUT

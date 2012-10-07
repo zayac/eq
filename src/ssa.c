@@ -32,6 +32,7 @@ ssa_copy_var_hash (struct id_defined *hash)
 	el_copy->id = strdup (hash->id);
       if (hash->id_new != NULL)
 	el_copy->id_new = strdup (hash->id_new);
+      utarray_new (el_copy->phi_node, &ut_str_icd);
       HASH_ADD_KEYPTR (hh, new_hash,
 		       el_copy->id, strlen (el_copy->id), el_copy);
     }
@@ -55,7 +56,8 @@ ssa_declare_new_var (basic_block bb, tree var)
   id_el->divider = 10;
   /* if `id_new' is NULL, then variable wasn't yet redefined.  */
   id_el->id_new = NULL;
-  id_el->phi_node = NULL;
+  utarray_new (id_el->phi_node, &ut_str_icd);
+  utarray_push_back (id_el->phi_node, &s);
   HASH_ADD_KEYPTR (hh, bb->var_hash, 
 		   id_el->id, strlen (id_el->id), id_el);
 }
@@ -172,19 +174,20 @@ ssa_verify_vars (basic_block bb, tree node)
 	      if (id_el != NULL)
 		{
 		  /* Check for necessity of phi nodes.  */
-		  if (utarray_len (id_el->phi_node) > 1)
+		  if (id_el->phi_node && utarray_len (id_el->phi_node) > 1)
 		    {
-		      char* tmpstr = NULL;
+		      char** tmpstr = NULL;
 		      tree new_node  = make_tree (PHI_NODE);
 		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
-		      while (tmpstr = (char*) utarray_next (id_el->phi_node, tmpstr))
+		      while ((tmpstr = (char**) utarray_next (id_el->phi_node, 
+							      tmpstr)))
 			{
 			  tree tmp = tree_copy (el->entry);
-			  replace_id_str (el->entry, tmpstr);
-			  utarray_push_back (TREE_PHI_NODE (new_node),
-					     &tmp);
+			  replace_id_str (el->entry, *tmpstr);
+			  utarray_push_back (TREE_PHI_NODE (new_node), &tmp);
 			}
 		      el->entry = new_node;
+		      utarray_clear (id_el->phi_node);
 		      //id_el->phi_node = NULL;
 		    }
 		  else if (id_el->id_new != NULL 
@@ -209,12 +212,34 @@ ssa_verify_vars (basic_block bb, tree node)
 	  struct id_defined *id_el = NULL;
 	  HASH_FIND_STR (bb->var_hash, 
 	      TREE_STRING_CST (TREE_ID_NAME (node)), id_el);
-	  if (id_el != NULL && id_el->id_new != NULL
-	   && strcmp (id_el->id_new, 
-		       TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, 1)))))
+	  if (id_el != NULL)
 	    {
-		TREE_OPERAND_SET (node, 1, tree_copy (TREE_OPERAND (node, 1)));
-		replace_id_str (TREE_OPERAND (node, 1), id_el->id_new);
+	      /* Check for necessity of phi nodes.  */
+	      if (id_el->phi_node && utarray_len (id_el->phi_node) > 1)
+		{
+		  char** tmpstr = NULL;
+		  tree new_node  = make_tree (PHI_NODE);
+		  utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
+		  while ((tmpstr = (char**) utarray_next (id_el->phi_node,
+							  tmpstr)))
+		    {
+		      tree tmp = tree_copy (TREE_OPERAND (node, 1));
+		      replace_id_str (TREE_OPERAND (node, 1), *tmpstr);
+		      utarray_push_back (TREE_PHI_NODE (new_node),
+					 &tmp);
+		    }
+		  TREE_OPERAND_SET (node, 1, new_node);
+		  utarray_clear (id_el->phi_node);
+		  //id_el->phi_node = NULL;
+		}
+	      else if (id_el->id_new != NULL 
+		  && strcmp (id_el->id_new,
+			TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, 1)))))
+		{
+		    TREE_OPERAND_SET (node, 1, 
+				      tree_copy (TREE_OPERAND (node, 1)));
+		    replace_id_str (TREE_OPERAND (node, 1), id_el->id_new);
+		}
 	    }
 	}
       else
@@ -233,12 +258,34 @@ ssa_verify_vars (basic_block bb, tree node)
 	      struct id_defined *id_el = NULL;
 	      HASH_FIND_STR (bb->var_hash, 
 		  TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i))), id_el);
-	      if (id_el != NULL && id_el->id_new != NULL
-	       && strcmp (id_el->id_new, 
-		      TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i)))))
+	      if (id_el != NULL)
 		{
-		    TREE_OPERAND_SET (node, i, TREE_OPERAND (node, i));
-		    replace_id_str (TREE_OPERAND (node, i), id_el->id_new);
+		  /* Check for necessity of phi nodes.  */
+		  if (id_el->phi_node && utarray_len (id_el->phi_node) > 1)
+		    {
+		      char** tmpstr = NULL;
+		      tree new_node  = make_tree (PHI_NODE);
+		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
+		      while ((tmpstr = (char**) utarray_next (id_el->phi_node,
+							      tmpstr)))
+			{
+			  tree tmp = tree_copy (TREE_OPERAND (node, i));
+			  replace_id_str (tmp, *tmpstr);
+			  utarray_push_back (TREE_PHI_NODE (new_node),
+					     &tmp);
+			}
+		      TREE_OPERAND_SET (node, i, new_node);
+		      utarray_clear (id_el->phi_node);
+		      //id_el->phi_node = NULL;
+		    }
+		  else if (id_el->id_new != NULL 
+		      && strcmp (id_el->id_new,
+			    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i)))))
+		    {
+			TREE_OPERAND_SET (node, i, 
+					  tree_copy (TREE_OPERAND (node, i)));
+			replace_id_str (TREE_OPERAND (node, i), id_el->id_new);
+		    }
 		}
 	    }
 	  else
