@@ -16,6 +16,8 @@
 #ifndef SSA
 #include "ssa.h"
 
+UT_icd tree_icd = {sizeof (tree), NULL, NULL, NULL};
+
 struct id_defined*
 ssa_copy_var_hash (struct id_defined *hash)
 {
@@ -53,6 +55,7 @@ ssa_declare_new_var (basic_block bb, tree var)
   id_el->divider = 10;
   /* if `id_new' is NULL, then variable wasn't yet redefined.  */
   id_el->id_new = NULL;
+  id_el->phi_node = NULL;
   HASH_ADD_KEYPTR (hh, bb->var_hash, 
 		   id_el->id, strlen (id_el->id), id_el);
 }
@@ -171,16 +174,15 @@ ssa_verify_vars (basic_block bb, tree node)
 		  /* Check for necessity of phi nodes.  */
 		  if (utarray_len (id_el->phi_node) > 1)
 		    {
-		      tree tmp = NULL;
 		      char* tmpstr = NULL;
 		      tree new_node  = make_tree (PHI_NODE);
 		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
-		      while (tmpstr = (tree) utarray_next (id_el->phi_node, tmpstr))
+		      while (tmpstr = (char*) utarray_next (id_el->phi_node, tmpstr))
 			{
 			  tree tmp = tree_copy (el->entry);
 			  replace_id_str (el->entry, tmpstr);
 			  utarray_push_back (TREE_PHI_NODE (new_node),
-					     &tmpstr);
+					     &tmp);
 			}
 		      el->entry = new_node;
 		      //id_el->phi_node = NULL;

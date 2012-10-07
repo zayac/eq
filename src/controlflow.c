@@ -203,7 +203,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	      el_orig->divider = el->divider;
 	      if (el_orig->phi_node == NULL)
 		utarray_new (el_orig->phi_node, &ut_str_icd);
-	      utarray_push_back (el_orig->phi_node, el->id_new);
+	      utarray_push_back (el_orig->phi_node, &el->id_new);
 	    }
 	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
@@ -227,7 +227,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 		  el_orig->counter = el->counter;
 		  el_orig->counter_length = el->counter_length;
 		  el_orig->divider = el->divider;
-		  utarray_push_back (el_orig->phi_node, el->id_new);
+		  utarray_push_back (el_orig->phi_node, &el->id_new);
 		}
 	    }
 	}

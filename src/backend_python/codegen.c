@@ -1056,6 +1056,19 @@ codegen_expression (FILE* f, tree expr)
       }
       break;
 
+    case PHI_NODE:
+      {
+	tree *p = NULL;
+	fprintf (f, "< ");
+	while ( (p = (tree*) utarray_next (TREE_PHI_NODE (expr), p))) 
+	  {
+	    codegen_expression (f, *p);
+	    fprintf (f, " "); 
+	  }
+	fprintf (f, ">");
+      }
+      break;
+
     case GENAR_EXPR:
       {
 	if (TREE_TYPE (TREE_OPERAND (expr, 0)) == z_type_node)
