@@ -24,6 +24,7 @@ ssa_copy_var_hash (struct id_defined *hash)
   struct id_defined *new_hash = NULL, *el, *tmp;
   HASH_ITER (hh, hash, el, tmp)
     {
+      char **p = NULL;
       struct id_defined* el_copy = (struct id_defined*) 
 				   malloc (sizeof (struct id_defined));
       memcpy (el_copy, el, sizeof (struct id_defined));
@@ -33,6 +34,12 @@ ssa_copy_var_hash (struct id_defined *hash)
       if (hash->id_new != NULL)
 	el_copy->id_new = strdup (hash->id_new);
       utarray_new (el_copy->phi_node, &ut_str_icd);
+      while (hash->phi_node 
+	     && (p = (char**) utarray_next (hash->phi_node, p)))
+	{
+	  *p = strdup (*p);
+	  utarray_push_back (el_copy->phi_node, p);
+	}
       HASH_ADD_KEYPTR (hh, new_hash,
 		       el_copy->id, strlen (el_copy->id), el_copy);
     }
@@ -57,7 +64,7 @@ ssa_declare_new_var (basic_block bb, tree var)
   /* if `id_new' is NULL, then variable wasn't yet redefined.  */
   id_el->id_new = NULL;
   utarray_new (id_el->phi_node, &ut_str_icd);
-  utarray_push_back (id_el->phi_node, &s);
+  //utarray_push_back (id_el->phi_node, &s);
   HASH_ADD_KEYPTR (hh, bb->var_hash, 
 		   id_el->id, strlen (id_el->id), id_el);
 }
@@ -91,6 +98,7 @@ ssa_reassign_var (basic_block bb, tree var)
 	    }
 	  HASH_FIND_STR (bb->var_hash, new_name, tmp);
 	} while (tmp != NULL);
+      utarray_clear (id_el->phi_node);
     }
   else
     ssa_declare_new_var (bb, var);
@@ -149,7 +157,7 @@ ssa_redefine_vars (basic_block bb, tree node)
 	      if (name != NULL)
 		{
 		  TREE_OPERAND_SET (node, i, tree_copy (TREE_OPERAND (node, i)));
-		  replace_id_str (TREE_OPERAND (node, 0), name);
+		  replace_id_str (TREE_OPERAND (node, i), name);
 		}
 	    }
 	}
@@ -183,7 +191,7 @@ ssa_verify_vars (basic_block bb, tree node)
 							      tmpstr)))
 			{
 			  tree tmp = tree_copy (el->entry);
-			  replace_id_str (el->entry, *tmpstr);
+			  replace_id_str (tmp, *tmpstr);
 			  utarray_push_back (TREE_PHI_NODE (new_node), &tmp);
 			}
 		      el->entry = new_node;
@@ -224,7 +232,7 @@ ssa_verify_vars (basic_block bb, tree node)
 							  tmpstr)))
 		    {
 		      tree tmp = tree_copy (TREE_OPERAND (node, 1));
-		      replace_id_str (TREE_OPERAND (node, 1), *tmpstr);
+		      replace_id_str (tmp, *tmpstr);
 		      utarray_push_back (TREE_PHI_NODE (new_node),
 					 &tmp);
 		    }

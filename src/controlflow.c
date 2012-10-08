@@ -176,6 +176,33 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
   basic_block ret = bb;
 
   ssa_verify_vars (bb, head->entry);
+      if (join_tail1 != NULL)
+	{
+	  basic_block join_bb = make_bb (cfg, head);
+	  join_bb->var_hash = ssa_copy_var_hash (bb->var_hash);
+	  link_blocks (cfg, join_tail1, join_bb);
+	  ret = join_bb;
+#ifdef CFG_OUTPUT
+          printf ("%u->%u; ", join_tail1->id, join_bb->id);
+#endif
+	  join_tail1 = NULL;
+	  if (join_tail2 != NULL)
+	    {
+#ifdef CFG_OUTPUT
+              printf ("%u->%u; ", join_tail2->id, join_bb->id);
+#endif
+	      link_blocks (cfg, join_tail2, join_bb);
+	    }
+	  else
+	    {
+#ifdef CFG_OUTPUT
+              printf ("%u->%u; ", bb->id, join_bb->id);
+#endif
+	      link_blocks (cfg, bb, join_bb);
+	    }
+	  join_tail2 = NULL;
+	  bb = join_bb;
+	}
   /* `if' statement is an indicator of a `branch node'.
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
@@ -204,10 +231,12 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	      el_orig->counter = el->counter;
 	      el_orig->counter_length = el->counter_length;
 	      el_orig->divider = el->divider;
+	      #if 0
 	      utarray_push_back (el_orig->phi_node, &el->id_new);
 	      while (el->phi_node 
 		     && (p = (char**) utarray_next (el->phi_node, p)))
 		utarray_push_back (el_orig->phi_node, p);
+	      #endif
 	    }
 	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
@@ -231,8 +260,22 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 		  el_orig->counter = el->counter;
 		  el_orig->counter_length = el->counter_length;
 		  el_orig->divider = el->divider;
+		  utarray_clear (el_orig->phi_node); 
 		  utarray_push_back (el_orig->phi_node, &el->id_new);
 		}
+	    }
+	}
+      HASH_ITER (hh, bb_a->var_hash, el, tmp)
+	{
+	  struct id_defined *el_orig;
+	  char** p = NULL;
+	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
+	  if (el_orig != NULL)
+	    {
+	      utarray_push_back (el_orig->phi_node, &el->id_new);
+	      while (el->phi_node 
+		     && (p = (char**) utarray_next (el->phi_node, p)))
+		utarray_push_back (el_orig->phi_node, p);
 	    }
 	}
       join_tail1 = jt1;
@@ -241,6 +284,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
     }
   else
     {
+#if 0
       if (join_tail1 != NULL)
 	{
 	  basic_block join_bb = make_bb (cfg, head);
@@ -268,6 +312,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	  join_tail2 = NULL;
 	  bb = join_bb;
 	}
+#endif
     }
   if (head->next != NULL)
     ret = controlflow_pass_block (cfg, bb, head->next);
