@@ -91,6 +91,9 @@ free_cfg (struct control_flow_graph* cfg)
       utarray_free (bb->preds);
       HASH_ITER (hh, bb->var_hash, el, tmp)
 	{
+	  utarray_free (el->phi_node);
+	  if (el->id_new)
+	    free (el->id_new);
 	  HASH_DEL (bb->var_hash, el);
 	  free (el);
 	}
@@ -260,6 +263,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 		  el_orig->counter = el->counter;
 		  el_orig->counter_length = el->counter_length;
 		  el_orig->divider = el->divider;
+		  el_orig->id_new = el->id_new;
 		  utarray_clear (el_orig->phi_node); 
 		  utarray_push_back (el_orig->phi_node, &el->id_new);
 		}
@@ -272,6 +276,13 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
 	  if (el_orig != NULL)
 	    {
+	      if (jt2 == NULL)
+		{
+		  if (el_orig->id_new)
+		    utarray_push_back (el_orig->phi_node, &el_orig->id_new);
+		  else
+		    utarray_push_back (el_orig->phi_node, &el_orig->id);
+		}
 	      utarray_push_back (el_orig->phi_node, &el->id_new);
 	      while (el->phi_node 
 		     && (p = (char**) utarray_next (el->phi_node, p)))
