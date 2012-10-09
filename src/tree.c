@@ -221,7 +221,7 @@ free_tree (tree node)
       || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK
       || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type)
     return;
-
+  
   code = TREE_CODE (node);
   switch (TREE_CODE_CLASS (code))
     {
@@ -252,7 +252,7 @@ free_tree (tree node)
 	}
       else if (code == PHI_NODE)
 	{
-	  utarray_free (TREE_PHI_NODE (node));
+	  //utarray_free (TREE_PHI_NODE (node));
 	}
       break;
 

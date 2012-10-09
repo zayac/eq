@@ -24,21 +24,23 @@ ssa_copy_var_hash (struct id_defined *hash)
   struct id_defined *new_hash = NULL, *el, *tmp;
   HASH_ITER (hh, hash, el, tmp)
     {
-      char **p = NULL;
+      struct phi_node *hel, *htmp;
       struct id_defined* el_copy = (struct id_defined*) 
 				   malloc (sizeof (struct id_defined));
       memcpy (el_copy, el, sizeof (struct id_defined));
       memset (&(el_copy->hh), 0, sizeof (UT_hash_handle));
       if (hash->id != NULL)
-	el_copy->id = strdup (hash->id);
+	el_copy->id = hash->id;
       if (hash->id_new != NULL)
 	el_copy->id_new = strdup (hash->id_new);
-      utarray_new (el_copy->phi_node, &ut_str_icd);
-      while (hash->phi_node 
-	     && (p = (char**) utarray_next (hash->phi_node, p)))
+      el_copy->phi_node = NULL;
+      HASH_ITER (hh, hash->phi_node, hel, htmp)
 	{
-	  *p = strdup (*p);
-	  utarray_push_back (el_copy->phi_node, p);
+	  struct phi_node *phi_node = (struct phi_node *)
+				      malloc (sizeof (struct phi_node));
+	  phi_node->s = hel->s;
+	  HASH_ADD_KEYPTR (hh, el_copy->phi_node, phi_node->s, 
+			   strlen (phi_node->s), phi_node);
 	}
       HASH_ADD_KEYPTR (hh, new_hash,
 		       el_copy->id, strlen (el_copy->id), el_copy);
@@ -55,16 +57,14 @@ ssa_declare_new_var (basic_block bb, tree var)
   struct id_defined *id_el = NULL;
   assert (TREE_CODE (var) == IDENTIFIER, "identifier expected");
   s = TREE_STRING_CST (TREE_ID_NAME (var));
-  id_el = (struct id_defined*) malloc (sizeof (struct id_defined));
+  id_el = (struct id_defined *) malloc (sizeof (struct id_defined)); 
+  /* if `id_new' is NULL, then variable wasn't yet redefined.  */
+  memset (id_el, 0, sizeof (struct id_defined));
   /* Initialization.  */
   id_el->id = s;
   id_el->counter = 0;
   id_el->counter_length = 1;
   id_el->divider = 10;
-  /* if `id_new' is NULL, then variable wasn't yet redefined.  */
-  id_el->id_new = NULL;
-  utarray_new (id_el->phi_node, &ut_str_icd);
-  //utarray_push_back (id_el->phi_node, &s);
   HASH_ADD_KEYPTR (hh, bb->var_hash, 
 		   id_el->id, strlen (id_el->id), id_el);
 }
@@ -76,6 +76,7 @@ ssa_reassign_var (basic_block bb, tree var)
   char* source_name = TREE_STRING_CST (TREE_ID_NAME (var));
   HASH_FIND_STR (bb->var_hash, source_name, id_el);
   char* new_name = NULL;
+  struct phi_node *el, *phi_tmp;
   if (id_el != NULL)
     {
       /* We do the reassignment in the loop, because we don't want the 
@@ -98,7 +99,7 @@ ssa_reassign_var (basic_block bb, tree var)
 	    }
 	  HASH_FIND_STR (bb->var_hash, new_name, tmp);
 	} while (tmp != NULL);
-      utarray_clear (id_el->phi_node);
+      HASH_FREE (hh, id_el->phi_node, el, phi_tmp);
     }
   else
     ssa_declare_new_var (bb, var);
@@ -182,20 +183,20 @@ ssa_verify_vars (basic_block bb, tree node)
 	      if (id_el != NULL)
 		{
 		  /* Check for necessity of phi nodes.  */
-		  if (id_el->phi_node && utarray_len (id_el->phi_node) > 1)
+		  if (id_el->phi_node && HASH_COUNT (id_el->phi_node) > 1)
 		    {
-		      char** tmpstr = NULL;
+		      struct phi_node *hel, *tmp;
 		      tree new_node  = make_tree (PHI_NODE);
 		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
-		      while ((tmpstr = (char**) utarray_next (id_el->phi_node, 
-							      tmpstr)))
+		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
 			  tree tmp = tree_copy (el->entry);
-			  replace_id_str (tmp, *tmpstr);
+			  replace_id_str (tmp, hel->s);
 			  utarray_push_back (TREE_PHI_NODE (new_node), &tmp);
 			}
 		      el->entry = new_node;
-		      utarray_clear (id_el->phi_node);
+		      /* Clear hash.  */
+		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		      //id_el->phi_node = NULL;
 		    }
 		  else if (id_el->id_new != NULL 
@@ -223,21 +224,20 @@ ssa_verify_vars (basic_block bb, tree node)
 	  if (id_el != NULL)
 	    {
 	      /* Check for necessity of phi nodes.  */
-	      if (id_el->phi_node && utarray_len (id_el->phi_node) > 1)
+	      if (id_el->phi_node && HASH_COUNT (id_el->phi_node) > 1)
 		{
-		  char** tmpstr = NULL;
+		  struct phi_node *hel, *tmp;
 		  tree new_node  = make_tree (PHI_NODE);
 		  utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
-		  while ((tmpstr = (char**) utarray_next (id_el->phi_node,
-							  tmpstr)))
+		  HASH_ITER (hh, id_el->phi_node, hel, tmp)
 		    {
 		      tree tmp = tree_copy (TREE_OPERAND (node, 1));
-		      replace_id_str (tmp, *tmpstr);
+		      replace_id_str (tmp, hel->s);
 		      utarray_push_back (TREE_PHI_NODE (new_node),
 					 &tmp);
 		    }
 		  TREE_OPERAND_SET (node, 1, new_node);
-		  utarray_clear (id_el->phi_node);
+		  HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		  //id_el->phi_node = NULL;
 		}
 	      else if (id_el->id_new != NULL 
@@ -269,21 +269,20 @@ ssa_verify_vars (basic_block bb, tree node)
 	      if (id_el != NULL)
 		{
 		  /* Check for necessity of phi nodes.  */
-		  if (id_el->phi_node && utarray_len (id_el->phi_node) > 1)
+		  if (id_el->phi_node && HASH_COUNT (id_el->phi_node) > 1)
 		    {
-		      char** tmpstr = NULL;
+		      struct phi_node *hel, *tmp;
 		      tree new_node  = make_tree (PHI_NODE);
 		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
-		      while ((tmpstr = (char**) utarray_next (id_el->phi_node,
-							      tmpstr)))
+		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
 			  tree tmp = tree_copy (TREE_OPERAND (node, i));
-			  replace_id_str (tmp, *tmpstr);
+			  replace_id_str (tmp, hel->s);
 			  utarray_push_back (TREE_PHI_NODE (new_node),
 					     &tmp);
 			}
 		      TREE_OPERAND_SET (node, i, new_node);
-		      utarray_clear (id_el->phi_node);
+		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		      //id_el->phi_node = NULL;
 		    }
 		  else if (id_el->id_new != NULL 

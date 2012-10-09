@@ -91,7 +91,8 @@ free_cfg (struct control_flow_graph* cfg)
       utarray_free (bb->preds);
       HASH_ITER (hh, bb->var_hash, el, tmp)
 	{
-	  utarray_free (el->phi_node);
+	  struct phi_node *hel, *tmp;
+	  HASH_FREE (hh, el->phi_node, hel, tmp);
 	  if (el->id_new)
 	    free (el->id_new);
 	  HASH_DEL (bb->var_hash, el);
@@ -227,19 +228,12 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       HASH_ITER (hh, bb_a->var_hash, el, tmp)
 	{
 	  struct id_defined *el_orig;
-	  char** p = NULL;
 	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
 	  if (el_orig != NULL)
 	    {
 	      el_orig->counter = el->counter;
 	      el_orig->counter_length = el->counter_length;
 	      el_orig->divider = el->divider;
-	      #if 0
-	      utarray_push_back (el_orig->phi_node, &el->id_new);
-	      while (el->phi_node 
-		     && (p = (char**) utarray_next (el->phi_node, p)))
-		utarray_push_back (el_orig->phi_node, p);
-	      #endif
 	    }
 	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
@@ -260,33 +254,49 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	      HASH_FIND_STR (bb->var_hash, el->id, el_orig);
 	      if (el_orig != NULL)
 		{
+		  struct phi_node *hel, *tmp;
 		  el_orig->counter = el->counter;
 		  el_orig->counter_length = el->counter_length;
 		  el_orig->divider = el->divider;
 		  el_orig->id_new = el->id_new;
-		  utarray_clear (el_orig->phi_node); 
-		  utarray_push_back (el_orig->phi_node, &el->id_new);
+		  HASH_FREE (hh, el_orig->phi_node, hel, tmp);
+		  hel = (struct phi_node *) malloc 
+					    (sizeof (struct phi_node));
+		  hel->s = el->id_new;
+		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, 
+				   hel->s, strlen (hel->s), hel);
 		}
 	    }
 	}
       HASH_ITER (hh, bb_a->var_hash, el, tmp)
 	{
 	  struct id_defined *el_orig;
-	  char** p = NULL;
 	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
 	  if (el_orig != NULL)
 	    {
+	      struct phi_node *hel, *tmp;
 	      if (jt2 == NULL)
 		{
+		  hel = (struct phi_node *) malloc (sizeof (struct phi_node));
 		  if (el_orig->id_new)
-		    utarray_push_back (el_orig->phi_node, &el_orig->id_new);
+		    hel->s = el_orig->id_new;
 		  else
-		    utarray_push_back (el_orig->phi_node, &el_orig->id);
+		    hel->s = (char*) el_orig->id;
+		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s,
+				   strlen (hel->s), hel);
 		}
-	      utarray_push_back (el_orig->phi_node, &el->id_new);
-	      while (el->phi_node 
-		     && (p = (char**) utarray_next (el->phi_node, p)))
-		utarray_push_back (el_orig->phi_node, p);
+	      hel = (struct phi_node *) malloc (sizeof (struct phi_node));
+	      hel->s = el->id_new;
+	      HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s, strlen (hel->s),
+			       hel);
+	      HASH_ITER (hh, el->phi_node, hel, tmp)
+		{
+		  struct phi_node *new_el = (struct phi_node *)
+					    malloc (sizeof (struct phi_node));
+		  new_el->s = hel->s;
+		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s, 
+				   strlen (hel->s), hel);
+		}
 	    }
 	}
       join_tail1 = jt1;
