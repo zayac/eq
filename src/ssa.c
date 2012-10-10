@@ -16,7 +16,7 @@
 #ifndef SSA
 #include "ssa.h"
 
-UT_icd tree_icd = {sizeof (tree), NULL, NULL, NULL};
+//UT_icd tree_icd = {sizeof (tree), NULL, NULL, NULL};
 
 struct id_defined*
 ssa_copy_var_hash (struct id_defined *hash)
@@ -38,6 +38,7 @@ ssa_copy_var_hash (struct id_defined *hash)
 	{
 	  struct phi_node *phi_node = (struct phi_node *)
 				      malloc (sizeof (struct phi_node));
+	  memset (phi_node, 0, sizeof (struct phi_node));
 	  phi_node->s = hel->s;
 	  HASH_ADD_KEYPTR (hh, el_copy->phi_node, phi_node->s, 
 			   strlen (phi_node->s), phi_node);
@@ -91,6 +92,11 @@ ssa_reassign_var (basic_block bb, tree var)
 	  sprintf (new_name, "%s%d", id_el->id, id_el->counter);
 
 	  /* Update the relevant entry in the hash table.  */
+	  if (id_el->id_new)
+	    {
+	      free (id_el->id_new);
+	      id_el->id_new = NULL;
+	    }
 	  id_el->id_new = new_name;
 	  while (!(++id_el->counter % id_el->divider))
 	    {
@@ -187,13 +193,24 @@ ssa_verify_vars (basic_block bb, tree node)
 		    {
 		      struct phi_node *hel, *tmp;
 		      tree new_node  = make_tree (PHI_NODE);
-		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
 		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
-			  tree tmp = tree_copy (el->entry);
-			  replace_id_str (tmp, hel->s);
-			  utarray_push_back (TREE_PHI_NODE (new_node), &tmp);
+			  struct phi_node_tree *hash_tree_el = 
+			    (struct phi_node_tree *) 
+			     malloc (sizeof (struct phi_node_tree));
+			  memset (hash_tree_el, 0, 
+				  sizeof (struct phi_node_tree));
+			  tree ttmp = tree_copy (el->entry);
+			  replace_id_str (ttmp, hel->s);
+			  hash_tree_el->s = hel->s;
+			  hash_tree_el->node = ttmp;
+			  HASH_ADD_KEYPTR (hh, TREE_PHI_NODE (new_node),
+					   hash_tree_el->s,
+					   strlen (hash_tree_el->s),
+					   hash_tree_el);
+
 			}
+		      free_tree (el->entry);
 		      el->entry = new_node;
 		      /* Clear hash.  */
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
@@ -203,7 +220,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		      && strcmp (id_el->id_new, 
 			       TREE_STRING_CST (TREE_ID_NAME (el->entry))))
 		    {
-			el->entry = tree_copy (el->entry);
+			//el->entry = tree_copy (el->entry);
 			replace_id_str (el->entry, id_el->id_new);
 		    }
 		}
@@ -228,14 +245,23 @@ ssa_verify_vars (basic_block bb, tree node)
 		{
 		  struct phi_node *hel, *tmp;
 		  tree new_node  = make_tree (PHI_NODE);
-		  utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
 		  HASH_ITER (hh, id_el->phi_node, hel, tmp)
 		    {
-		      tree tmp = tree_copy (TREE_OPERAND (node, 1));
-		      replace_id_str (tmp, hel->s);
-		      utarray_push_back (TREE_PHI_NODE (new_node),
-					 &tmp);
+		      struct phi_node_tree *hash_tree_el = 
+			(struct phi_node_tree *) 
+			 malloc (sizeof (struct phi_node_tree));
+		      memset (hash_tree_el, 0, 
+			      sizeof (struct phi_node_tree));
+		      tree ttmp = tree_copy (TREE_OPERAND (node, 1));
+		      replace_id_str (ttmp, hel->s);
+		      hash_tree_el->s = hel->s;
+		      hash_tree_el->node = ttmp;
+		      HASH_ADD_KEYPTR (hh, TREE_PHI_NODE (new_node),
+				       hash_tree_el->s,
+				       strlen (hash_tree_el->s),
+				       hash_tree_el);
 		    }
+		  free_tree (TREE_OPERAND (node, 1));
 		  TREE_OPERAND_SET (node, 1, new_node);
 		  HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		  //id_el->phi_node = NULL;
@@ -244,8 +270,8 @@ ssa_verify_vars (basic_block bb, tree node)
 		  && strcmp (id_el->id_new,
 			TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, 1)))))
 		{
-		    TREE_OPERAND_SET (node, 1, 
-				      tree_copy (TREE_OPERAND (node, 1)));
+		    //TREE_OPERAND_SET (node, 1, 
+			//	      tree_copy (TREE_OPERAND (node, 1)));
 		    replace_id_str (TREE_OPERAND (node, 1), id_el->id_new);
 		}
 	    }
@@ -273,14 +299,23 @@ ssa_verify_vars (basic_block bb, tree node)
 		    {
 		      struct phi_node *hel, *tmp;
 		      tree new_node  = make_tree (PHI_NODE);
-		      utarray_new (TREE_PHI_NODE (new_node), &tree_icd);
 		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
-			  tree tmp = tree_copy (TREE_OPERAND (node, i));
-			  replace_id_str (tmp, hel->s);
-			  utarray_push_back (TREE_PHI_NODE (new_node),
-					     &tmp);
+			  struct phi_node_tree *hash_tree_el = 
+			    (struct phi_node_tree *) 
+			     malloc (sizeof (struct phi_node_tree));
+			  memset (hash_tree_el, 0,
+				  sizeof (struct phi_node_tree));
+			  tree ttmp = tree_copy (TREE_OPERAND (node, i));
+			  replace_id_str (ttmp, hel->s);
+			  hash_tree_el->s = hel->s;
+			  hash_tree_el->node = ttmp;
+			  HASH_ADD_KEYPTR (hh, TREE_PHI_NODE (new_node),
+					   hash_tree_el->s,
+					   strlen (hash_tree_el->s),
+					   hash_tree_el);
 			}
+		      free_tree (TREE_OPERAND (node, i));
 		      TREE_OPERAND_SET (node, i, new_node);
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		      //id_el->phi_node = NULL;
@@ -289,8 +324,8 @@ ssa_verify_vars (basic_block bb, tree node)
 		      && strcmp (id_el->id_new,
 			    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i)))))
 		    {
-			TREE_OPERAND_SET (node, i, 
-					  tree_copy (TREE_OPERAND (node, i)));
+			//TREE_OPERAND_SET (node, i, 
+			//		  tree_copy (TREE_OPERAND (node, i)));
 			replace_id_str (TREE_OPERAND (node, i), id_el->id_new);
 		    }
 		}

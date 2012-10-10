@@ -92,9 +92,13 @@ free_cfg (struct control_flow_graph* cfg)
       HASH_ITER (hh, bb->var_hash, el, tmp)
 	{
 	  struct phi_node *hel, *tmp;
-	  HASH_FREE (hh, el->phi_node, hel, tmp);
+	  if (el->phi_node)
+	    HASH_FREE (hh, el->phi_node, hel, tmp);
 	  if (el->id_new)
-	    free (el->id_new);
+	    {
+	      free (el->id_new);
+	      el->id_new = NULL;
+	    }
 	  HASH_DEL (bb->var_hash, el);
 	  free (el);
 	}
@@ -176,37 +180,37 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
      If `join_tail2' is NULL, then { bb, join_tail1 } => new_block,
 		      else { join_tail1, join_tail2 } => new_block.  */
   static basic_block join_tail1 = NULL, join_tail2 = NULL;
-  static basic_block jt1 = NULL, jt2 = NULL;
+  basic_block jt1 = NULL, jt2 = NULL;
   basic_block ret = bb;
 
   ssa_verify_vars (bb, head->entry);
-      if (join_tail1 != NULL)
+  if (join_tail1 != NULL)
+    {
+      basic_block join_bb = make_bb (cfg, head);
+      join_bb->var_hash = ssa_copy_var_hash (bb->var_hash);
+      link_blocks (cfg, join_tail1, join_bb);
+      ret = join_bb;
+#ifdef CFG_OUTPUT
+      printf ("%u->%u; ", join_tail1->id, join_bb->id);
+#endif
+      join_tail1 = NULL;
+      if (join_tail2 != NULL)
 	{
-	  basic_block join_bb = make_bb (cfg, head);
-	  join_bb->var_hash = ssa_copy_var_hash (bb->var_hash);
-	  link_blocks (cfg, join_tail1, join_bb);
-	  ret = join_bb;
 #ifdef CFG_OUTPUT
-          printf ("%u->%u; ", join_tail1->id, join_bb->id);
+	  printf ("%u->%u; ", join_tail2->id, join_bb->id);
 #endif
-	  join_tail1 = NULL;
-	  if (join_tail2 != NULL)
-	    {
-#ifdef CFG_OUTPUT
-              printf ("%u->%u; ", join_tail2->id, join_bb->id);
-#endif
-	      link_blocks (cfg, join_tail2, join_bb);
-	    }
-	  else
-	    {
-#ifdef CFG_OUTPUT
-              printf ("%u->%u; ", bb->id, join_bb->id);
-#endif
-	      link_blocks (cfg, bb, join_bb);
-	    }
-	  join_tail2 = NULL;
-	  bb = join_bb;
+	  link_blocks (cfg, join_tail2, join_bb);
 	}
+      else
+	{
+#ifdef CFG_OUTPUT
+	  printf ("%u->%u; ", bb->id, join_bb->id);
+#endif
+	  link_blocks (cfg, bb, join_bb);
+	}
+      join_tail2 = NULL;
+      bb = join_bb;
+    }
   /* `if' statement is an indicator of a `branch node'.
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
@@ -258,10 +262,11 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 		  el_orig->counter = el->counter;
 		  el_orig->counter_length = el->counter_length;
 		  el_orig->divider = el->divider;
-		  el_orig->id_new = el->id_new;
+		  el_orig->id_new = strdup (el->id_new);
 		  HASH_FREE (hh, el_orig->phi_node, hel, tmp);
 		  hel = (struct phi_node *) malloc 
 					    (sizeof (struct phi_node));
+		  memset (hel, 0, sizeof (struct phi_node));
 		  hel->s = el->id_new;
 		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, 
 				   hel->s, strlen (hel->s), hel);
@@ -278,6 +283,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	      if (jt2 == NULL)
 		{
 		  hel = (struct phi_node *) malloc (sizeof (struct phi_node));
+		  memset (hel, 0, sizeof (struct phi_node));
 		  if (el_orig->id_new)
 		    hel->s = el_orig->id_new;
 		  else
@@ -286,6 +292,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 				   strlen (hel->s), hel);
 		}
 	      hel = (struct phi_node *) malloc (sizeof (struct phi_node));
+	      memset (hel, 0, sizeof (struct phi_node));
 	      hel->s = el->id_new;
 	      HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s, strlen (hel->s),
 			       hel);
@@ -293,6 +300,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 		{
 		  struct phi_node *new_el = (struct phi_node *)
 					    malloc (sizeof (struct phi_node));
+		  memset (new_el, 0, sizeof (struct phi_node));
 		  new_el->s = hel->s;
 		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s, 
 				   strlen (hel->s), hel);

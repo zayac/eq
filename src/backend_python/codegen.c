@@ -18,6 +18,7 @@
 #include "tree.h"
 #include "global.h"
 #include "recurrence.h"
+#include "ssa.h"
 #include "codegen.h"
 
 #define indent(f, x)			      \
@@ -1058,11 +1059,11 @@ codegen_expression (FILE* f, tree expr)
 
     case PHI_NODE:
       {
-	tree *p = NULL;
+	struct phi_node_tree *el, *tmp;
 	fprintf (f, "< ");
-	while ( (p = (tree*) utarray_next (TREE_PHI_NODE (expr), p))) 
+	HASH_ITER (hh, TREE_PHI_NODE (expr), el, tmp)
 	  {
-	    codegen_expression (f, *p);
+	    codegen_expression (f, el->node);
 	    fprintf (f, " "); 
 	  }
 	fprintf (f, ">");

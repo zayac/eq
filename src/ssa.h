@@ -26,12 +26,20 @@ do \
       HASH_DEL (head, el); \
       free (el); \
     } \
+  head = NULL; \
 } while (0)
 
 #ifndef SSA 
 struct phi_node
 {
   char *s;
+  UT_hash_handle hh;
+};
+
+struct phi_node_tree
+{
+  char *s;
+  tree node;
   UT_hash_handle hh;
 };
 

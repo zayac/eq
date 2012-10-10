@@ -20,7 +20,6 @@
 #include "eq.h"
 #include "utlist.h"
 #include "uthash.h"
-#include "utarray.h"
 
 enum tree_code_class
 {
@@ -169,10 +168,13 @@ struct tree_identifier_node
   unsigned with_prefix:1;
 };
 
+/* Structure declaration, which is defined in ssa.c.  */
+struct phi_node_tree;
+
 struct tree_phi_node
 {
   struct tree_type_base typed;
-  UT_array* values;
+  struct phi_node_tree *values;
 };
 
 struct tree_rec_expr_node

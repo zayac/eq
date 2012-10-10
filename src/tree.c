@@ -20,6 +20,7 @@
 #include "print.h"
 #include "types.h"
 #include "controlflow.h"
+#include "ssa.h"
 
 #define DEF_TREE_CODE(code, desc, class, operands, typed) class,
 enum tree_code_class tree_code_type[] =
@@ -100,6 +101,8 @@ get_tree_size (enum tree_code code)
 	return ops + sizeof (struct tree_list_node);
       else if (code == ITER_EXPR)
 	return ops + sizeof (struct tree_rec_expr_node);
+      else if (code == PHI_NODE)
+	return ops + sizeof (struct tree_phi_node);
       else if (code == ERROR_MARK)
 	return 0;
       else
@@ -252,7 +255,13 @@ free_tree (tree node)
 	}
       else if (code == PHI_NODE)
 	{
-	  //utarray_free (TREE_PHI_NODE (node));
+	  struct phi_node_tree *el, *tmp;
+	  HASH_ITER (hh, TREE_PHI_NODE (node), el, tmp)
+	    {
+	      HASH_DEL (TREE_PHI_NODE (node), el);
+	      free_tree (el->node);
+	      free (el);
+	    }
 	}
       break;
 
