@@ -343,6 +343,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	}
 #endif
     }
+
   if (head->next != NULL)
     ret = controlflow_pass_block (cfg, bb, head->next);
   else

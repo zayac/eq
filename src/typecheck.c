@@ -132,6 +132,13 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     {
       ret += typecheck_stmt (tle->entry, ext_vars, vars, func_ref);
+      /* We create an artificial node to generate correct control flow graph
+	 later.  */
+      if (TREE_CODE (tle->entry) == IF_STMT && tle->next == NULL)
+	{
+	  tree_list_append (stmt_list, make_tree (DUMMY_NODE));
+	  break;
+	}
       if (ret)
 	return ret;
     }

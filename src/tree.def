@@ -49,6 +49,9 @@ DEF_TREE_CODE (LIST, "tree_list", tcl_misc, 0, false)
 #ifndef SSA
 /* Phi nodes for variable renaming.  */
 DEF_TREE_CODE (PHI_NODE, "phi_node", tcl_misc, 0, true)
+
+/* Dummy statement inserted for techical reason.  */
+DEF_TREE_CODE (DUMMY_NODE, "dummy_node", tcl_misc, 0, false)
 #endif
 
 /* Type nodes.  */

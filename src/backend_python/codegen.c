@@ -761,7 +761,11 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	  }
       }
       break;
+    case DUMMY_NODE:
+      {
 
+      }
+      break;
     default:
       {
 	error_loc (TREE_LOCATION (stmt), "cannot generate code for "
