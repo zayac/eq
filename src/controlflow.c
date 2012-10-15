@@ -170,6 +170,22 @@ controlflow_function (tree func)
   return 0;
 }
 
+/* Add a variable string to the set explicitly checking 
+   the uniqueness.  */
+inline void
+safe_hash_add (struct phi_node **head, char *s)
+{
+  struct phi_node *el;
+  HASH_FIND_STR (*head, s, el);
+  if (el != NULL)
+    HASH_DEL (*head, el);
+  else
+    el = (struct phi_node *) malloc (sizeof (struct phi_node));
+  memset (el, 0, sizeof (struct phi_node));
+  el->s = s;
+  HASH_ADD_KEYPTR (hh, *head, s, strlen (s), el);
+}
+
 /* A recursive pass extracting new blocks.  */
 basic_block
 controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
@@ -215,7 +231,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
     {
-      struct id_defined *el, *tmp;
+      struct id_defined *el_orig, *tmp;
       basic_block bb_a = make_bb (cfg, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 1)));
       bb_a->var_hash = ssa_copy_var_hash (bb->var_hash);
@@ -229,15 +245,17 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
       /* Merge information about variables defined in outer 
 	 and inner blocks.  */
-      HASH_ITER (hh, bb_a->var_hash, el, tmp)
+      HASH_ITER (hh, bb->var_hash, el_orig, tmp)
 	{
-	  struct id_defined *el_orig;
-	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
-	  if (el_orig != NULL)
+	  struct id_defined *el_nested;
+	  HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
+	  /* Update information about variable if variable was modified
+	     inside the block.  */
+	  if (el_nested != NULL && el_nested->id_new != el_orig->id_new)
 	    {
-	      el_orig->counter = el->counter;
-	      el_orig->counter_length = el->counter_length;
-	      el_orig->divider = el->divider;
+	      el_orig->counter = el_nested->counter;
+	      el_orig->counter_length = el_nested->counter_length;
+	      el_orig->divider = el_nested->divider;
 	    }
 	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
@@ -252,96 +270,50 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
 	  /* Merge information about variables defined in outer 
 	     and inner blocks.  */
-	  HASH_ITER (hh, bb_b->var_hash, el, tmp)
+	  HASH_ITER (hh, bb->var_hash, el_orig, tmp)
 	    {
-	      struct id_defined *el_orig;
-	      HASH_FIND_STR (bb->var_hash, el->id, el_orig);
-	      if (el_orig != NULL)
+	      struct id_defined *el_nested;
+	      HASH_FIND_STR (bb_b->var_hash, el_orig->id, el_nested);
+	      /* Update information about variable if variable was modified
+		 inside the block.  */
+	      if (el_nested != NULL && el_nested->id_new != el_orig->id_new)
 		{
 		  struct phi_node *hel, *tmp;
-		  el_orig->counter = el->counter;
-		  el_orig->counter_length = el->counter_length;
-		  el_orig->divider = el->divider;
-		  el_orig->id_new = strdup (el->id_new);
+		  el_orig->counter = el_nested->counter;
+		  el_orig->counter_length = el_nested->counter_length;
+		  el_orig->divider = el_nested->divider;
+		  el_orig->id_new = strdup (el_nested->id_new);
 		  HASH_FREE (hh, el_orig->phi_node, hel, tmp);
-		  hel = (struct phi_node *) malloc 
-					    (sizeof (struct phi_node));
-		  memset (hel, 0, sizeof (struct phi_node));
-		  hel->s = el->id_new;
-		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, 
-				   hel->s, strlen (hel->s), hel);
+		  safe_hash_add (&el_orig->phi_node, el_nested->id_new);
+		  HASH_ITER (hh, el_nested->phi_node, hel, tmp)
+		    safe_hash_add (&el_orig->phi_node, hel->s);
 		}
 	    }
 	}
-      HASH_ITER (hh, bb_a->var_hash, el, tmp)
+      HASH_ITER (hh, bb->var_hash, el_orig, tmp)
 	{
-	  struct id_defined *el_orig;
-	  HASH_FIND_STR (bb->var_hash, el->id, el_orig);
-	  if (el_orig != NULL)
+	  struct id_defined *el_nested;
+	  HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
+	  /* Update information about variable if variable was modified
+	     inside the block.  */
+	  if (el_nested != NULL && el_nested->id_new != el_orig->id_new)
 	    {
 	      struct phi_node *hel, *tmp;
 	      if (jt2 == NULL)
 		{
-		  hel = (struct phi_node *) malloc (sizeof (struct phi_node));
-		  memset (hel, 0, sizeof (struct phi_node));
 		  if (el_orig->id_new)
-		    hel->s = el_orig->id_new;
+		    safe_hash_add (&el_orig->phi_node, el_orig->id_new);
 		  else
-		    hel->s = (char*) el_orig->id;
-		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s,
-				   strlen (hel->s), hel);
+		    safe_hash_add (&el_orig->phi_node, (char*) el_orig->id);
 		}
-	      hel = (struct phi_node *) malloc (sizeof (struct phi_node));
-	      memset (hel, 0, sizeof (struct phi_node));
-	      hel->s = el->id_new;
-	      HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s, strlen (hel->s),
-			       hel);
-	      HASH_ITER (hh, el->phi_node, hel, tmp)
-		{
-		  struct phi_node *new_el = (struct phi_node *)
-					    malloc (sizeof (struct phi_node));
-		  memset (new_el, 0, sizeof (struct phi_node));
-		  new_el->s = hel->s;
-		  HASH_ADD_KEYPTR (hh, el_orig->phi_node, hel->s, 
-				   strlen (hel->s), hel);
-		}
+	      safe_hash_add (&el_orig->phi_node, el_nested->id_new);
+	      HASH_ITER (hh, el_nested->phi_node, hel, tmp)
+		safe_hash_add (&el_orig->phi_node, hel->s);
 	    }
 	}
       join_tail1 = jt1;
       join_tail2 = jt2;
       bb->tail = head;
-    }
-  else
-    {
-#if 0
-      if (join_tail1 != NULL)
-	{
-	  basic_block join_bb = make_bb (cfg, head);
-	  join_bb->var_hash = ssa_copy_var_hash (bb->var_hash);
-	  link_blocks (cfg, join_tail1, join_bb);
-	  ret = join_bb;
-#ifdef CFG_OUTPUT
-          printf ("%u->%u; ", join_tail1->id, join_bb->id);
-#endif
-	  join_tail1 = NULL;
-	  if (join_tail2 != NULL)
-	    {
-#ifdef CFG_OUTPUT
-              printf ("%u->%u; ", join_tail2->id, join_bb->id);
-#endif
-	      link_blocks (cfg, join_tail2, join_bb);
-	    }
-	  else
-	    {
-#ifdef CFG_OUTPUT
-              printf ("%u->%u; ", bb->id, join_bb->id);
-#endif
-	      link_blocks (cfg, bb, join_bb);
-	    }
-	  join_tail2 = NULL;
-	  bb = join_bb;
-	}
-#endif
     }
 
   if (head->next != NULL)

@@ -20,6 +20,8 @@
 
 struct basic_block_def;
 
+struct phi_node;
+
 typedef struct edge_def {
   /* Source and destination blocks connected by the edge.  */
   struct basic_block_def *src;
@@ -79,6 +81,8 @@ void free_cfg (struct control_flow_graph*);
 basic_block make_bb(struct control_flow_graph*, struct tree_list_element*);
 int controlflow (void);
 int controlflow_function (tree);
+
+void safe_hash_add (struct phi_node**, char*);
 basic_block controlflow_pass_block (struct control_flow_graph*, 
 				    basic_block, 
 				    struct tree_list_element *el);

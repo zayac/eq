@@ -16,8 +16,6 @@
 #ifndef SSA
 #include "ssa.h"
 
-//UT_icd tree_icd = {sizeof (tree), NULL, NULL, NULL};
-
 struct id_defined*
 ssa_copy_var_hash (struct id_defined *hash)
 {
@@ -171,6 +169,11 @@ ssa_redefine_vars (basic_block bb, tree node)
     }
 }
 
+int string_sort(struct phi_node *a, struct phi_node *b) 
+{
+    return strcmp (a->s, b->s);
+}
+
 void
 ssa_verify_vars (basic_block bb, tree node)
 {
@@ -193,6 +196,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		    {
 		      struct phi_node *hel, *tmp;
 		      tree new_node  = make_tree (PHI_NODE);
+		      HASH_SORT (id_el->phi_node, string_sort);
 		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
 			  struct phi_node_tree *hash_tree_el = 
@@ -214,15 +218,11 @@ ssa_verify_vars (basic_block bb, tree node)
 		      el->entry = new_node;
 		      /* Clear hash.  */
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
-		      //id_el->phi_node = NULL;
 		    }
 		  else if (id_el->id_new != NULL 
 		      && strcmp (id_el->id_new, 
 			       TREE_STRING_CST (TREE_ID_NAME (el->entry))))
-		    {
-			//el->entry = tree_copy (el->entry);
-			replace_id_str (el->entry, id_el->id_new);
-		    }
+		    replace_id_str (el->entry, id_el->id_new);
 		}
 	    }
 	  else
@@ -245,6 +245,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		{
 		  struct phi_node *hel, *tmp;
 		  tree new_node  = make_tree (PHI_NODE);
+		  HASH_SORT (id_el->phi_node, string_sort);
 		  HASH_ITER (hh, id_el->phi_node, hel, tmp)
 		    {
 		      struct phi_node_tree *hash_tree_el = 
@@ -264,16 +265,11 @@ ssa_verify_vars (basic_block bb, tree node)
 		  free_tree (TREE_OPERAND (node, 1));
 		  TREE_OPERAND_SET (node, 1, new_node);
 		  HASH_FREE (hh, id_el->phi_node, hel, tmp);
-		  //id_el->phi_node = NULL;
 		}
 	      else if (id_el->id_new != NULL 
 		  && strcmp (id_el->id_new,
 			TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, 1)))))
-		{
-		    //TREE_OPERAND_SET (node, 1, 
-			//	      tree_copy (TREE_OPERAND (node, 1)));
-		    replace_id_str (TREE_OPERAND (node, 1), id_el->id_new);
-		}
+		replace_id_str (TREE_OPERAND (node, 1), id_el->id_new);
 	    }
 	}
       else
@@ -299,6 +295,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		    {
 		      struct phi_node *hel, *tmp;
 		      tree new_node  = make_tree (PHI_NODE);
+		      HASH_SORT (id_el->phi_node, string_sort);
 		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
 			  struct phi_node_tree *hash_tree_el = 
@@ -318,16 +315,11 @@ ssa_verify_vars (basic_block bb, tree node)
 		      free_tree (TREE_OPERAND (node, i));
 		      TREE_OPERAND_SET (node, i, new_node);
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
-		      //id_el->phi_node = NULL;
 		    }
 		  else if (id_el->id_new != NULL 
 		      && strcmp (id_el->id_new,
 			    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i)))))
-		    {
-			//TREE_OPERAND_SET (node, i, 
-			//		  tree_copy (TREE_OPERAND (node, i)));
-			replace_id_str (TREE_OPERAND (node, i), id_el->id_new);
-		    }
+		    replace_id_str (TREE_OPERAND (node, i), id_el->id_new);
 		}
 	    }
 	  else

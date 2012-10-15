@@ -782,7 +782,8 @@ finalize_withloop:
 	    new_scope = make_tree_list ();
 	    ret += typecheck_stmt_list (fs_stmts, ext_vars,
 						  new_scope, func_ref);
-	    free_tree (new_scope);
+	    // free_tree (new_scope);
+	    tree_list_append (delete_list, new_scope);
 	  }
 	/* split combined lists back.  */
 	tree_list_split (ext_vars, vars);
