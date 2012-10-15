@@ -745,7 +745,7 @@ finalize_withloop:
 	    free (el);
 	  }
 
-	free_tree (new_scope);
+	tree_list_append (delete_list, new_scope);
 
 	/* split combined lists back.  */
 	tree_list_split (ext_vars, vars);
@@ -775,14 +775,13 @@ finalize_withloop:
 	tree_list_combine (ext_vars, vars);
 	new_scope = make_tree_list ();
 	ret += typecheck_stmt_list (tr_stmts, ext_vars, new_scope, func_ref);
-	free_tree (new_scope);
+	tree_list_append (delete_list, new_scope);
 	/* Another scope for "else" statement list.  */
 	if (fs_stmts != NULL)
 	  {
 	    new_scope = make_tree_list ();
 	    ret += typecheck_stmt_list (fs_stmts, ext_vars,
 						  new_scope, func_ref);
-	    // free_tree (new_scope);
 	    tree_list_append (delete_list, new_scope);
 	  }
 	/* split combined lists back.  */

@@ -214,7 +214,7 @@ ssa_verify_vars (basic_block bb, tree node)
 					   hash_tree_el);
 
 			}
-		      free_tree (el->entry);
+		      //free_tree (el->entry);
 		      el->entry = new_node;
 		      /* Clear hash.  */
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
@@ -262,7 +262,7 @@ ssa_verify_vars (basic_block bb, tree node)
 				       strlen (hash_tree_el->s),
 				       hash_tree_el);
 		    }
-		  free_tree (TREE_OPERAND (node, 1));
+		  //free_tree (TREE_OPERAND (node, 1));
 		  TREE_OPERAND_SET (node, 1, new_node);
 		  HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		}
@@ -312,7 +312,7 @@ ssa_verify_vars (basic_block bb, tree node)
 					   strlen (hash_tree_el->s),
 					   hash_tree_el);
 			}
-		      free_tree (TREE_OPERAND (node, i));
+		      //free_tree (TREE_OPERAND (node, i));
 		      TREE_OPERAND_SET (node, i, new_node);
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		    }
