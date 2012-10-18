@@ -46,13 +46,11 @@ DEF_TREE_CODE (PRINT_MARK, "print_mark", tcl_misc, 1, false)
    or list of arguments in the function call.  */
 DEF_TREE_CODE (LIST, "tree_list", tcl_misc, 0, false)
 
-#ifndef SSA
 /* Phi nodes for variable renaming.  */
 DEF_TREE_CODE (PHI_NODE, "phi_node", tcl_misc, 0, true)
 
 /* Dummy statement inserted for techical reason.  */
 DEF_TREE_CODE (DUMMY_NODE, "dummy_node", tcl_misc, 0, false)
-#endif
 
 /* Type nodes.  */
 DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 0, false)

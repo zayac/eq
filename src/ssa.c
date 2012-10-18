@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+/* Copyright (c) 2012 Artem Shinkarov <artyom.shinkaroff@gmail.com>
 		      Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any
@@ -13,9 +13,11 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
-#ifndef SSA
 #include "ssa.h"
 
+/* Copy information about variable instances.
+   We call this function when we create a new block and variable information
+   needs to be transfered between blocks.  */
 struct id_defined*
 ssa_copy_var_hash (struct id_defined *hash)
 {
@@ -27,12 +29,11 @@ ssa_copy_var_hash (struct id_defined *hash)
 				   malloc (sizeof (struct id_defined));
       memcpy (el_copy, el, sizeof (struct id_defined));
       memset (&(el_copy->hh), 0, sizeof (UT_hash_handle));
-      if (hash->id != NULL)
-	el_copy->id = hash->id;
-      if (hash->id_new != NULL)
-	el_copy->id_new = strdup (hash->id_new);
+      el_copy->id = el->id;
+      if (el->id_new != NULL)
+	el_copy->id_new = strdup (el->id_new);
       el_copy->phi_node = NULL;
-      HASH_ITER (hh, hash->phi_node, hel, htmp)
+      HASH_ITER (hh, el->phi_node, hel, htmp)
 	{
 	  struct phi_node *phi_node = (struct phi_node *)
 				      malloc (sizeof (struct phi_node));
@@ -125,6 +126,7 @@ ssa_redefine_vars (basic_block bb, tree node)
   struct tree_list_element *el;
   int i;
 
+  /* FIXME May be we can avoid this code duplication.  */
   if (code == LIST)
     {
       DL_FOREACH (TREE_LIST (node), el)
@@ -169,7 +171,8 @@ ssa_redefine_vars (basic_block bb, tree node)
     }
 }
 
-int string_sort(struct phi_node *a, struct phi_node *b) 
+/* Callback to sort strings inside utarray.  */
+static int string_sort(struct phi_node *a, struct phi_node *b) 
 {
     return strcmp (a->s, b->s);
 }
@@ -180,6 +183,7 @@ ssa_verify_vars (basic_block bb, tree node)
   enum tree_code code = TREE_CODE (node);
   struct tree_list_element *el;
   int i;
+  /* FIXME May be we can avoid this code duplication.  */
   if (code == LIST)
     {
       DL_FOREACH (TREE_LIST (node), el)
@@ -214,7 +218,8 @@ ssa_verify_vars (basic_block bb, tree node)
 					   hash_tree_el);
 
 			}
-		      //free_tree (el->entry);
+		      TREE_TYPE (new_node) = TREE_TYPE (el->entry);
+		      tree_list_append (delete_list, el->entry);
 		      el->entry = new_node;
 		      /* Clear hash.  */
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
@@ -262,7 +267,7 @@ ssa_verify_vars (basic_block bb, tree node)
 				       strlen (hash_tree_el->s),
 				       hash_tree_el);
 		    }
-		  //free_tree (TREE_OPERAND (node, 1));
+		  tree_list_append (delete_list, TREE_OPERAND (node, 1));
 		  TREE_OPERAND_SET (node, 1, new_node);
 		  HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		}
@@ -312,7 +317,7 @@ ssa_verify_vars (basic_block bb, tree node)
 					   strlen (hash_tree_el->s),
 					   hash_tree_el);
 			}
-		      //free_tree (TREE_OPERAND (node, i));
+		      tree_list_append (delete_list, TREE_OPERAND (node, i));
 		      TREE_OPERAND_SET (node, i, new_node);
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		    }
@@ -327,4 +332,3 @@ ssa_verify_vars (basic_block bb, tree node)
 	}
     }
 }
-#endif

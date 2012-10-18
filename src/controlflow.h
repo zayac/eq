@@ -77,6 +77,7 @@ extern UT_icd edge_icd_dtor;
 
 edge link_blocks (struct control_flow_graph *, basic_block, basic_block);
 struct control_flow_graph* make_cfg (void);
+void free_var_hash (struct id_defined*);
 void free_cfg (struct control_flow_graph*);
 basic_block make_bb(struct control_flow_graph*, struct tree_list_element*);
 int controlflow (void);

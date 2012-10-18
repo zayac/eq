@@ -264,7 +264,6 @@ free_tree (tree node)
 	    }
 	}
       break;
-
     case tcl_constant:
       if (code == STRING_CST)
 	{

@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+/* Copyright (c) 2012 Artem Shinkarov <artyom.shinkaroff@gmail.com>
 		      Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any
@@ -29,7 +29,6 @@ do \
   head = NULL; \
 } while (0)
 
-#ifndef SSA 
 struct phi_node
 {
   char *s;
@@ -67,4 +66,4 @@ struct id_defined* ssa_copy_var_hash (struct id_defined*);
 void ssa_declare_new_var (basic_block, tree);
 char* ssa_reassign_var (basic_block, tree);
 void ssa_verify_vars (basic_block, tree);
-#endif
+void ssa_redefine_vars (basic_block, tree);

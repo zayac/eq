@@ -132,6 +132,7 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     {
       ret += typecheck_stmt (tle->entry, ext_vars, vars, func_ref);
+#ifndef SSA
       /* We create an artificial node to generate correct control flow graph
 	 later.  */
       if (TREE_CODE (tle->entry) == IF_STMT && tle->next == NULL)
@@ -139,6 +140,7 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
 	  tree_list_append (stmt_list, make_tree (DUMMY_NODE));
 	  break;
 	}
+#endif
       if (ret)
 	return ret;
     }
@@ -326,13 +328,13 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	  || (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	{
 #ifdef SSA
-	      /* Perform error reporting if single assignment form is 
-		 enabled.  */
-	      error_loc (TREE_LOCATION (lhs),
-			 "variable `%s' is defined somewhere else already",
-			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (lhs)));
-	      /* We could interrupt type checking here because of the error,
-		 but this error shouldn't break forward check.  */
+	  /* Perform error reporting if single assignment form is 
+	     enabled.  */
+	  error_loc (TREE_LOCATION (lhs),
+		     "variable `%s' is defined somewhere else already",
+		     TREE_STRING_CST (TREE_ID_SOURCE_NAME (lhs)));
+	  /* We could interrupt type checking here because of the error,
+	     but this error shouldn't break forward check.  */
 #endif
 	  /* Replace the variable with a variable from the list. */
 	  free_tree (lhs);
