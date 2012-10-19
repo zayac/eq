@@ -1117,15 +1117,7 @@ codegen_expression (FILE* f, tree expr)
 	error += codegen_expression (f, TREE_OPERAND (expr, 0));
       }
       break;
-    case PHI_NODE:
-      {
-	fprintf (f, "PHI <");
-	error += codegen_expression (f, TREE_OPERAND (expr, 0));
-	fprintf (f, ", ");
-	error += codegen_expression (f, TREE_OPERAND (expr, 1));
-	fprintf (f, ">");
-      }
-      break;
+
     default:
       {
 	const char* opcode;

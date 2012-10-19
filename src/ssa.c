@@ -332,8 +332,3 @@ ssa_verify_vars (basic_block bb, tree node)
 	}
     }
 }
-<<<<<<< HEAD
-#endif
-
-=======
->>>>>>> phi-nodes

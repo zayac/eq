@@ -25,22 +25,12 @@
    In order to get a visual representation of the graph run these commands:
 
    $ eq any_source_file.tex | sed -n '/^digraph * /p' > any_dot_file.dot
-   $ ccomps -x any_dot_file.dot | dot | gvpack -array3 | neato -Tpng -n2 \
-     -o any_output_file.png
+   $ ccomps -x any_dot_file.dot | dot | gvpack -array3 | neato -Tpng -n2 -o any_output_file.png
 */
 
 /* `free' function to remove an edge.  */
-void edge_dtor (void *_elt) 
-{
-  struct id_defined_tree *el, *tmp;
-  edge *elt = (edge*) _elt;
-#ifndef SSA
-  HASH_ITER (hh, (*elt)->var_list, el, tmp)
-    {
-      HASH_DEL ((*elt)->var_list, el);
-      free (el);
-    }
-#endif
+void edge_dtor (void *_elt) {
+  edge *elt = (edge*) _elt; 
   if (*elt != NULL)
     free (*elt);
 }
@@ -60,38 +50,12 @@ static unsigned id_counter = 0;
 
 /* Connect basic blocks with a directed edge.  */
 edge
-link_blocks (tree func, basic_block src, basic_block dest)
+link_blocks (struct control_flow_graph *cfg, basic_block src, basic_block dest)
 {
-#ifndef SSA
-  struct block_variables *el;
-#endif
-  struct control_flow_graph *cfg = TREE_FUNC_CFG (func);
   edge new_edge = (edge) malloc (sizeof (struct edge_def));
   memset (new_edge, 0, sizeof (struct edge_def));
   new_edge->src = src;
   new_edge->dest = dest;
-  new_edge->var_list = NULL;
-#ifndef SSA
-#if 0
-  /* Get the information about variables available in the block.  */
-  HASH_FIND_PTR (TREE_FUNC_BB_VARS (func), &(dest->head), el);
-  if (el != NULL)
-    {
-      struct tree_list_element *var = TREE_LIST (TREE_FUNC_VAR_LIST (func));
-      while (var != el->list_end->next)
-	{
-	  struct id_defined_tree *el = (struct id_defined_tree *)
-	      malloc (sizeof (struct id_defined_tree));
-	  
-	  el->key = TREE_STRING_CST (TREE_ID_SOURCE_NAME (var->entry));
-	  el->var = var->entry;
-	  HASH_ADD_KEYPTR (hh, new_edge->var_list, el->key, strlen (el->key), el);
-	  var = var->next;
-	}
-    }
-#endif
-#endif
-
   /* Add an edge to the source basic block.  */
   utarray_push_back (src->succs, &new_edge);
   /* Add an edge to the destination basic block.  */
@@ -233,7 +197,6 @@ basic_block
 controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 			struct tree_list_element *head)
 {
-  struct control_flow_graph *cfg = TREE_FUNC_CFG (func);
   /* If at least one of these blocks is not NULL, then we need to create a new
      `join' block.
      If `join_tail2' is NULL, then { bb, join_tail1 } => new_block,
@@ -417,7 +380,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
     }
 
   if (head->next != NULL)
-    ret = controlflow_pass_block (func, bb, head->next);
+    ret = controlflow_pass_block (cfg, bb, head->next);
   else
     bb->tail = head;
   return ret;
