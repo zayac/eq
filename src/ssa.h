@@ -21,59 +21,52 @@
 #include "tree.h"
 #include "controlflow.h"
 
+#define HASH_FREE(hh,head,el,tmp) \
+do \
+{ \
+  HASH_ITER (hh, head, el, tmp) \
+    { \
+      HASH_DEL (head, el); \
+      free (el); \
+    } \
+  head = NULL; \
+} while (0)
+
+struct phi_node
+{
+  char *s;
+  UT_hash_handle hh;
+};
+
+struct phi_node_tree
+{
+  char *s;
+  tree node;
+  UT_hash_handle hh;
+};
+
 /* We store defined variables in a hash table.
-   If static single assignment is on, we throw errors in case the same variables
-   are defined one more time.
    If static single assignment is off, we are redefining every variable redefinition.  */
 struct id_defined
 {
-  const char *id;	   /* An original name of the redefined variable.  
-			      Used as a key in a hash table.  */
-#ifndef SSA 
-  int counter;		   /* A number whose string representation is appended 
-			      to a varaible on every redifinition.  Then this 
-			      number is incremented.  */
-  unsigned counter_length; /* The number of digits in `counter' number. We need
-			      this while allocating memory for string 
-			      representation.  */
+  const char *id;	    /* An original name of the redefined variable.  
+			       Used as a key in a hash table.  */
+  int counter;		    /* A number whose string representation is appended
+			       to a varaible on every redefinition.  Then this 
+			       number is incremented.  */
+  unsigned counter_length;  /* The number of digits in `counter' number. We 
+			       need this while allocating memory for string
+			       representation.  */
   unsigned divider;	    /* A helper field for fast `counter_length'
 			       variable track. divider = 10^counter_length.  */
   char* id_new;		    /* A new name for a redefined variable.  */
-#endif
+
+  struct phi_node *phi_node;/* Information about phi node.  */
   UT_hash_handle hh;
 };
 
-/* An id-tree hash table entry.  */
-#ifndef SSA
-struct id_defined_tree
-{
-  char *key;
-  tree var;
-  UT_hash_handle hh;
-};
-
-extern struct id_defined *id_definitions;
-
-struct block_variables 
-{
-  struct tree_list_element *key;
-  UT_array *vars;
-  UT_hash_handle hh;
-};
-
-void ssa_reassign_var (struct id_defined*,
-		       tree, tree, tree);
-struct block_variables* ssa_declare_new_block
-		       (struct tree_list_element *,
-		        tree);
-void ssa_create_block_vars (struct tree_list_element *, tree);
-void ssa_register_new_var (tree);
-tree ssa_create_phi_node (basic_block, tree);
-tree ssa_localize_phi_node (basic_block, tree);
-#else
-void ssa_hash_add_var (tree);
-#endif
-void ssa_free_id_hash (void);
-void ssa_register_var_func_list (tree, tree);
-
-#endif /* __SSA_H__  */
+struct id_defined* ssa_copy_var_hash (struct id_defined*);
+void ssa_declare_new_var (basic_block, tree);
+char* ssa_reassign_var (basic_block, tree);
+void ssa_verify_vars (basic_block, tree);
+void ssa_redefine_vars (basic_block, tree);

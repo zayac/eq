@@ -101,6 +101,8 @@ get_tree_size (enum tree_code code)
 	return ops + sizeof (struct tree_list_node);
       else if (code == ITER_EXPR)
 	return ops + sizeof (struct tree_rec_expr_node);
+      else if (code == PHI_NODE)
+	return ops + sizeof (struct tree_phi_node);
       else if (code == ERROR_MARK)
 	return 0;
       else
@@ -222,7 +224,7 @@ free_tree (tree node)
       || node == error_mark_node || TREE_CODE (node) == EMPTY_MARK
       || TREE_CODE_CLASS (TREE_CODE (node)) == tcl_type)
     return;
-
+  
   code = TREE_CODE (node);
   switch (TREE_CODE_CLASS (code))
     {
@@ -252,8 +254,17 @@ free_tree (tree node)
 	{
 	  free_tree (TREE_ITER_LIST (node));
 	}
+      else if (code == PHI_NODE)
+	{
+	  struct phi_node_tree *el, *tmp;
+	  HASH_ITER (hh, TREE_PHI_NODE (node), el, tmp)
+	    {
+	      HASH_DEL (TREE_PHI_NODE (node), el);
+	      free_tree (el->node);
+	      free (el);
+	    }
+	}
       break;
-
     case tcl_constant:
       if (code == STRING_CST)
 	{

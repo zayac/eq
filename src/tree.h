@@ -168,6 +168,15 @@ struct tree_identifier_node
   unsigned with_prefix:1;
 };
 
+/* Structure declaration, which is defined in ssa.c.  */
+struct phi_node_tree;
+
+struct tree_phi_node
+{
+  struct tree_type_base typed;
+  struct phi_node_tree *values;
+};
+
 struct tree_rec_expr_node
 {
   struct tree_base base;
@@ -191,6 +200,7 @@ union tree_node
   struct tree_string_cst_node string_cst_node;
   struct tree_circumflex_op_node circumflex_op_node;
   struct tree_rec_expr_node rec_expr_node;
+  struct tree_phi_node phi_node;
 };
 
 enum tree_global_code
@@ -322,6 +332,7 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
 
+#define TREE_PHI_NODE(node) ((node)->phi_node.values)
 static inline bool
 is_assignment_operator (enum token_kind tk)
 {

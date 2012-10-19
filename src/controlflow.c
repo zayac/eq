@@ -113,6 +113,27 @@ make_cfg (void)
   return cfg;
 }
 
+/* Deallocate variable hash.  */
+void
+free_var_hash (struct id_defined *head)
+{
+  struct id_defined *el, *tmp;
+  HASH_ITER (hh, head, el, tmp)
+    {
+      struct phi_node *hel, *tmp;
+      if (el->phi_node)
+	HASH_FREE (hh, el->phi_node, hel, tmp);
+      if (el->id_new)
+	{
+	  free (el->id_new);
+	  el->id_new = NULL;
+	}
+      HASH_DEL (head, el);
+      free (el);
+    }
+}
+
+/* Deallocate CFG structure.  */
 void
 free_cfg (struct control_flow_graph* cfg)
 {
@@ -124,16 +145,18 @@ free_cfg (struct control_flow_graph* cfg)
       /* NOTE: These functions don't remove edges themselves.  */
       utarray_free (bb->succs);
       utarray_free (bb->preds);
+      free_var_hash (bb->var_hash);
       if (CFG_ENTRY_BLOCK (cfg) != NULL)
 	DL_DELETE (CFG_ENTRY_BLOCK (cfg), bb);
       free (bb);
     }
   /* This one removes all the edges in CFG.  */
-  utarray_free (cfg->edge_list);
+  if (cfg->edge_list)
+    utarray_free (cfg->edge_list);
   free (cfg);
 }
 
-
+/* Create new basic block for CFG.  */
 basic_block 
 make_bb (struct control_flow_graph* cfg, struct tree_list_element *head) {
   basic_block bb = (basic_block) malloc (sizeof (struct basic_block_def));
@@ -160,9 +183,7 @@ controlflow (void)
 #endif
   struct tree_list_element *tl;
   DL_FOREACH (TREE_LIST (function_list), tl)
-    {
-      controlflow_function (tl->entry);
-    }
+    controlflow_function (tl->entry);
   printf ("note: finished generating CFG.\n");
   return 0;
 }
@@ -171,16 +192,19 @@ int
 controlflow_function (tree func)
 {
   basic_block bb;
-
+  struct tree_list_element *el;
   TREE_FUNC_CFG (func) = make_cfg ();
 #ifdef CFG_OUTPUT
   printf ("digraph %s { ",
     TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))));
 #endif
   bb = make_bb (TREE_FUNC_CFG (func), TREE_LIST (TREE_OPERAND (func, 4)));
+  /* Add function argument variables in hash.  */
+  DL_FOREACH (TREE_LIST (TREE_OPERAND (func, 1)), el)
+    ssa_declare_new_var (bb, el->entry);
   CFG_ENTRY_BLOCK (TREE_FUNC_CFG (func)) = bb;
-
-  controlflow_pass_block (func, bb, TREE_LIST (TREE_OPERAND (func, 4)));
+  controlflow_pass_block (TREE_FUNC_CFG (func), bb, 
+			  TREE_LIST (TREE_OPERAND (func, 4)));
   CFG_EXIT_BLOCK (TREE_FUNC_CFG (func)) = bb->prev;
 #ifdef CFG_OUTPUT
   printf (" }\n");
@@ -188,10 +212,26 @@ controlflow_function (tree func)
   return 0;
 }
 
+/* Add a variable string to the set explicitly checking 
+   the uniqueness.  */
+inline void
+safe_hash_add (struct phi_node **head, char *s)
+{
+  struct phi_node *el;
+  HASH_FIND_STR (*head, s, el);
+  if (el != NULL)
+    HASH_DEL (*head, el);
+  else
+    el = (struct phi_node *) malloc (sizeof (struct phi_node));
+  memset (el, 0, sizeof (struct phi_node));
+  el->s = s;
+  HASH_ADD_KEYPTR (hh, *head, s, strlen (s), el);
+}
+
 /* A recursive pass extracting new blocks.  */
 basic_block
-controlflow_pass_block (tree func, basic_block bb,
-    struct tree_list_element *head)
+controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
+			struct tree_list_element *head)
 {
   struct control_flow_graph *cfg = TREE_FUNC_CFG (func);
   /* If at least one of these blocks is not NULL, then we need to create a new
@@ -199,69 +239,183 @@ controlflow_pass_block (tree func, basic_block bb,
      If `join_tail2' is NULL, then { bb, join_tail1 } => new_block,
 		      else { join_tail1, join_tail2 } => new_block.  */
   static basic_block join_tail1 = NULL, join_tail2 = NULL;
+  basic_block jt1 = NULL, jt2 = NULL;
   basic_block ret = bb;
+
+  /* Create a new block if previous one was an inner block of `if' statement.
+     Join blocks with edge.  */
+  if (join_tail1 != NULL)
+    {
+      basic_block join_bb = make_bb (cfg, head);
+      /* Copy information about inner scope variable instances 
+	 to outer scope.  */
+      join_bb->var_hash = ssa_copy_var_hash (bb->var_hash);
+      link_blocks (cfg, join_tail1, join_bb);
+      ret = join_bb;
+#ifdef CFG_OUTPUT
+      printf ("%u->%u; ", join_tail1->id, join_bb->id);
+#endif
+      join_tail1 = NULL;
+      /* `join_tail2' is an inner block of `if' statement related to the
+	 `false' predicate.  */
+      if (join_tail2 != NULL)
+	{
+#ifdef CFG_OUTPUT
+	  printf ("%u->%u; ", join_tail2->id, join_bb->id);
+#endif
+	  link_blocks (cfg, join_tail2, join_bb);
+	}
+      else
+	{
+#ifdef CFG_OUTPUT
+	  printf ("%u->%u; ", bb->id, join_bb->id);
+#endif
+	  link_blocks (cfg, bb, join_bb);
+	}
+      join_tail2 = NULL;
+      bb = join_bb;
+    }
+  /* Perform variable replacement.  */
+  ssa_verify_vars (bb, head->entry);
   /* `if' statement is an indicator of a `branch node'.
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
     {
-      basic_block tmp_join = NULL;
+      struct id_defined *el_orig, *tmp;
+      bool was_modified_a, was_modified_b;
       basic_block bb_a = make_bb (cfg, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 1)));
+      bb_a->var_hash = ssa_copy_var_hash (bb->var_hash);
+      
       basic_block bb_b = NULL;
 #ifdef CFG_OUTPUT
       printf ("%u->%u; ", bb->id, bb_a->id);
 #endif
-      link_blocks (func, bb, bb_a);
-      tmp_join = controlflow_pass_block (func, bb_a, 
+      link_blocks (cfg, bb, bb_a);
+      jt1 = controlflow_pass_block (cfg, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
+      /* Merge information about variables defined in outer 
+	 and inner blocks.  */
+      HASH_ITER (hh, bb->var_hash, el_orig, tmp)
+	{
+	  struct id_defined *el_nested;
+	  HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
+	  /* Update information about variable.  */
+	  el_orig->counter = el_nested->counter;
+	  el_orig->counter_length = el_nested->counter_length;
+	  el_orig->divider = el_nested->divider;
+	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
 	  bb_b = make_bb (cfg, TREE_LIST (TREE_OPERAND (head->entry, 2)));
-	  link_blocks (func, bb, bb_b);
+	  bb_b->var_hash = ssa_copy_var_hash (bb->var_hash);
+	  link_blocks (cfg, bb, bb_b);
 #ifdef CFG_OUTPUT
-        printf ("%u->%u; ", bb->id, bb_b->id);
+	  printf ("%u->%u; ", bb->id, bb_b->id);
 #endif
-	  join_tail2 = controlflow_pass_block (func, bb_b, 
+	  jt2 = controlflow_pass_block (cfg, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
-	  join_tail1 = tmp_join;
+	  /* Merge information about variables defined in outer 
+	     and inner blocks.  */
+	  HASH_ITER (hh, bb->var_hash, el_orig, tmp)
+	    {
+	      struct id_defined *el_nested_a, *el_nested_b;
+	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested_a);
+	      HASH_FIND_STR (bb_b->var_hash, el_orig->id, el_nested_b);
+	      assert (el_nested_a != NULL, "must be defined");
+	      assert (el_nested_b != NULL, "must be defined");
+
+	      /* Update information about variable.  */
+	      el_orig->counter = el_nested_b->counter;
+	      el_orig->counter_length = el_nested_b->counter_length;
+	      el_orig->divider = el_nested_b->divider;
+
+	      was_modified_a = (el_orig->id_new == NULL 
+			    && el_nested_a->id_new != NULL)
+			    || (el_orig->id_new != NULL 
+			     && el_nested_a->id_new != NULL
+		    && strcmp (el_nested_a->id_new, el_orig->id_new));
+	      was_modified_b = (el_orig->id_new == NULL 
+			    && el_nested_b->id_new != NULL)
+			    || (el_orig->id_new != NULL 
+			     && el_nested_b->id_new != NULL
+		    && strcmp (el_nested_b->id_new, el_orig->id_new));
+	      /* Update information about variable if variable was modified
+		 inside the block.  */
+	      if (was_modified_a && was_modified_b) 
+		{
+		  struct phi_node *hel, *tmp;
+		  el_orig->counter = el_nested_b->counter;
+		  el_orig->counter_length = el_nested_b->counter_length;
+		  el_orig->divider = el_nested_b->divider;
+		  if (el_orig->id_new)
+		    free (el_orig->id_new);
+		  el_orig->id_new = strdup (el_nested_b->id_new);
+		  HASH_FREE (hh, el_orig->phi_node, hel, tmp);
+		  safe_hash_add (&el_orig->phi_node, el_nested_b->id_new);
+		  safe_hash_add (&el_orig->phi_node, el_nested_a->id_new);
+		  HASH_ITER (hh, el_nested_b->phi_node, hel, tmp)
+		    safe_hash_add (&el_orig->phi_node, hel->s);
+		  HASH_ITER (hh, el_nested_a->phi_node, hel, tmp)
+		    safe_hash_add (&el_orig->phi_node, hel->s);
+		}
+	      else
+		{
+		  struct id_defined *el_nested = NULL;
+		  struct phi_node *hel, *tmp;
+		  if (was_modified_b)
+		    el_nested = el_nested_b;
+		  else if (was_modified_a)
+		    el_nested = el_nested_a;
+		  if (el_nested != NULL)
+		    {
+		      if (el_orig->id_new)
+			safe_hash_add (&el_orig->phi_node, el_orig->id_new);
+		      else
+			safe_hash_add (&el_orig->phi_node, (char*) el_orig->id);
+		      if (el_nested->id_new)
+			{
+			  safe_hash_add (&el_orig->phi_node, 
+					 el_nested->id_new);
+			  el_orig->id_new = strdup (el_nested->id_new);
+			}
+		      HASH_ITER (hh, el_nested->phi_node, hel, tmp)
+			safe_hash_add (&el_orig->phi_node, hel->s);
+		    }
+		}
+	    }
 	}
+      else
+	{
+	  HASH_ITER (hh, bb->var_hash, el_orig, tmp)
+	    {
+	      struct id_defined *el_nested;
+	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
+	      /* update information about variable if variable was modified
+		 inside the block.  */
+	      if (el_nested != NULL
+	       && ((el_orig->id_new == NULL && el_nested->id_new != NULL)
+	       || (el_orig->id_new != NULL
+	        && el_nested->id_new != NULL
+		&& strcmp (el_nested->id_new, el_orig->id_new))))
+		{
+		  struct phi_node *hel, *tmp;
+		  if (el_orig->id_new)
+		    safe_hash_add (&el_orig->phi_node, el_orig->id_new);
+		  else
+		    safe_hash_add (&el_orig->phi_node, (char*) el_orig->id);
+		  if (el_nested->id_new)
+		    safe_hash_add (&el_orig->phi_node, el_nested->id_new);
+		  HASH_ITER (hh, el_nested->phi_node, hel, tmp)
+		    safe_hash_add (&el_orig->phi_node, hel->s);
+		}
+	    }
+	}
+      join_tail1 = jt1;
+      join_tail2 = jt2;
       bb->tail = head;
     }
-  else
-    {
-      if (join_tail1 != NULL)
-	{
-	  struct tree_list_element *el;
-	  basic_block join_bb = make_bb (cfg, head);
-	  link_blocks (func, join_tail1, join_bb);
-	  ret = join_bb;
-#ifdef CFG_OUTPUT
-          printf ("%u->%u; ", join_tail1->id, join_bb->id);
-#endif
-	  join_tail1 = NULL;
-	  if (join_tail2 != NULL)
-	    {
-#ifdef CFG_OUTPUT
-              printf ("%u->%u; ", join_tail2->id, join_bb->id);
-#endif
-	      link_blocks (func, join_tail2, join_bb);
-	    }
-	  else
-	    {
-#ifdef CFG_OUTPUT
-              printf ("%u->%u; ", bb->id, join_bb->id);
-#endif
-	      link_blocks (func, bb, join_bb);
-	    }
-	  join_tail2 = NULL;
-	  bb = join_bb;
-#if 0
-	  for (el = join_bb->head; el != NULL && el != join_bb->tail; 
-	       el = el->next)
-	    ssa_localize_phi_node (join_bb, el->entry);
-#endif
-	}
-    }
+
   if (head->next != NULL)
     ret = controlflow_pass_block (func, bb, head->next);
   else
