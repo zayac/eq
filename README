@@ -22,7 +22,6 @@ CMake cache variables can be defined:
 					a first-class objects.
   -DCFG_OUTPUT=[<ON>|OFF]	      = Enable a flow graph output in
 					graphviz notation.
-  -DSSA=[ON|<OFF>]		      = Enable static single assignment.
 
 In case you want to run a test bundle:
   $ ctest

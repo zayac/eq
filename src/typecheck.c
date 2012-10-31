@@ -123,7 +123,6 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
   DL_FOREACH (TREE_LIST (stmt_list), tle)
     {
       ret += typecheck_stmt (tle->entry, ext_vars, vars, func_ref);
-#ifndef SSA
       /* We create an artificial node to generate correct control flow graph
 	 later.  */
       if (TREE_CODE (tle->entry) == IF_STMT && tle->next == NULL)
@@ -131,7 +130,6 @@ typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
 	  tree_list_append (stmt_list, make_tree (DUMMY_NODE));
 	  break;
 	}
-#endif
       if (ret)
 	return ret;
     }
@@ -167,6 +165,9 @@ conversion_possible (tree from, tree to)
 	  /* if shape is marked as an unknown, we propose that conversion is
 	     possible, however, it has to be checked later.  */
 	  if (TYPE_SHAPE (from) == unknown_mark_node)
+	    return true;
+
+	  if (TYPE_SHAPE (to) == NULL)
 	    return true;
 	}
     }
@@ -318,15 +319,6 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       if ((var = is_var_in_list (lhs, vars)) != NULL
 	  || (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	{
-#ifdef SSA
-	  /* Perform error reporting if single assignment form is 
-	     enabled.  */
-	  error_loc (TREE_LOCATION (lhs),
-		     "variable `%s' is defined somewhere else already",
-		     TREE_STRING_CST (TREE_ID_SOURCE_NAME (lhs)));
-	  /* We could interrupt type checking here because of the error,
-	     but this error shouldn't break forward check.  */
-#endif
 	  /* Replace the variable with a variable from the list. */
 	  free_tree (lhs);
 	  el->entry = var;
@@ -619,9 +611,12 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	    tree lhs = lel->entry;
 	    tree rhs = rel->entry;
 
-	    assert (TREE_CODE (lhs) == IDENTIFIER,
-		    "Left hand side of the assignment expression "
-		    "must be an identifier");
+	    if (TREE_CODE (lhs) != IDENTIFIER)
+	      {
+		error_loc (TREE_LOCATION (lhs), "Left hand side of the declaration "
+			   "must be an identifier");
+		return 1;
+	      }
 
 	    if (TREE_CODE_CLASS (TREE_CODE (rhs)) != tcl_type)
 	      {
@@ -688,9 +683,15 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	tree gen = TREE_OPERAND (stmt, 1);
 	tree cases = TREE_OPERAND (stmt, 2);
 	tree new_scope = make_tree_list ();
-	tree lower = TREE_OPERAND (stmt, 0);
+	tree lower = var;
 
 	tree_list_combine (ext_vars, vars);
+
+	if (TREE_CODE (var) == CIRCUMFLEX)
+	  {
+	    var = TREE_OPERAND (var, 0);
+	    lower = var;
+	  }
 
 	assert (TREE_CODE (var) == LOWER,
 	    "index loop can be performed only on lower indeces");
@@ -710,21 +711,32 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	DL_FOREACH (TREE_LIST (cases), el)
 	  {
 	    tree exp = TREE_OPERAND (el->entry, 0);
+	    typecheck_options.iter_index = true;
 	    ret += typecheck_expression (exp, ext_vars, new_scope, func_ref);
+	    typecheck_options.iter_index = false;
 	    if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == GENERATOR)
 	      ret += typecheck_generator (TREE_OPERAND (el->entry, 1),
 					  ext_vars, new_scope, func_ref, false);
 
 	    if (!tree_compare (TREE_TYPE (var), TREE_TYPE (exp)))
 	      {
-		char* var_type = tree_to_str (TREE_TYPE (var));
-		char* exp_type = tree_to_str (TREE_TYPE (exp));
-		error_loc (TREE_LOCATION (exp), "type mismatch. "
-			   "`%s' expected, `%s' found.",
-			   var_type, exp_type);
-		free (var_type);
-		free (exp_type);
-		ret += 1;
+		if (conversion_possible (TREE_TYPE (exp),
+					 TREE_TYPE (var)))
+		  {
+		    tree t = make_convert (TREE_TYPE (exp), TREE_TYPE (var));
+		    TREE_TYPE (exp) = t;
+		  }
+		else
+		  {
+		    char* var_type = tree_to_str (TREE_TYPE (var));
+		    char* exp_type = tree_to_str (TREE_TYPE (exp));
+		    error_loc (TREE_LOCATION (exp), "type mismatch. "
+			       "`%s' expected, `%s' found.",
+			       var_type, exp_type);
+		    free (var_type);
+		    free (exp_type);
+		    ret += 1;
+		  }
 	      }
 
 	  }
@@ -989,7 +1001,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
   tree rhs = TREE_OPERAND (expr, 1);
   int dim = 0;
   tree shape = NULL;
-  tree tmp_type;
+  tree tmp_type = NULL;
 
   /* if 'generator' is not set, it means that this function was called from
      generator expression. Then 'lhs' must be an identifier.  */
@@ -1108,11 +1120,23 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
 	  tree_list_append (shape, el->entry);
 	}
     }
+  
+  if (dim == 0 && shape == NULL)
+    {
+      if (TREE_CODE (TREE_TYPE (lhs)) == Z_TYPE)
+	tmp_type = z_type_node;
+      else if (TREE_CODE (TREE_TYPE (lhs)) == R_TYPE)
+	tmp_type = r_type_node;
+      else if (TREE_CODE (TREE_TYPE (lhs)) == N_TYPE)
+	tmp_type = n_type_node;
+    }
 
-  tmp_type = tree_copy (TREE_TYPE (lhs));
-  TYPE_DIM (tmp_type) = dim ? make_integer_cst (dim) : NULL;
-  TYPE_SHAPE (tmp_type) = shape;
-
+  if (tmp_type == NULL)
+    {
+      tmp_type = tree_copy (TREE_TYPE (lhs));
+      TYPE_DIM (tmp_type) = dim ? make_integer_cst (dim) : NULL;
+      TYPE_SHAPE (tmp_type) = shape;
+    }
   TREE_TYPE (expr) = types_assign_type (tmp_type);
   
   /* an array element can not be a stream.  */

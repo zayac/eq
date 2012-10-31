@@ -135,6 +135,7 @@ struct tree_circumflex_op_node
 {
   struct tree_type_base typed;
   bool is_index;
+  tree index;
   tree operands[];
 };
 

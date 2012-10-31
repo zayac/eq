@@ -25,7 +25,6 @@ project (eq C)
 option (BUILD_LEXER "compiling lexer" OFF)
 option (FIRST_CLASS_FUNCTIONS "functions as first-class objects" ON)
 option (CFG_OUTPUT "output control flow graph" ON)
-option (SSA "allow single assignment" OFF)
 
 # A list of available backends
 set (BACKENDS python haskell)
@@ -63,8 +62,6 @@ endif()
 
 message(STATUS "Control flow graph output is ${CFG_OUTPUT}")
 
-message(STATUS "Static single assignment is ${SSA}")
-
 message(STATUS "${BACKEND_LANG} as a backend is used")
 
 include (cmake/version.cmake)
@@ -77,10 +74,6 @@ configure_file (
 if (NOT FIRST_CLASS_FUNCTIONS)
   message (STATUS "First-class functions are disabled")
   add_definitions(-DDISABLE_FCF)
-endif()
-
-if (SSA)
-  add_definitions(-DSSA)
 endif()
 
 if (CFG_OUTPUT)

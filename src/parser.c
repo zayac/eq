@@ -1148,6 +1148,18 @@ handle_indexes (struct parser * parser, tree prefix)
 	  parser_unget (parser);
 	  up = upper_wrapper (parser, low);
 	}
+      if (token_is_operator (parser_get_token (parser), tv_lower_index))
+	{
+	  tree identifier;	  
+	  parser_unget (parser);
+	  low = handle_lower (parser);
+	  identifier = TREE_OPERAND (up, 0);
+	  TREE_OPERAND_SET (up, 0, low);
+	  TREE_OPERAND_SET (low, 0, identifier);
+	  return up;
+	}
+      else
+	parser_unget (parser);
     }
   else
     parser_unget (parser);
@@ -2358,7 +2370,7 @@ handle_sexpr_op (struct parser * parser)
   if (token_value (tok) == tv_call
 	|| token_value (tok) == tv_lambda)
     {
-      if (token_value (parser_get_token (parser)) == tv_lbrace)
+      if (token_is_operator (parser_get_token (parser), tv_lbrace))
 	{
 	  parser_unget (parser);
 	  parser_unget (parser);
@@ -2897,7 +2909,7 @@ handle_declare (struct parser * parser, tree prefix_id)
   tree id = NULL, type = NULL;
 
   if (prefix_id == NULL)
-    id = handle_list (parser, handle_idx, tv_comma);
+    id = handle_list (parser, handle_id, tv_comma);
   else
     id = prefix_id;
 

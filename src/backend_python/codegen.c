@@ -400,7 +400,10 @@ codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
     error += codegen_zero_array (f, el->next, code);
   else
     fprintf_zero_element (f, code);
-  fprintf (f, " for i in range(%li)]", TREE_INTEGER_CST (el->entry));
+
+  fprintf (f, " for i in range(");
+  codegen_expression (f, el->entry);
+  fprintf (f, ")]");
   return error;
 }
 
@@ -822,6 +825,8 @@ codegen_expression (FILE* f, tree expr)
 	if (TREE_TYPE (expr) == z_type_node)
 	  fprintf (f, "%li", TREE_INTEGER_CST (expr));
 	else if (TREE_TYPE (expr) == n_type_node)
+	  fprintf (f, "%lu", TREE_INTEGER_CST (expr));
+	else if (TREE_CODE (TREE_TYPE (expr)) == CONVERT_EXPR)
 	  fprintf (f, "%lu", TREE_INTEGER_CST (expr));
 	else
 	  {
