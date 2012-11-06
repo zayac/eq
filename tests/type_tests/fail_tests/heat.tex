@@ -1,0 +1,23 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage{eqcode}
+
+\begin{document}
+
+\proto{sin}{\type{R}}{\type{R}}
+
+\begin{eqcode}{heat}{T, X, h, \tau, a}{\type{Z}, \type{Z}, \type{R},
+\type{R}, \type{R}}{\arraytype{\ldots}{R}}
+  \pi \gets 3.1415 \lend
+  u \in \overline{\arraytype{X}{R}} \lend
+  u^{[2]}_j |\ \forall j \gets 1 \lend
+  u^{[3]}_j |\ \forall j \gets u^{[2]} \lend % eq-error-loc: type mismatch
+  u^{[\iter]}_j |\ \forall j \quad \; \; \gets 
+  \begin{cases}
+    0 & j: j = 0 \cup j = X - 1 \lend
+  \frac{a^2 \cdot \tau}{h^2} \cdot (u^{[\iter-1]}_{j-1} +
+    u^{[\iter - 1]}_{j+1}) + (1.0 - \frac{2 \cdot a^2 \cdot \tau}{h^2}) \cdot
+    u^{[\iter-1]}_j & \otherwise \lend
+  \end{cases} \lend
+  \return {u^{[T - 1]}} \lend
+\end{eqcode}
+\end{document}

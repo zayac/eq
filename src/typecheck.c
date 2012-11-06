@@ -411,16 +411,12 @@ typecheck_assign_index (tree lhs, tree rhs)
   int ret = 0;
   tree id;
   tree iter_pair = NULL;
-  tree variables = NULL;
 
   /* determine either recurrence is defined using cases.  */
   if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
     id = TREE_OPERAND (lhs, 0);
   else
-    {
-      id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
-      variables = TREE_OPERAND (TREE_OPERAND (lhs, 0), 1);
-    }
+    id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
 
   if (TREE_ID_ITER (id) == NULL)
     {
@@ -701,7 +697,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	tree cases = TREE_OPERAND (stmt, 2);
 	tree new_scope = make_tree_list ();
 	tree lower = var;
-
+	tree loop_cases;
 	tree_list_combine (ext_vars, vars);
 
 	if (TREE_CODE (var) == CIRCUMFLEX)
@@ -740,8 +736,8 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 		if (conversion_possible (TREE_TYPE (exp),
 					 TREE_TYPE (var)))
 		  {
-		    tree t = make_convert (TREE_TYPE (exp), TREE_TYPE (var));
-		    TREE_TYPE (exp) = t;
+		    tree t = make_convert (exp, TREE_TYPE (var));
+		    TREE_OPERAND_SET (el->entry, 0, t);
 		  }
 		else
 		  {
@@ -759,7 +755,14 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	  }
 	
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == CIRCUMFLEX)
-	  ret += typecheck_assign_index (TREE_OPERAND (stmt, 0), stmt);
+	  {
+	    loop_cases = make_tree (INDEX_LOOP_CASES);
+	    TREE_OPERAND_SET (loop_cases, 0, 
+	      TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0), 1));
+	    TREE_OPERAND_SET (loop_cases, 1, TREE_OPERAND (stmt, 1));
+	    TREE_OPERAND_SET (loop_cases, 2, TREE_OPERAND (stmt, 2));
+	    ret += typecheck_assign_index (TREE_OPERAND (stmt, 0), loop_cases);
+	  }
 
 finalize_withloop:
 	DL_FOREACH_SAFE (TREE_LIST (new_scope), el, tmp)
@@ -1809,7 +1812,17 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 		free (rhs_type);
 		return 1;
 	      }
-	    TREE_TYPE (expr) = change_stream_prop (TREE_TYPE (lhs));
+	    /* In case we want to get a lower index expression of recurrence
+	       variable, we definitely now that it 
+	       is not a stream any more.  */
+	    if (TREE_CODE (lhs) == LOWER 
+	     && TREE_CIRCUMFLEX_INDEX_STATUS (expr))
+	      {
+		TREE_TYPE (expr) = TREE_TYPE (lhs);
+		TYPE_IS_STREAM (expr) = false;
+	      }
+	    else
+	      TREE_TYPE (expr) = change_stream_prop (TREE_TYPE (lhs));
 
 	  }
 	else

@@ -1148,6 +1148,9 @@ handle_indexes (struct parser * parser, tree prefix)
 	  parser_unget (parser);
 	  up = upper_wrapper (parser, low);
 	}
+      if (TREE_CODE (up) == ERROR_MARK)
+	return error_mark_node;
+
       if (token_is_operator (parser_get_token (parser), tv_lower_index))
 	{
 	  tree identifier;	  

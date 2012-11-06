@@ -171,6 +171,8 @@ print_expression (xfile *  xf, tree exp)
     case Z_TYPE:
     case R_TYPE:
       {
+	if (TYPE_IS_STREAM (exp))
+	  xfile_fprintf (xf, "\\overline {");
 	xfile_fprintf (xf, "\\type {");
 	if (TREE_CODE (exp) == B_TYPE)
 	  xfile_fprintf (xf, "B");
@@ -195,6 +197,8 @@ print_expression (xfile *  xf, tree exp)
 	      return xfile_fprintf (xf, "}");
 	  }
 	xfile_fprintf (xf, "}");
+	if (TYPE_IS_STREAM (exp))
+	  xfile_fprintf (xf, "}");
 	break;
       }
     case FUNCTION_TYPE:

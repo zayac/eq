@@ -379,6 +379,7 @@ free_tree_type (tree node, bool hard)
       TYPE_DIM (node) = NULL;
       TYPE_SHAPE (node) = NULL;
     }
+
   TREE_CODE_SET (node, EMPTY_MARK);
   atomic_trees_add (node);
 }
@@ -734,6 +735,9 @@ tree_copy (tree t)
 {
   tree tmp;
   int i = 0;
+
+  if (!t)
+    return NULL;
 
   if (TREE_CODE (t) == LIST)
     {

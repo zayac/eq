@@ -89,10 +89,15 @@ recurrence_check_relation (tree t, tree left)
 	    }
 	}
     }
+  if (TREE_CODE (t) == LIST)
+    {
+      struct tree_list_element *el;
+      DL_FOREACH (TREE_LIST (t), el)
+	ret += recurrence_check_relation (el->entry, left);
+    }
+
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
     {
-      if (TREE_CODE (t) == INDEX_LOOP_EXPR && i == 0)
-	continue;
       ret += recurrence_check_relation (TREE_OPERAND (t, i), left); 
     }
   return ret;
@@ -126,10 +131,18 @@ recurrence_find_max_shift (tree t)
 	    max = TREE_INTEGER_CST (TREE_OPERAND (index, 1));
 	}
     }
+  if (TREE_CODE (t) == LIST)
+    {
+      struct tree_list_element *el;
+      DL_FOREACH (TREE_LIST (t), el)
+	{
+	  int tmp = recurrence_find_max_shift (el->entry);
+	  if (tmp > max)
+	    max = tmp;
+	}
+    }
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
     {
-      if (TREE_CODE (t) == INDEX_LOOP_EXPR && i == 0)
-	continue;
       int tmp = recurrence_find_max_shift (TREE_OPERAND (t, i));
       if (tmp > max)
 	max = tmp;
