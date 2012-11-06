@@ -90,7 +90,11 @@ recurrence_check_relation (tree t, tree left)
 	}
     }
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
-    ret += recurrence_check_relation (TREE_OPERAND (t, i), left); 
+    {
+      if (TREE_CODE (t) == INDEX_LOOP_EXPR && i == 0)
+	continue;
+      ret += recurrence_check_relation (TREE_OPERAND (t, i), left); 
+    }
   return ret;
 
 }
@@ -124,6 +128,8 @@ recurrence_find_max_shift (tree t)
     }
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
     {
+      if (TREE_CODE (t) == INDEX_LOOP_EXPR && i == 0)
+	continue;
       int tmp = recurrence_find_max_shift (TREE_OPERAND (t, i));
       if (tmp > max)
 	max = tmp;

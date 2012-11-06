@@ -169,6 +169,13 @@ struct tree_identifier_node
   unsigned with_prefix:1;
 };
 
+struct tree_iter_pair
+{
+  struct tree_base base;
+  tree lower_index;
+  tree operands[];
+};
+
 /* Structure declaration, which is defined in ssa.c.  */
 struct phi_node_tree;
 
@@ -202,6 +209,7 @@ union tree_node
   struct tree_circumflex_op_node circumflex_op_node;
   struct tree_rec_expr_node rec_expr_node;
   struct tree_phi_node phi_node;
+  struct tree_iter_pair iter_pair;
 };
 
 enum tree_global_code
@@ -267,6 +275,8 @@ get_tree_operand (tree node, int idx)
     {
       if (code == CIRCUMFLEX)
 	return node->circumflex_op_node.operands[idx];
+      else if (code == ITER_PAIR)
+	return node->iter_pair.operands[idx];
       else if (code == FUNCTION)
 	return node->function_node.operands[idx];
       if (TREE_CODE_TYPED (code))
@@ -289,6 +299,8 @@ set_tree_operand (tree node, int idx, tree value)
     {
       if (code == CIRCUMFLEX)
 	node->circumflex_op_node.operands[idx] = value;
+      else if (code == ITER_PAIR)
+	node->iter_pair.operands[idx] = value;
       else if (code == FUNCTION)
 	node->function_node.operands[idx] = value;
       else if (TREE_CODE_TYPED (code))
@@ -315,6 +327,9 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ID_DEFINED(node) ((node)->identifier_node.defined)
 #define TREE_ID_WITH_PREFIX(node) ((node)->identifier_node.with_prefix)
 #define TREE_ID_ITER(node) ((node)->identifier_node.iter_desc)
+#define is_iter_cases (node) (TREE_CODE (TREE_OPERAND ((node), 1)) == LIST)
+
+#define TREE_ITER_PAIR_LOWER(node) ((node)->iter_pair.lower_index)
 
 #define TREE_ITER_MIN(node) ((node)->rec_expr_node.min_value)
 #define TREE_ITER_SIZE(node) ((node)->rec_expr_node.size)

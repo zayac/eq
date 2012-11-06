@@ -28,9 +28,9 @@
     r_i\  |\  i : 0 \leq i \leq 7 \gets 0 \lend
      n \gets 256^{\lfloor \log_{256} \left ( a \right ) \rfloor } \lend
     n^{[0]} \gets n \lend
-    r^{[\iter]}_\iter \gets \dfrac{a}{n^{[\iter]}} \lend % eq-error-loc: unexpected token `_'
+    r^{[\iter]}_\iter \gets \dfrac{a}{n^{[\iter]}} \lend
     n^{[\iter]} \gets \dfrac{n^{[\iter-1]}}{256} \lend
-    \return{\filter { r^{[\iter]}\  |\  i : i = {\call{shape}{a}}_0}} \lend
+    \return{\filter { r^{[\iter]}\  |\  i : i = {\call{shape}{a}}_0}} \lend % eq-error-loc: unexpected token
 \end{eqcode}
 
 \begin{eqcode}{divide}{w}{\arraytype{\ldots}{Z}}{\arraytype{64}{Z}}

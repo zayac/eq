@@ -409,9 +409,19 @@ int
 typecheck_assign_index (tree lhs, tree rhs)
 {
   int ret = 0;
-  tree id = TREE_OPERAND (lhs, 0);
-  assert (TREE_CODE (lhs) == CIRCUMFLEX,
-      "only circumflex expression can be checked");
+  tree id;
+  tree iter_pair = NULL;
+  tree variables = NULL;
+
+  /* determine either recurrence is defined using cases.  */
+  if (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER)
+    id = TREE_OPERAND (lhs, 0);
+  else
+    {
+      id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
+      variables = TREE_OPERAND (TREE_OPERAND (lhs, 0), 1);
+    }
+
   if (TREE_ID_ITER (id) == NULL)
     {
       TREE_ID_ITER (id) = make_tree (ITER_EXPR);
@@ -442,8 +452,15 @@ typecheck_assign_index (tree lhs, tree rhs)
 	    }
 	}
     }
-  tree_list_append (TREE_ITER_LIST (TREE_ID_ITER (id)),
-      make_binary_op (ITER_PAIR, TREE_OPERAND (lhs, 1), rhs));
+
+  iter_pair = make_tree (ITER_PAIR);
+  TREE_OPERAND_SET (iter_pair, 0, TREE_OPERAND (lhs, 1));
+  TREE_OPERAND_SET (iter_pair, 1, rhs);
+
+  if (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER)
+    TREE_ITER_PAIR_LOWER (iter_pair) = TREE_OPERAND (TREE_OPERAND (lhs, 0), 1);
+
+  tree_list_append (TREE_ITER_LIST (TREE_ID_ITER (id)), iter_pair);
   return ret;
 }
 
@@ -740,6 +757,9 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	      }
 
 	  }
+	
+	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == CIRCUMFLEX)
+	  ret += typecheck_assign_index (TREE_OPERAND (stmt, 0), stmt);
 
 finalize_withloop:
 	DL_FOREACH_SAFE (TREE_LIST (new_scope), el, tmp)
