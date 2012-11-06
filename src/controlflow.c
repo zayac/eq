@@ -128,7 +128,7 @@ make_bb (struct control_flow_graph* cfg, struct tree_list_element *head) {
 #ifdef CFG_OUTPUT
   /* Assign id to a block.  */
   bb->id = id_counter++;
-  printf ("%u; ", bb->id);
+  fprintf (stdout, "%u; ", bb->id);
 #endif
   utarray_new (bb->preds, &edge_icd);
   utarray_new (bb->succs, &edge_icd);
@@ -143,7 +143,7 @@ int
 controlflow (void)
 {
 #ifdef CFG_OUTPUT
-  printf ("Control flow graph:\n");
+  fprintf (stdout, "Control flow graph:\n");
 #endif
   struct tree_list_element *tl;
   DL_FOREACH (TREE_LIST (function_list), tl)
@@ -159,7 +159,7 @@ controlflow_function (tree func)
   struct tree_list_element *el;
   TREE_FUNC_CFG (func) = make_cfg ();
 #ifdef CFG_OUTPUT
-  printf ("digraph %s { ",
+  fprintf (stdout, "digraph %s { ",
     TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))));
 #endif
   bb = make_bb (TREE_FUNC_CFG (func), TREE_LIST (TREE_OPERAND (func, 4)));
@@ -171,7 +171,7 @@ controlflow_function (tree func)
 			  TREE_LIST (TREE_OPERAND (func, 4)));
   CFG_EXIT_BLOCK (TREE_FUNC_CFG (func)) = bb->prev;
 #ifdef CFG_OUTPUT
-  printf (" }\n");
+  fprintf (stdout, " }\n");
 #endif
   return 0;
 }
@@ -216,7 +216,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       link_blocks (cfg, join_tail1, join_bb);
       ret = join_bb;
 #ifdef CFG_OUTPUT
-      printf ("%u->%u; ", join_tail1->id, join_bb->id);
+      fprintf (stdout, "%u->%u; ", join_tail1->id, join_bb->id);
 #endif
       join_tail1 = NULL;
       /* `join_tail2' is an inner block of `if' statement related to the
@@ -224,14 +224,14 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       if (join_tail2 != NULL)
 	{
 #ifdef CFG_OUTPUT
-	  printf ("%u->%u; ", join_tail2->id, join_bb->id);
+	  fprintf (stdout, "%u->%u; ", join_tail2->id, join_bb->id);
 #endif
 	  link_blocks (cfg, join_tail2, join_bb);
 	}
       else
 	{
 #ifdef CFG_OUTPUT
-	  printf ("%u->%u; ", bb->id, join_bb->id);
+	  fprintf (stdout, "%u->%u; ", bb->id, join_bb->id);
 #endif
 	  link_blocks (cfg, bb, join_bb);
 	}
@@ -252,7 +252,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       
       basic_block bb_b = NULL;
 #ifdef CFG_OUTPUT
-      printf ("%u->%u; ", bb->id, bb_a->id);
+      fprintf (stdout, "%u->%u; ", bb->id, bb_a->id);
 #endif
       link_blocks (cfg, bb, bb_a);
       jt1 = controlflow_pass_block (cfg, bb_a, 
@@ -274,7 +274,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	  bb_b->var_hash = ssa_copy_var_hash (bb->var_hash);
 	  link_blocks (cfg, bb, bb_b);
 #ifdef CFG_OUTPUT
-	  printf ("%u->%u; ", bb->id, bb_b->id);
+	  fprintf (stdout, "%u->%u; ", bb->id, bb_b->id);
 #endif
 	  jt2 = controlflow_pass_block (cfg, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));

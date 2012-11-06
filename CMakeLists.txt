@@ -106,16 +106,6 @@ macro (run_test arg opt)
     FAIL_REGULAR_EXPRESSION "^error:")
 endmacro (run_test)
 
-# Add tests that must run and should not produce any errors
-macro (memory_test arg opt)
-  add_test (NAME memory_test_${arg}
-	    COMMAND valgrind ${PROJECT_BINARY_DIR}/eq ${opt} ${arg})
-  set_tests_properties (memory_test_${arg}
-  PROPERTIES 
-    PASS_REGULAR_EXPRESSION "no leaks are possible"
-    FAIL_REGULAR_EXPRESSION "definitely lost:|Invalid")
-endmacro (memory_test)
-
 # Add tests that produce errors and have appropriate error-annotations
 macro (fail_test arg opt)
   execute_process (COMMAND ${PROJECT_SOURCE_DIR}/tests/eq-error.sh ${arg}
@@ -210,6 +200,16 @@ file (GLOB exec_tests "tests/codegen_tests_${BACKEND_LANG}/*.tex")
 foreach (test ${exec_tests})
   exec_test (${test} "")
 endforeach ()
+
+# Add tests that must run and should not produce any errors
+macro (memory_test arg opt)
+  add_test (NAME memory_test_${arg}
+	    COMMAND valgrind ${PROJECT_BINARY_DIR}/eq ${opt} ${arg})
+  set_tests_properties (memory_test_${arg}
+  PROPERTIES 
+    PASS_REGULAR_EXPRESSION "no leaks are possible"
+    FAIL_REGULAR_EXPRESSION "definitely lost:|Invalid")
+endmacro (memory_test)
 
 # include files for memory testing
 if (${VALGRIND_EXISTS} EQUAL 1)

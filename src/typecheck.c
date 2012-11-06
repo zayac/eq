@@ -1823,7 +1823,6 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	      }
 	    else
 	      TREE_TYPE (expr) = change_stream_prop (TREE_TYPE (lhs));
-
 	  }
 	else
 	  {
