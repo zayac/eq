@@ -24,6 +24,8 @@ texOutput=`cat $1 | \
 egrep '%[ \t]*eq-cfg:' | \
 sed 's/%[ \t]*eq-cfg: //'`
 execOutput=`./eq $1 | sed -n '/^digraph * /p'`
+filename="${1##*/}"
+rm ${filename%.*}.py
 echo "$execOutput"
 echo "----"
 echo "$texOutput"

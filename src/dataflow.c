@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+/* Copyright (c) 2012 Artem Shinkarov <artyom.shinkaroff@gmail.com>
 		      Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any

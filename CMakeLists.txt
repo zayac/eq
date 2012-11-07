@@ -98,8 +98,8 @@ enable_testing ()
 
 # Add tests that must run and should not produce any errors
 macro (run_test arg opt)
-  add_test (NAME run_test_${arg}
-	    COMMAND eq ${opt} ${arg})
+  add_test (run_test_${arg} ${PROJECT_SOURCE_DIR}/tests/eq-run.sh 
+	    ${PROJECT_BINARY_DIR}/eq ${arg} ${opt})
   set_tests_properties (run_test_${arg}
   PROPERTIES 
     PASS_REGULAR_EXPRESSION "finished compiling"
@@ -107,7 +107,7 @@ macro (run_test arg opt)
 endmacro (run_test)
 
 # Add tests that produce errors and have appropriate error-annotations
-macro (fail_test arg opt)
+macro (error_test arg opt)
   execute_process (COMMAND ${PROJECT_SOURCE_DIR}/tests/eq-error.sh ${arg}
 		   OUTPUT_VARIABLE out
   		   ERROR_VARIABLE err
@@ -128,11 +128,11 @@ macro (fail_test arg opt)
     set (out "error:")
   endif()
 
-  add_test (fail_test_${arg} eq ${opt} ${arg})
-  set_tests_properties (fail_test_${arg}
+  add_test (error_test_${arg} eq ${opt} ${arg})
+  set_tests_properties (error_test_${arg}
   PROPERTIES
     PASS_REGULAR_EXPRESSION ${out})
-endmacro(fail_test)
+endmacro(error_test)
 
 macro (cfg_test arg opt)
   add_test (cfg_test_${arg} ${PROJECT_SOURCE_DIR}/tests/eq-cfg.sh ${arg})
@@ -157,10 +157,10 @@ foreach (test ${run_tests})
 endforeach ()
 
 # include files for error-testing
-file (GLOB_RECURSE fail_tests "tests/parser_tests/fail_tests/*.tex")
+file (GLOB_RECURSE error_tests "tests/parser_tests/fail_tests/*.tex")
 set (opt "-Bparser")
-foreach (test ${fail_tests})
-  fail_test (${test} ${opt})
+foreach (test ${error_tests})
+  error_test (${test} ${opt})
 endforeach ()
 
 #include files for typechecker testing
@@ -171,16 +171,16 @@ foreach (test ${run_tests})
 endforeach ()
 
 # include files for error-testing
-file (GLOB_RECURSE fail_tests "tests/type_tests/fail_tests/*.tex")
+file (GLOB_RECURSE error_tests "tests/type_tests/fail_tests/*.tex")
 set (opt "-Btypecheck")
-foreach (test ${fail_tests})
-  fail_test (${test} ${opt})
+foreach (test ${error_tests})
+  error_test (${test} ${opt})
 endforeach ()
 
 # include files for error-testing
-file (GLOB_RECURSE fail_tests "tests/codegen_tests_python/fail_tests/*.tex")
-foreach (test ${fail_tests})
-  fail_test (${test} "")
+file (GLOB_RECURSE error_tests "tests/codegen_tests_python/fail_tests/*.tex")
+foreach (test ${error_tests})
+  error_test (${test} "")
 endforeach ()
 
 # include files for flow graph testing
@@ -203,8 +203,8 @@ endforeach ()
 
 # Add tests that must run and should not produce any errors
 macro (memory_test arg opt)
-  add_test (NAME memory_test_${arg}
-	    COMMAND valgrind ${PROJECT_BINARY_DIR}/eq ${opt} ${arg})
+  add_test (memory_test_${arg} ${PROJECT_SOURCE_DIR}/tests/eq-memory.sh
+	    ${PROJECT_BINARY_DIR}/eq ${arg})
   set_tests_properties (memory_test_${arg}
   PROPERTIES 
     PASS_REGULAR_EXPRESSION "no leaks are possible"

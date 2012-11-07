@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#  Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+#  Copyright (c) 2012 Artem Shinkarov <artyom.shinkaroff@gmail.com>
 #                     Pavel Zaichenkov <zaichenkov@gmail.com>
 #
 #  Permission to use, copy, modify, and distribute this software for any
@@ -16,33 +16,9 @@
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 # This file is a part of Eq testing routine.
-# The script below reads the input file matching the lines with `eq-exec'
-# prefix and compares an expected output with an actual one. In case of match
-# pring return `passed' string, otherwise -- `failed ' string.
+# This script executes valgrind to catch memory leaks, invalid memory accesses.
 
-texOutput=`cat -n $1 | \
-egrep '%[ \t]*eq-exec:' | \
-sed -e 's/^[ \t]*\([0-9]*\)[^%]*%[ \t]*eq-exec: \(.*\)/\2/g'`
-./eq $1
-filename="${1##*/}"
-execOutput=`$2 ${filename%.*}.py`
+$1 $3 $2
+filename="${2##*/}"
 rm ${filename%.*}.py
-echo "$execOutput"
-echo "----"
-echo "$texOutput"
-if [ "$execOutput" == "$texOutput" ]
-then
-  echo "$1 passed"
-else
-  echo "$1 failed"
-fi
 exit 0
-
-# For example:
-#
-# \begin{eqcode}{\mu}{\ }{\ }{\type{Z}}
-# a \gets 3 \lend
-# \print {a} \lend
-# \return {a} \lend
-# \end{eqcode}
-# % eq-exec: 3

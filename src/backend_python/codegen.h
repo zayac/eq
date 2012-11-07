@@ -16,7 +16,7 @@
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
 
-int codegen (void);
+int codegen (char*);
 int codegen_function (FILE*, tree);
 int codegen_stmt_list (FILE*, tree, char*);
 int codegen_stmt (FILE*, tree, char*);

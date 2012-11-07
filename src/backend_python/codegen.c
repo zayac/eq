@@ -137,12 +137,17 @@ codegen_zero_array (FILE* f, struct tree_list_element *el, enum tree_code code)
 }
 
 int
-codegen (void)
+codegen (char *file)
 {
   struct tree_list_element *tl;
   int function_error = 0;
-  const char* filename = "out.py";
   FILE* f;
+  const char* extension = ".py";
+  char* filename = (char*) malloc (sizeof (char) 
+				 * (strlen (file) + strlen (extension) + 1));
+  strcpy (filename, file);
+  strcat (filename, extension);
+  
   level = 0;
 
   init_codegen_options ();
@@ -188,6 +193,8 @@ codegen (void)
   printf ("note: finished generating code.\n");
 
   free_tree (rec_construct_list);
+
+  free (filename);
 
   return function_error;
 }

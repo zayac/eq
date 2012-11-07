@@ -85,6 +85,7 @@ main (int argc, char *argv[])
   int c, ret = 0;
   char *subopts;
   char *value;
+  char *src_name = NULL;
   extern char *optarg;
   extern int optind;
   struct tree_list_element *tle;
@@ -178,6 +179,24 @@ main (int argc, char *argv[])
       ret = -2;
       goto cleanup;
     }
+  else
+    {
+      /* Discard extension from file to compile.  */
+      char* start = strrchr (*argv, '/');
+      char* ext = strrchr (*argv, '.');
+      int size = 0;
+      
+      if (start == NULL)
+	start = *argv;
+      else
+	start += 1;
+      if (ext == NULL)
+	size = strlen(start);
+      else
+	size = ext - start;
+      src_name = strndup (start, size);
+    }
+
 
   /* Initialize the parser.  */
   parser_init (parser, lex);
@@ -219,8 +238,10 @@ main (int argc, char *argv[])
   if (options.break_option != break_controlflow
    && options.break_option != break_typecheck
    && options.break_option != break_parser && !ret)
-    codegen ();
+    codegen (src_name);
   printf ("note: finished compiling.\n");
+
+  free (src_name);
 cleanup:
   parser_finalize (parser);
   finalize_global_tree ();
