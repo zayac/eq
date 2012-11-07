@@ -298,10 +298,12 @@ lexer_read_keyword (struct lexer *lex, struct token *tok, char **buf,
     {
       if (c == '\\' && !first)
 	{
+	  char c1 = c;
 	  c = lexer_getch (lex);
 	  if (c != '_')
 	    {
 	      lexer_ungetch (lex, c);
+	      c = c1;
 	      break;
 	    }
 	}

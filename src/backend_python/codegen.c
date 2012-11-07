@@ -990,16 +990,14 @@ codegen_expression (FILE* f, tree expr)
 	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "self.locals['");
 
-	if (*c == '\\')
+	while(*c)
 	  {
-	    fprintf (f, "_");
-	    while (*(++c))
-	      {
-		fprintf (f, "%c", *c);
-	      }
+	    if (*c == '\\')
+	      fprintf (f, "_");
+	    else
+	      fprintf (f, "%c", *c);
+	    c++;
 	  }
-	else
-	  fprintf (f, "%s", c);
       	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "']");
       }
