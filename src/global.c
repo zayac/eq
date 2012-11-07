@@ -85,6 +85,7 @@ init_global_tree ()
       = make_string_cst_str (token_kind_name[tv_iter]);
   TREE_ID_DEFINED (global_tree[TG_ITER_VAR]) = true;
   TREE_ID_ITER (global_tree[TG_ITER_VAR]) = NULL;
+  TREE_CONSTANT (global_tree[TG_ITER_VAR]) = false;
 
   TREE_CODE_SET (global_tree[TG_ERROR_MARK], ERROR_MARK);
   TREE_CODE_SET (global_tree[TG_UNKNOWN_MARK], UNKNOWN_MARK);

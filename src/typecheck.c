@@ -1596,18 +1596,15 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 					   TREE_OPERAND (func_ref, 0))));
 	/* The order of checking *is* important.  */
 	if ((var = is_var_in_list (expr, vars)) != NULL
-	    || (var = is_var_in_list (expr, ext_vars)) != NULL)
+	    || (var = is_var_in_list (expr, ext_vars)) != NULL
+	    || (var = function_exists (id_name))
+	    || (var = function_proto_exists (id_name)))
 	  {
 	    assert (TREE_TYPE (var) != NULL, 0);
 	    /* we don't assign iterative expressions here, as we are to do this
 	       in parent node.  */
 	    TREE_TYPE (expr) = TREE_TYPE (var);
 	    TREE_CONSTANT (expr) = TREE_CONSTANT (var);
-	  }
-	else if ((var = function_exists (id_name))
-	      || (var = function_proto_exists (id_name)))
-	  {
-	    TREE_TYPE (expr) = TREE_TYPE (var);
 	  }
 	else
 	  {

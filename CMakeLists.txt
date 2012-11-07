@@ -208,7 +208,7 @@ macro (memory_test arg opt)
   set_tests_properties (memory_test_${arg}
   PROPERTIES 
     PASS_REGULAR_EXPRESSION "no leaks are possible"
-    FAIL_REGULAR_EXPRESSION "definitely lost:|Invalid")
+    FAIL_REGULAR_EXPRESSION "definitely lost:|Invalid|uninitialised")
 endmacro (memory_test)
 
 # include files for memory testing
