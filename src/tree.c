@@ -662,9 +662,9 @@ make_return (tree a, struct location loc)
 }
 
 tree
-make_index_loop (tree idx, tree cond, tree expr)
+make_parallel_loop (tree idx, tree cond, tree expr)
 {
-  tree t = make_tree (INDEX_LOOP_EXPR);
+  tree t = make_tree (PARALLEL_LOOP_EXPR);
   TREE_OPERAND_SET (t, 0, idx);
   TREE_OPERAND_SET (t, 1, cond);
   TREE_OPERAND_SET (t, 2, expr);

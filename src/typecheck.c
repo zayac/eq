@@ -689,7 +689,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
       }
       break;
 
-    case INDEX_LOOP_EXPR:
+    case PARALLEL_LOOP_EXPR:
       {
 	struct tree_list_element *el, *tmp;
 	tree var = TREE_OPERAND (stmt, 0);
@@ -707,7 +707,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	  }
 
 	assert (TREE_CODE (var) == LOWER,
-	    "index loop can be performed only on lower indeces");
+	    "parallel loop can be performed only on lower indeces");
 
 	ret += typecheck_lower (lower, ext_vars, new_scope, func_ref, true);
 	/* variables used as a lower indeces in the identifier belong to a new
@@ -756,7 +756,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == CIRCUMFLEX)
 	  {
-	    loop_cases = make_tree (INDEX_LOOP_CASES);
+	    loop_cases = make_tree (PARALLEL_LOOP_CASES);
 	    TREE_OPERAND_SET (loop_cases, 0, 
 	      TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0), 1));
 	    TREE_OPERAND_SET (loop_cases, 1, TREE_OPERAND (stmt, 1));
@@ -1041,17 +1041,17 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
   if (ret)
     return ret;
 
-  /* it is possible to use indexes only with vector types.  */
+  /* it is possible to use parallel ops only with vector types.  */
   if  (TYPE_DIM (TREE_TYPE (lhs)) == NULL)
     {
-      error_loc (TREE_LOCATION (lhs), "index operations are valid "
+      error_loc (TREE_LOCATION (lhs), "parallel operations are valid "
 		 "for vector types only");
       return 1;
     }
   else
     dim = TREE_INTEGER_CST (TYPE_DIM (TREE_TYPE (lhs)));
 
-  /* The return type of index operation is constructed using the
+  /* The return type of parallel operation is constructed using the
      information about base type and index list.
      Code  -- remains the same.
      Dim   -- defined as <dim of base> - <length of index list>

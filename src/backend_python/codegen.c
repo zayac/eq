@@ -143,10 +143,8 @@ codegen (char *file)
   int function_error = 0;
   FILE* f;
   const char* extension = ".py";
-  char* filename = (char*) malloc (sizeof (char) 
-				 * (strlen (file) + strlen (extension) + 1));
-  strcpy (filename, file);
-  strcat (filename, extension);
+  char* filename = NULL;
+  asprintf (&filename, "%s%s", file, extension);
   
   level = 0;
 
@@ -278,7 +276,7 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
 }
 
 int
-codegen_index_loop (FILE* f, tree id, tree stmt, bool recurrent)
+codegen_parallel_loop (FILE* f, tree id, tree stmt, bool recurrent)
 {
   unsigned counter = 0;
   int error = 0;
@@ -459,7 +457,7 @@ codegen_iterative (FILE* f, tree var)
 	  && (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node))
 	{
 	  fprintf (f, "\t\t\tif __i - __start >= self.size-1:\n");
-	  if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == INDEX_LOOP_EXPR)
+	  if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == PARALLEL_LOOP_EXPR)
 	    {
 	      int old_level = level;
 	      fprintf (f, "\t\t\t\t");
@@ -476,11 +474,11 @@ codegen_iterative (FILE* f, tree var)
 
 	      level = 4;
 	      if (el->next == NULL)
-		error += codegen_index_loop (f, var, 
-					     TREE_OPERAND (el->entry, 1),
+		error += codegen_parallel_loop (f, var, 
+						TREE_OPERAND (el->entry, 1),
 					     true);
 	      else
-		error += codegen_index_loop (f, var,
+		error += codegen_parallel_loop (f, var,
 					TREE_OPERAND (el->next->entry, 1),
 					true);
 	      
@@ -778,7 +776,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	  }
       }
       break;
-    case INDEX_LOOP_EXPR:
+    case PARALLEL_LOOP_EXPR:
       {
 	tree id, gen_id_list;
 	unsigned counter = 0;
@@ -819,7 +817,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	      }
 	  }
 
-	error += codegen_index_loop (f, id, stmt, false);
+	error += codegen_parallel_loop (f, id, stmt, false);
 	level = old_level;
       }
       break;

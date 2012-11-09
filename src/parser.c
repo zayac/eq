@@ -2987,7 +2987,7 @@ handle_instr (struct parser * parser)
       else if (token_is_operator (tok, tv_vertical))
 	{
 	  parser_unget (parser);
-	  return handle_index_loop (parser, idx);
+	  return handle_parallel_loop (parser, idx);
 	}
 
 	free_tree (idx);
@@ -2999,11 +2999,11 @@ handle_instr (struct parser * parser)
 }
 
 /*
-   index_loop:
-   idx | generator \gets ( expr | index_loop_cases )
+   parallel_loop:
+   idx | generator \gets ( expr | parallel_loop_cases )
  */
 tree
-handle_index_loop (struct parser * parser, tree prefix_id)
+handle_parallel_loop (struct parser * parser, tree prefix_id)
 {
   tree t = NULL, idx = NULL, cond = NULL, expr = NULL;
 
@@ -3050,13 +3050,13 @@ handle_index_loop (struct parser * parser, tree prefix_id)
       tree_list_append (tlist,
 			make_binary_op (CASE_EXPR, expr,
 					make_tree (OTHERWISE_EXPR)));
-      t = make_index_loop (idx, cond, tlist);
+      t = make_parallel_loop (idx, cond, tlist);
     }
   else
     {
       parser_unget (parser);
-      expr = handle_index_loop_cases (parser);
-      t = make_index_loop (idx, cond, expr);
+      expr = handle_parallel_loop_cases (parser);
+      t = make_parallel_loop (idx, cond, expr);
     }
   return t;
 error:
@@ -3068,10 +3068,10 @@ error:
 }
 
 /*
-   index_loop_cases:
+   parallel_loop_cases:
  */
 tree
-handle_index_loop_cases (struct parser * parser)
+handle_parallel_loop_cases (struct parser * parser)
 {
   tree list = NULL, expr = NULL, gen = NULL;
 

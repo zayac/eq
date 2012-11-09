@@ -16,7 +16,7 @@
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 # This file is a part of Eq testing routine.
-# This script executes valgrind to catch memory leaks, invalid memory accesses.
+# This script executes tests with options given as argument.
 
 $1 $3 $2
 filename="${2##*/}"
