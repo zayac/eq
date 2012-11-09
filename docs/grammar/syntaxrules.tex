@@ -226,15 +226,15 @@
 \bEnd
 }
 
-\newcommand{\BnfIndexLoop}{
-\bHead{index\_loop}
+\newcommand{\BnfParallelLoop}{
+\bHead{parallel\_loop}
   idx \bSymb{|} generator \bToken {\bs gets}
-  \bAlt {expr} {index\_loop\_cases}
+  \bAlt {expr} {parallel\_loop\_cases}
 \bEnd
 }
 
-\newcommand{\BnfIndexLoopCases}{
-\bHead{index\_loop\_cases}
+\newcommand{\BnfParallelLoopCases}{
+\bHead{parallel\_loop\_cases}
   \bToken{\bs begin} \bSymb{\{} \bToken{cases} \bSymb{\}} \bSkip
   \bPlus{expr \bSymb{\&} generator} \bSkip
   \bPlus{expr \bSymb{\&} \bToken{\bs otherwise}}\bSkip

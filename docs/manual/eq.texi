@@ -105,6 +105,71 @@ Shinkarov.
 
 @fixme{Describe eq syntax and semantics}
 
+@menu
+* Lexical elements
+* Constants
+* Types
+* Blocks
+* Declarations and scope
+* Expressions
+* Statements
+@end menu
+
+@section Lexical elements
+Source code is ANSI text. The language is case-sensitive, i.e. upper and lower
+case letters are different characters.
+
+As a source code can be parsed by LaTeX compiler, lexical structures in Eq look
+very similar to those in LaTeX.
+
+@subsection Comments
+There is two forms of comment:
+@enumerate
+  @cindex line comment
+  @item @emph{Line comment} -- starts from the character @code{%} and stops at
+  the end of the line. A line comment acts as a new line. This comment is
+  interpreted as a comment by LaTeX compiler as well.
+  @cindex visual comment
+  @item @emph{visual comment} -- starts with the keyword @code{\comment} which
+  is followed by a string in braces. This comment is interpreted as a text by
+  LaTeX compiler and will be printed in the final document.
+@end enumerate
+
+@subsection Tokens
+There are six basic token classes: @dfn{keyword}, @dfn{identifier},
+@dfn{operator}, @dfn{real number}, @dfn{integer number}, @dfn{string},
+@dfn{white space}, @dfn{comment} and @dfn{EOF}.
+@code{EOF} character is the only one which has @dfn{EOF} type. Every input file
+is parsed until @code{EOF} character is occured.
+
+@subsection Identifiers
+An identifier as a sequence of one or more letters and digits with optional
+backslash symbol @code{\} in front.
+@lisp
+identifier = letter @{ letter | digit  @}
+@end lisp
+
+@subsection Keywords
+The following keywords are reserved and may not be used as identifiers: @dfn{B},
+@dfn{N}, @dfn{R}, @dfn{Z}, @dfn{\arraytype}, @dfn{\begin}, @dfn{\call},
+@dfn{\comment'}, @dfn{\dfrac'}, @dfn{\end'}, @dfn{\endl}, @dfn{\expr},
+@dfn{\filter}, @dfn{\forall}, @dfn{\frac}, @dfn{\genar},  @dfn{\hex},
+@dfn{\iif}, @dfn{\in}, @dfn{\land}, @dfn{\ldots}, @dfn{\lend}, @dfn{\leq},
+@dfn{\limits}, @dfn{\ll}, @dfn{\lnot}, @dfn{\lor}, @dfn{\match}, @dfn{\opt},
+@dfn{\otherwise}, @dfn{\overline}, @dfn{\print}, @dfn{\proto}, @dfn{\qelse},
+@dfn{\qelseif}, @dfn{\qendif}, @dfn{\qif}, @dfn{\return}, @dfn{\sum},
+@dfn{\to}, @dfn{\type}, @dfn{cases}, @dfn{eqcode}, @dfn{tmatrix},
+@dfn{tvector}.  
+
+Another set of keywords may be used as identifiers. Basically these are
+keywords representing greek alphabet letters: @dfn{\alpha}, @dfn{\beta},
+@dfn{\chi}, @dfn{\delta}, @dfn{\epsilon}, @dfn{\eta}, @dfn{\gamma},
+@dfn{\iota}, @dfn{\kappa}, @dfn{\lambda}, @dfn{\mu}, @dfn{\omega}, @dfn{\phi},
+@dfn{\pi}, @dfn{\psi}, @dfn{\rho}, @dfn{\sigma}, @dfn{\tau}, @dfn{\theta},
+@dfn{\upsilon}, @dfn{\xi}, @dfn{\zeta}, @dfn{\iter}.
+
+The last keyword represents an identifier, but can be used only in particular
+cases.
 
 @node Compiler usage
 @chapter Compiling with @eq{}

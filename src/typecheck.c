@@ -1,5 +1,5 @@
-/* Copyright (c) 2011 Artem Shinkarov <artyom.shinkaroff@gmail.com>
-		      Pavel Zaichenkov <zaichenkov@gmail.com>
+/* Copyright (c) 2011,2012 Artem Shinkarov <artyom.shinkaroff@gmail.com>
+			   Pavel Zaichenkov <zaichenkov@gmail.com>
 
    Permission to use, copy, modify, and distribute this software for any
    purpose with or without fee is hereby granted, provided that the above
@@ -310,6 +310,15 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
   if (TREE_CODE (lhs) == IDENTIFIER)
     {
       tree var;
+
+      /* assignment to `iter_var_node' is not allowed.  */
+      if (lhs == iter_var_node)
+	{
+	  error_loc (TREE_LOCATION (lhs), "`%s' is allowed only in the "
+		"definition of recurrent process",
+		token_kind_name[tv_iter]);
+	  return 1;
+	}
 
       /* add function prefix to the identifier.  */
       add_prefix_to_var (lhs, TREE_STRING_CST (TREE_ID_NAME
