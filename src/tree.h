@@ -381,7 +381,7 @@ tree make_binary_op (enum tree_code, tree, tree);
 tree make_unary_op (enum tree_code, tree, struct location);
 tree make_matrix (tree, struct location);
 tree make_genar (tree, tree, struct location);
-tree make_index_loop (tree, tree, tree);
+tree make_parallel_loop (tree, tree, tree);
 tree make_return (tree, struct location);
 tree make_assign (enum token_kind, tree, tree);
 tree make_convert (tree, tree);

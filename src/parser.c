@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <err.h>
 
 #include "tree.h"
 #include "global.h"
@@ -273,17 +274,15 @@ parser_get_token (struct parser *parser)
 	return del;
       else
 	{
-	  /* String concatenation  */
-	  char *conc =
-	    (char *) malloc (sizeof (char) *
-			     (strlen (token_as_string (tok)) +
-			      strlen (token_as_string (del)) + 1));
+	  char *conc = NULL;
 	  size_t s = parser->buf_size, e = parser->buf_end;
-	  memcpy (conc, token_as_string (tok),
-		  strlen (token_as_string (tok)));
-	  memcpy (conc + strlen (token_as_string (tok)),
-		  token_as_string (del), strlen (token_as_string (del)) + 1);
-	  /* Leave one token instead of two  */
+
+          if (-1 == asprintf (&conc, "%s%s",
+                              token_as_string (tok),
+                              token_as_string (del)))
+            err (EXIT_FAILURE, "asprintf failed");
+
+          /* Leave one token instead of two  */
 	  free (tok->value.cval);
 	  tok->value.cval = conc;
 	  token_free (parser->token_buffer[buf_idx_inc (e, -1, s)]);
@@ -735,7 +734,7 @@ handle_print (struct parser * parser)
   tree t, ret;
   struct token *tok = parser_get_token (parser);
   struct location loc = token_location (tok);
-  
+
   if (!token_is_keyword (tok, tv_print))
     {
       parser_unget (parser);
@@ -1153,7 +1152,7 @@ handle_indexes (struct parser * parser, tree prefix)
 
       if (token_is_operator (parser_get_token (parser), tv_lower_index))
 	{
-	  tree identifier;	  
+	  tree identifier;
 	  parser_unget (parser);
 	  low = handle_lower (parser);
 	  identifier = TREE_OPERAND (up, 0);
@@ -2675,7 +2674,7 @@ handle_filter (struct parser * parser)
     goto error;
 
   cond = handle_cond_block (parser);
-  
+
   if (cond == error_mark_node)
     goto error;
 

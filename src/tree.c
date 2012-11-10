@@ -239,7 +239,6 @@ free_tree (tree node)
 	}
       else if (code == FUNCTION)
 	{
-	  struct block_variables *el, *tmp;
 	  free_cfg (TREE_FUNC_CFG (node));
 	}
       else if (code == LIST)
@@ -340,7 +339,7 @@ free_tree_type (tree node, bool hard)
 	      else
 		free_tree_type (TYPE_FUNCTION_RET (node), true);
 	    }
-	  assert (TREE_CODE (TYPE_LIST (node)) == LIST, 
+	  assert (TREE_CODE (TYPE_LIST (node)) == LIST,
 		"a list property code of `%s' has to be `%s' only",
 		TREE_CODE_NAME (FUNCTION_TYPE),
 		TREE_CODE_NAME (LIST));
@@ -856,7 +855,7 @@ tree_compare (tree left, tree right)
 			     TREE_FUNC_ARG_TYPES (right))
 	    && tree_compare (TREE_FUNC_RET_TYPE (left),
 			     TREE_FUNC_RET_TYPE (right));
-      else 
+      else
 	return tree_compare (TYPE_DIM (left), TYPE_DIM (right))
 	    && tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right));
     }
@@ -909,12 +908,12 @@ int equal_list_sizes (tree left, tree right)
     {
       if (rel == NULL)
 	rel = TREE_LIST (right);
-      
+
       if (lel->next == NULL && rel->next != NULL)
 	return -1;
       else if (lel->next != NULL && rel->next == NULL)
 	return 1;
-      
+
       rel = rel->next;
     }
   return 0;

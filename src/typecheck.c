@@ -14,6 +14,7 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #include <stdio.h>
+#include <err.h>
 
 #include "eq.h"
 #include "tree.h"
@@ -55,8 +56,9 @@ add_prefix_to_var (tree expr, char* prefix)
   if (!TREE_ID_WITH_PREFIX (expr)
      && !(function_exists (id_name) || function_proto_exists (id_name)))
     {
-      id_name_new = (char*) malloc (strlen (id_name) + strlen (prefix) + 2);
-      sprintf (id_name_new, "%s_%s", prefix, id_name);
+      if (-1 == asprintf (&id_name_new, "%s_%s", prefix, id_name))
+        err (EXIT_FAILURE, "asprintf failed");
+
       TREE_STRING_CST (TREE_ID_NAME (expr)) = id_name_new;
       free (id_name);
       id_name = id_name_new;
@@ -80,12 +82,12 @@ typecheck (void)
     {
       function_check += typecheck_function (tl->entry);
 
-      /* Each function has to have a return statement.  
+      /* Each function has to have a return statement.
 	 However, we check this only if there were no errors inside the
 	 function.  */
       if (!typecheck_options.return_found && !function_check)
 	{
-	  error_loc (TREE_LOCATION (tl->entry), 
+	  error_loc (TREE_LOCATION (tl->entry),
 	    "function `%s' doesn't have any return statement",
 	    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (tl->entry, 0))));
 	}
@@ -762,11 +764,11 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	      }
 
 	  }
-	
+
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == CIRCUMFLEX)
 	  {
 	    loop_cases = make_tree (PARALLEL_LOOP_CASES);
-	    TREE_OPERAND_SET (loop_cases, 0, 
+	    TREE_OPERAND_SET (loop_cases, 0,
 	      TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0), 1));
 	    TREE_OPERAND_SET (loop_cases, 1, TREE_OPERAND (stmt, 1));
 	    TREE_OPERAND_SET (loop_cases, 2, TREE_OPERAND (stmt, 2));
@@ -866,7 +868,7 @@ finalize_withloop:
 	    ret_el = ret_el->next;
 	    type_el = type_el->next;
 	  }
-	if (TREE_OPERAND (stmt, 0) != NULL 
+	if (TREE_OPERAND (stmt, 0) != NULL
 	  && ((ret_el == NULL) ^ (type_el == NULL)))
 	  {
 	    error_loc (TREE_LOCATION (TREE_LIST(
@@ -1043,7 +1045,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
 	{
 	  error_loc (TREE_LOCATION (lhs), "identifier expected here");
 	  return 1;
-	}	
+	}
     }
 
   ret += typecheck_expression (lhs, ext_vars, vars, func_ref);
@@ -1152,7 +1154,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
 	  tree_list_append (shape, el->entry);
 	}
     }
-  
+
   if (dim == 0 && shape == NULL)
     {
       if (TREE_CODE (TREE_TYPE (lhs)) == Z_TYPE)
@@ -1170,7 +1172,7 @@ typecheck_lower (tree expr, tree ext_vars, tree vars,
       TYPE_SHAPE (tmp_type) = shape;
     }
   TREE_TYPE (expr) = types_assign_type (tmp_type);
-  
+
   /* an array element can not be a stream.  */
   TYPE_IS_STREAM (TREE_TYPE (expr)) = false;
 
@@ -1241,7 +1243,7 @@ typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref,
       add_prefix_to_var (el->entry, TREE_STRING_CST (TREE_ID_NAME (
 				    TREE_OPERAND (func_ref, 0))));
 
-      /* `decls_allowed' defines if a list of variables 
+      /* `decls_allowed' defines if a list of variables
 	 defines a new scope.  */
       if (decls_allowed)
 	{
@@ -1819,9 +1821,9 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 		return 1;
 	      }
 	    /* In case we want to get a lower index expression of recurrence
-	       variable, we definitely now that it 
+	       variable, we definitely now that it
 	       is not a stream any more.  */
-	    if (TREE_CODE (lhs) == LOWER 
+	    if (TREE_CODE (lhs) == LOWER
 	     && TREE_CIRCUMFLEX_INDEX_STATUS (expr))
 	      {
 		TREE_TYPE (expr) = TREE_TYPE (lhs);
@@ -1893,15 +1895,15 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 			 TREE_STRING_CST (TREE_ID_SOURCE_NAME (id)));
 		return 1;
 	      }
-	  
+
 	    var_counter++;
 	  }
 	TREE_TYPE (expr) = TREE_TYPE (TREE_OPERAND (expr, 0));
-	
-	typecheck_options.iter_index = true;	
+
+	typecheck_options.iter_index = true;
 	ret += typecheck_expression (cond, ext_vars, vars, func_ref);
 	typecheck_options.iter_index = false;
-	
+
 	/* if we filter multiple variables, the type of filter expression will
 	   be the list of types.  */
 	if (var_counter == 1)

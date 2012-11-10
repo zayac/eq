@@ -22,6 +22,8 @@ CMake cache variables can be defined:
 					a first-class objects.
   -DCFG_OUTPUT=[<ON>|OFF]	      = Enable a flow graph output in
 					graphviz notation.
+  -DRELEASE=[<ON>|<OFF>]              = Build  compiler with highest
+                                        optimisations enabled.
 
 In case you want to run a test bundle:
   $ ctest

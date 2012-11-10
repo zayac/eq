@@ -25,6 +25,7 @@ project (eq C)
 option (BUILD_LEXER "compiling lexer" OFF)
 option (FIRST_CLASS_FUNCTIONS "functions as first-class objects" ON)
 option (CFG_OUTPUT "output control flow graph" ON)
+option (RELASE "build the compiler with highest optimisations" OFF)
 
 # A list of available backends
 set (BACKENDS python haskell)
@@ -51,9 +52,15 @@ else()
   set (VALGRIND_EXISTS 1)
 endif()
 
-set (CFLAGS "-g -gdwarf-2 -g3 -Wall -Wextra -Wstrict-prototypes "
-	    "-pedantic -std=c99 -D_BSD_SOURCE"
-	    " -D_GNU_SOURCE -pedantic")
+if (RELEASE)
+  set (CFLAGS "-O3 -fomit-frame-pointer -Wall -Wextra -Wstrict-prototypes "
+	      "-pedantic -std=c99 -D_BSD_SOURCE"
+	      " -D_GNU_SOURCE -pedantic")
+else()
+  set (CFLAGS "-g -gdwarf-2 -g3 -Wall -Wextra -Wstrict-prototypes "
+	      "-pedantic -std=c99 -D_BSD_SOURCE"
+	      " -D_GNU_SOURCE -pedantic")
+endif()
 
 # Custom messages
 if (BUILD_LEXER)

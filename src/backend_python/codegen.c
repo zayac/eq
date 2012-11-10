@@ -14,6 +14,8 @@
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
 #include <stdio.h>
+#include <err.h>
+
 #include "eq.h"
 #include "tree.h"
 #include "global.h"
@@ -71,18 +73,18 @@ codegen_options
 				     def generate ... :
 				       ...
 				       < we are here if flag is set >
-				       ...  
+				       ...
   */
   bool inside_generator;
   /* set if we are generating code for the left part of the statement
      (assignment statement).
      If we are generating code for the right part of the assignment or
-     expression in any other statement, set false.  */ 
+     expression in any other statement, set false.  */
   bool is_left_assign;
   /* the following expression in the right part of the statement depends on the
      expression in the left one (used mostly in the assignment).  */
   bool is_dependant;
-  
+
   /* if expression represents a conditional statement in filter.  */
   bool inside_filter;
 
@@ -110,7 +112,7 @@ init_codegen_options (void)
   codegen_options.is_var_in_arg = false;
   active_circumflex = NULL;
   codegen_options.iter_as_index = false;
-  
+
   codegen_options.inside_generator = false;
   codegen_options.is_left_assign = false;
   codegen_options.is_dependant = false;
@@ -144,8 +146,9 @@ codegen (char *file)
   FILE* f;
   const char* extension = ".py";
   char* filename = NULL;
-  asprintf (&filename, "%s%s", file, extension);
-  
+  if (-1 == asprintf (&filename, "%s%s", file, extension))
+    err (EXIT_FAILURE, "asprintf failed");
+
   level = 0;
 
   init_codegen_options ();
@@ -359,7 +362,7 @@ codegen_parallel_loop (FILE* f, tree id, tree stmt, bool recurrent)
 	  level++;
 	  indent (f, level);
 	}
-      
+
       if (is_var_in_list (id, iter_var_list))
 	{
 	  codegen_options.circumflex_type = VAR;
@@ -368,13 +371,13 @@ codegen_parallel_loop (FILE* f, tree id, tree stmt, bool recurrent)
 	  if (!recurrent)
 	    {
 	      fprintf (f, "_");
-	      codegen_expression (f, 
+	      codegen_expression (f,
 		  TREE_OPERAND (TREE_OPERAND (stmt, 0), 1));
 	    }
 	}
       else
 	error += codegen_expression (f, id);
-      
+
       DL_FOREACH (TREE_LIST (gen_id_list), tel)
 	{
 	  fprintf (f, "[");
@@ -399,7 +402,7 @@ codegen_iterative (FILE* f, tree var)
   int error = 0;
   struct tree_list_element *el = NULL;
   /* a list shortcut.  */
-  struct tree_list_element *first_list_element = 
+  struct tree_list_element *first_list_element =
 			  TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (var)));
   fprintf (f, "class _recur_");
   codegen_expression (f, var);
@@ -433,9 +436,9 @@ codegen_iterative (FILE* f, tree var)
   fprintf (f, "\t\tif _iter == None:\n");
   fprintf (f, "\t\t\t_iter = float(\"inf\")\n");
   fprintf (f, "\t\twhile __i <= _iter:\n");
-  /* a separate case with absent base cases, 
+  /* a separate case with absent base cases,
      i.e. only expression for `\iter' index is defined.  */
-  if (first_list_element != NULL 
+  if (first_list_element != NULL
    && TREE_OPERAND (first_list_element->entry, 0)  == iter_var_node)
     {
       fprintf (f, "\t\t\tyield ");
@@ -465,8 +468,8 @@ codegen_iterative (FILE* f, tree var)
 	      fprintf (f, " = ");
 	      active_circumflex = var;
 	      codegen_options.is_var_in_arg = true;
-	      error += codegen_zero_array (f, 
-			TREE_LIST (TYPE_SHAPE (TREE_TYPE (var))), 
+	      error += codegen_zero_array (f,
+			TREE_LIST (TYPE_SHAPE (TREE_TYPE (var))),
 			TREE_CODE (TREE_TYPE (var)));
 	      fprintf (f, "\n\t\t\t\t");
 	      active_circumflex = NULL;
@@ -474,14 +477,14 @@ codegen_iterative (FILE* f, tree var)
 
 	      level = 4;
 	      if (el->next == NULL)
-		error += codegen_parallel_loop (f, var, 
+		error += codegen_parallel_loop (f, var,
 						TREE_OPERAND (el->entry, 1),
 					     true);
 	      else
 		error += codegen_parallel_loop (f, var,
 					TREE_OPERAND (el->next->entry, 1),
 					true);
-	      
+
 	      fprintf (f, "\t\t\t\t__new = ");
 	      error += codegen_expression (f, var);
 	      fprintf (f, "\n");
@@ -490,7 +493,7 @@ codegen_iterative (FILE* f, tree var)
 	  else
 	    {
 	      fprintf (f, "\t\t\t\t__new = ");
-	      
+
 	      active_circumflex = var;
 	      codegen_options.is_var_in_arg = true;
 	      if (el->next == NULL)
@@ -515,7 +518,7 @@ codegen_iterative (FILE* f, tree var)
   return error;
 }
 
-int 
+int
 codegen_stream (FILE* f, tree var)
 {
   int error = 0;
@@ -542,8 +545,8 @@ codegen_stream (FILE* f, tree var)
 	fprintf (f, "\t\t\t_iter = float(\"inf\")\n");
 	fprintf (f, "\t\tfor __el in _recur_");
 	codegen_expression (f, parent);
-	fprintf (f, ".generate(self):\n"); 
-	fprintf (f, "\t\t\tif "); 
+	fprintf (f, ".generate(self):\n");
+	fprintf (f, "\t\t\tif ");
 	codegen_options.inside_filter = true;
 	codegen_expression (f, TREE_OPERAND (filter, 1));
 	codegen_options.inside_filter = false;
@@ -597,7 +600,7 @@ codegen_zero_function (FILE* f, tree function)
   return 0;
 }
 
-static inline void 
+static inline void
 append_construct_list (tree lel)
 {
   if ((TREE_CODE (lel) == CIRCUMFLEX)
@@ -647,9 +650,9 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 			  "it is forbidden to define several different "
 			  "recurrent expressions in one statement. `%s' and "
 			  "`%s' variables conflict occured.",
-			  TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+			  TREE_STRING_CST (TREE_ID_SOURCE_NAME
 					(tmp_active_circumflex)),
-			  TREE_STRING_CST (TREE_ID_SOURCE_NAME 
+			  TREE_STRING_CST (TREE_ID_SOURCE_NAME
 				  (TREE_OPERAND (lel->entry, 0))));
 		      }
 		  }
@@ -671,8 +674,8 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	    active_circumflex = tmp_active_circumflex;
 	    codegen_options.is_left_assign = false;
 	    fprintf (f, " = ");
-	    
-	    if (!recurrence_is_constant_expression (rel->entry) 
+
+	    if (!recurrence_is_constant_expression (rel->entry)
 	      && TREE_CODE (rel->entry) != FILTER_EXPR)
 	      {
 		if (TYPE_SHAPE (TREE_TYPE (rel->entry)) != NULL)
@@ -778,18 +781,16 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
       break;
     case PARALLEL_LOOP_EXPR:
       {
-	tree id, gen_id_list;
-	unsigned counter = 0;
-	struct tree_list_element *el, * tel;
+	tree id;
 	int old_level = level;
-	
+
 	if (TREE_CODE (TREE_OPERAND (stmt, 0)) == LOWER)
 	  id = TREE_OPERAND (TREE_OPERAND (stmt, 0), 0);
 	else
 	  id = TREE_OPERAND (TREE_OPERAND (TREE_OPERAND (stmt, 0), 0), 0);
 
 	assert (TREE_CODE (id) == IDENTIFIER, "identifier expected");
-	
+
 	/* code generation for recurrence.  */
 	if (is_var_in_list (id, iter_var_list))
 	  {
@@ -807,10 +808,10 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		fprintf (f, "__");
 		codegen_expression (f, id);
 		fprintf (f, "_");
-		codegen_expression (f, 
+		codegen_expression (f,
 				    TREE_OPERAND (TREE_OPERAND (stmt, 0), 1));
 		fprintf (f, " = ");
-		codegen_zero_array (f, TREE_LIST (TYPE_SHAPE (TREE_TYPE (id))), 
+		codegen_zero_array (f, TREE_LIST (TYPE_SHAPE (TREE_TYPE (id))),
 				    TREE_CODE (TREE_TYPE (id)));
 		fprintf (f, "\n");
 		indent (f, level);
@@ -1097,7 +1098,7 @@ codegen_expression (FILE* f, tree expr)
 
 	    /* We choose the code to generate which is dependant of
 	       `inside_generator', `is_left_assign' and `is_dependant' flags:
-	    
+
 	    `inside_generator' | `is_left_assign' | `is_dependant' |  code
 
 		    0	       |	0	  |	  0	   |  GENERATE
@@ -1174,7 +1175,7 @@ codegen_expression (FILE* f, tree expr)
 	HASH_ITER (hh, TREE_PHI_NODE (expr), el, tmp)
 	  {
 	    codegen_expression (f, el->node);
-	    fprintf (f, " "); 
+	    fprintf (f, " ");
 	  }
 	fprintf (f, ">");
       }

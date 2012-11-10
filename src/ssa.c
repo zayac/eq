@@ -13,6 +13,9 @@
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
 
+#include <stdlib.h>
+#include <err.h>
+
 #include "ssa.h"
 
 /* Copy information about variable instances.
@@ -25,7 +28,7 @@ ssa_copy_var_hash (struct id_defined *hash)
   HASH_ITER (hh, hash, el, tmp)
     {
       struct phi_node *hel, *htmp;
-      struct id_defined* el_copy = (struct id_defined*) 
+      struct id_defined* el_copy = (struct id_defined*)
 				   malloc (sizeof (struct id_defined));
       memcpy (el_copy, el, sizeof (struct id_defined));
       memset (&(el_copy->hh), 0, sizeof (UT_hash_handle));
@@ -39,7 +42,7 @@ ssa_copy_var_hash (struct id_defined *hash)
 				      malloc (sizeof (struct phi_node));
 	  memset (phi_node, 0, sizeof (struct phi_node));
 	  phi_node->s = hel->s;
-	  HASH_ADD_KEYPTR (hh, el_copy->phi_node, phi_node->s, 
+	  HASH_ADD_KEYPTR (hh, el_copy->phi_node, phi_node->s,
 			   strlen (phi_node->s), phi_node);
 	}
       HASH_ADD_KEYPTR (hh, new_hash,
@@ -50,14 +53,14 @@ ssa_copy_var_hash (struct id_defined *hash)
 
 /* Add new element to a table where we store variable versions for ssa
    replacement.  */
-void 
+void
 ssa_declare_new_var (basic_block bb, tree var)
 {
   char* s;
   struct id_defined *id_el = NULL;
   assert (TREE_CODE (var) == IDENTIFIER, "identifier expected");
   s = TREE_STRING_CST (TREE_ID_NAME (var));
-  id_el = (struct id_defined *) malloc (sizeof (struct id_defined)); 
+  id_el = (struct id_defined *) malloc (sizeof (struct id_defined));
   /* if `id_new' is NULL, then variable wasn't yet redefined.  */
   memset (id_el, 0, sizeof (struct id_defined));
   /* Initialization.  */
@@ -65,7 +68,7 @@ ssa_declare_new_var (basic_block bb, tree var)
   id_el->counter = 0;
   id_el->counter_length = 1;
   id_el->divider = 10;
-  HASH_ADD_KEYPTR (hh, bb->var_hash, 
+  HASH_ADD_KEYPTR (hh, bb->var_hash,
 		   id_el->id, strlen (id_el->id), id_el);
 }
 
@@ -79,16 +82,15 @@ ssa_reassign_var (basic_block bb, tree var)
   struct phi_node *el, *phi_tmp;
   if (id_el != NULL)
     {
-      /* We do the reassignment in the loop, because we don't want the 
+      /* We do the reassignment in the loop, because we don't want the
 	 name of the new variable coincide with the existing one.
-	 We choose the first variable in the form of 
+	 We choose the first variable in the form of
 	 '<old_variable><some_number>'.  */
       do
 	{
 	  /* Create a new string for variable.  */
-	  new_name = (char*) malloc (sizeof (char) * (id_el->counter_length
-	    + strlen (id_el->id) + 1));
-	  sprintf (new_name, "%s%d", id_el->id, id_el->counter);
+	  if (-1 == asprintf (&new_name, "%s%d", id_el->id, id_el->counter))
+            err (EXIT_FAILURE, "asprintf failed");
 
 	  /* Update the relevant entry in the hash table.  */
 	  if (id_el->id_new)
@@ -172,7 +174,7 @@ ssa_redefine_vars (basic_block bb, tree node)
 }
 
 /* Callback to sort strings inside utarray.  */
-static int string_sort(struct phi_node *a, struct phi_node *b) 
+static int string_sort(struct phi_node *a, struct phi_node *b)
 {
     return strcmp (a->s, b->s);
 }
@@ -191,7 +193,7 @@ ssa_verify_vars (basic_block bb, tree node)
 	  if (TREE_CODE (el->entry) == IDENTIFIER)
 	    {
 	      struct id_defined *id_el = NULL;
-	      HASH_FIND_STR (bb->var_hash, 
+	      HASH_FIND_STR (bb->var_hash,
 		  TREE_STRING_CST (TREE_ID_NAME (el->entry)), id_el);
 	      if (id_el != NULL)
 		{
@@ -203,10 +205,10 @@ ssa_verify_vars (basic_block bb, tree node)
 		      HASH_SORT (id_el->phi_node, string_sort);
 		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
-			  struct phi_node_tree *hash_tree_el = 
-			    (struct phi_node_tree *) 
+			  struct phi_node_tree *hash_tree_el =
+			    (struct phi_node_tree *)
 			     malloc (sizeof (struct phi_node_tree));
-			  memset (hash_tree_el, 0, 
+			  memset (hash_tree_el, 0,
 				  sizeof (struct phi_node_tree));
 			  tree ttmp = tree_copy (el->entry);
 			  replace_id_str (ttmp, hel->s);
@@ -224,8 +226,8 @@ ssa_verify_vars (basic_block bb, tree node)
 		      /* Clear hash.  */
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		    }
-		  else if (id_el->id_new != NULL 
-		      && strcmp (id_el->id_new, 
+		  else if (id_el->id_new != NULL
+		      && strcmp (id_el->id_new,
 			       TREE_STRING_CST (TREE_ID_NAME (el->entry))))
 		    replace_id_str (el->entry, id_el->id_new);
 		}
@@ -241,7 +243,7 @@ ssa_verify_vars (basic_block bb, tree node)
       if (TREE_CODE (TREE_OPERAND (node, 1)) == IDENTIFIER)
 	{
 	  struct id_defined *id_el = NULL;
-	  HASH_FIND_STR (bb->var_hash, 
+	  HASH_FIND_STR (bb->var_hash,
 	      TREE_STRING_CST (TREE_ID_NAME (node)), id_el);
 	  if (id_el != NULL)
 	    {
@@ -253,10 +255,10 @@ ssa_verify_vars (basic_block bb, tree node)
 		  HASH_SORT (id_el->phi_node, string_sort);
 		  HASH_ITER (hh, id_el->phi_node, hel, tmp)
 		    {
-		      struct phi_node_tree *hash_tree_el = 
-			(struct phi_node_tree *) 
+		      struct phi_node_tree *hash_tree_el =
+			(struct phi_node_tree *)
 			 malloc (sizeof (struct phi_node_tree));
-		      memset (hash_tree_el, 0, 
+		      memset (hash_tree_el, 0,
 			      sizeof (struct phi_node_tree));
 		      tree ttmp = tree_copy (TREE_OPERAND (node, 1));
 		      replace_id_str (ttmp, hel->s);
@@ -271,7 +273,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		  TREE_OPERAND_SET (node, 1, new_node);
 		  HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		}
-	      else if (id_el->id_new != NULL 
+	      else if (id_el->id_new != NULL
 		  && strcmp (id_el->id_new,
 			TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, 1)))))
 		replace_id_str (TREE_OPERAND (node, 1), id_el->id_new);
@@ -291,7 +293,7 @@ ssa_verify_vars (basic_block bb, tree node)
 	  if (TREE_CODE (TREE_OPERAND (node, i)) == IDENTIFIER)
 	    {
 	      struct id_defined *id_el = NULL;
-	      HASH_FIND_STR (bb->var_hash, 
+	      HASH_FIND_STR (bb->var_hash,
 		  TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i))), id_el);
 	      if (id_el != NULL)
 		{
@@ -303,8 +305,8 @@ ssa_verify_vars (basic_block bb, tree node)
 		      HASH_SORT (id_el->phi_node, string_sort);
 		      HASH_ITER (hh, id_el->phi_node, hel, tmp)
 			{
-			  struct phi_node_tree *hash_tree_el = 
-			    (struct phi_node_tree *) 
+			  struct phi_node_tree *hash_tree_el =
+			    (struct phi_node_tree *)
 			     malloc (sizeof (struct phi_node_tree));
 			  memset (hash_tree_el, 0,
 				  sizeof (struct phi_node_tree));
@@ -321,7 +323,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		      TREE_OPERAND_SET (node, i, new_node);
 		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		    }
-		  else if (id_el->id_new != NULL 
+		  else if (id_el->id_new != NULL
 		      && strcmp (id_el->id_new,
 			    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i)))))
 		    replace_id_str (TREE_OPERAND (node, i), id_el->id_new);
