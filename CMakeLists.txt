@@ -56,16 +56,19 @@ if (RELEASE)
   set (CFLAGS "-O3 -fomit-frame-pointer -Wall -Wextra -Wstrict-prototypes "
 	      "-pedantic -std=c99 -D_BSD_SOURCE"
 	      " -D_GNU_SOURCE -pedantic")
+  message(STATUS "Compiling release version")
 else()
   set (CFLAGS "-g -gdwarf-2 -g3 -Wall -Wextra -Wstrict-prototypes "
 	      "-pedantic -std=c99 -D_BSD_SOURCE"
 	      " -D_GNU_SOURCE -pedantic")
+  message(STATUS "Compiling debug version")
 endif()
 
 # Custom messages
 if (BUILD_LEXER)
   message(STATUS "Only lexer is being built")
 endif()
+
 
 message(STATUS "Control flow graph output is ${CFG_OUTPUT}")
 

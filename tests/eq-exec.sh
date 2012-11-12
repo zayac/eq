@@ -26,7 +26,9 @@ sed -e 's/^[ \t]*\([0-9]*\)[^%]*%[ \t]*eq-exec: \(.*\)/\2/g'`
 ./eq $1
 filename="${1##*/}"
 execOutput=`$2 ${filename%.*}.py`
-rm ${filename%.*}.py
+if [ -f ${filename%.*}.py ]; then
+        rm ${filename%.*}.py
+fi
 echo "$execOutput"
 echo "----"
 echo "$texOutput"

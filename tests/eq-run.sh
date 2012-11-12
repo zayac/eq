@@ -20,5 +20,7 @@
 
 $1 $3 $2
 filename="${2##*/}"
-rm ${filename%.*}.py
+if [ -f ${filename%.*}.py ]; then
+        rm ${filename%.*}.py
+fi
 exit 0

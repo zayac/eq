@@ -32,9 +32,13 @@ extern tree stream_list;
 static struct
 typecheck_options
 {
+  /* indicates if we are checking type of a recurrence equation.  */
   bool iter_index;
+  /* indicates are we allowed to use `\iter' variable here.  */
+  bool is_iter_id_allowed;
+  /* indicates if `return' statement is found inside a function.  */
   bool return_found;
-} typecheck_options = {false, false};
+} typecheck_options = {false, false, false};
 
 /* Add a prefix to the string which represents variable name.
    Returns a new string.
@@ -294,9 +298,7 @@ typecheck_stmt_assign_right (struct tree_list_element *el,
 				    tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;
-  typecheck_options.iter_index = true;
   ret += typecheck_expression (el->entry, ext_vars, vars, func_ref);
-  typecheck_options.iter_index = false;
   return ret;
 }
 
@@ -316,8 +318,8 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       /* assignment to `iter_var_node' is not allowed.  */
       if (lhs == iter_var_node)
 	{
-	  error_loc (TREE_LOCATION (lhs), "`%s' is allowed only in the "
-		"definition of recurrent process",
+	  error_loc (TREE_LOCATION (lhs), "`%s' is allowed only in "
+		"recurrent equations",
 		token_kind_name[tv_iter]);
 	  return 1;
 	}
@@ -361,7 +363,10 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	}
       else if (TREE_CODE (index) == INTEGER_CST)
 	TREE_TYPE (index) = z_type_node;
+      else
+	typecheck_options.is_iter_id_allowed = true;
 
+      /* this indicates that we are checking type of a recurrence equation.  */
       typecheck_options.iter_index = true;
 
       /* add function prefix to the identifier.  */
@@ -373,10 +378,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       tmp_ret = typecheck_expression (TREE_OPERAND (lhs, 0), ext_vars,
 				      vars, func_ref);
       if (tmp_ret)
-	{
-	  ret += 1;
-	  goto finalize;
-	}
+	return ret + 1;
 
       assert (TREE_CODE (TREE_OPERAND (lhs, 0)) == IDENTIFIER,
 	      "identifier expected");
@@ -395,15 +397,13 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	{
 	  error_loc (TREE_LOCATION (id),
 		    "it is impossible to assign to a function");
-	  goto finalize;
+	  return ret;
 	}
       TREE_ID_DEFINED (id) = true;
 
       /* set the same type for circumflex as left operand has, but with
 	 disabled `is_stream' flag.  */
       TREE_TYPE (lhs) = change_stream_prop (TREE_TYPE (TREE_OPERAND (lhs, 0)));
-      finalize:
-	typecheck_options.iter_index = false;
 
     }
   else if (TREE_CODE (lhs) == LOWER)
@@ -510,8 +510,12 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	while (lel != NULL && rel != NULL)
 	  {
 	    tree lhs, rhs;
-	    ret += typecheck_stmt_assign_right (rel, ext_vars, vars, func_ref);
 	    ret += typecheck_stmt_assign_left (lel, ext_vars, vars, func_ref);
+	    if (ret)
+	      return ret;
+	    ret += typecheck_stmt_assign_right (rel, ext_vars, vars, func_ref);
+	    typecheck_options.iter_index = false;
+	    typecheck_options.is_iter_id_allowed = false;
 	    if (ret)
 	      return ret;
 
@@ -713,6 +717,18 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 
 	if (TREE_CODE (var) == CIRCUMFLEX)
 	  {
+	    typecheck_options.iter_index = true;
+	    if (TREE_CODE (TREE_OPERAND (var, 1)) != INTEGER_CST
+	     && TREE_OPERAND (var, 1) != iter_var_node)
+	      {
+		error_loc (TREE_LOCATION (TREE_OPERAND (var, 1)),
+			   "only `%s' or integer constant is allowed here",
+			   token_kind_name[tv_iter]);
+		ret += 1;
+	      }
+	    else if (TREE_OPERAND (var, 1) == iter_var_node)
+	      typecheck_options.is_iter_id_allowed = true;
+
 	    var = TREE_OPERAND (var, 0);
 	    lower = var;
 	  }
@@ -725,19 +741,17 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	   scope. Therefore, they can be used in current statement.  */
 	ret += associate_variables (lower, ext_vars, new_scope);
 	if(ret)
-	  goto finalize_withloop;
+	  goto finalize_parallel_loop;
 
 	/* check generator.  */
 	ret += typecheck_generator (gen, ext_vars, new_scope, func_ref, false);
 	if (ret)
-	  goto finalize_withloop;
+	  goto finalize_parallel_loop;
 
 	DL_FOREACH (TREE_LIST (cases), el)
 	  {
 	    tree exp = TREE_OPERAND (el->entry, 0);
-	    typecheck_options.iter_index = true;
 	    ret += typecheck_expression (exp, ext_vars, new_scope, func_ref);
-	    typecheck_options.iter_index = false;
 	    if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == GENERATOR)
 	      ret += typecheck_generator (TREE_OPERAND (el->entry, 1),
 					  ext_vars, new_scope, func_ref, false);
@@ -775,7 +789,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	    ret += typecheck_assign_index (TREE_OPERAND (stmt, 0), loop_cases);
 	  }
 
-finalize_withloop:
+finalize_parallel_loop:
 	DL_FOREACH_SAFE (TREE_LIST (new_scope), el, tmp)
 	  {
 	    DL_DELETE (TREE_LIST (new_scope), el);
@@ -786,6 +800,10 @@ finalize_withloop:
 
 	/* split combined lists back.  */
 	tree_list_split (ext_vars, vars);
+
+
+	typecheck_options.is_iter_id_allowed = false;
+	typecheck_options.iter_index = false;
 	return ret;
       }
       break;
@@ -919,10 +937,19 @@ typecheck_function (tree func_ref)
   if (ext_vars != NULL)
     DL_FOREACH (TREE_LIST (ext_vars), el)
       {
-
 	/* add function prefix to the identifier.  */
-	add_prefix_to_var (el->entry, TREE_STRING_CST (TREE_ID_NAME (
-				      TREE_OPERAND (func_ref, 0))));
+	if (el->entry != iter_var_node)
+	  add_prefix_to_var (el->entry, TREE_STRING_CST (TREE_ID_NAME (
+					TREE_OPERAND (func_ref, 0))));
+	else
+	  {
+	    error_loc (TREE_LOCATION (el->entry),
+		      "`%s' is not allowed in function arguments "
+		      "declarations",
+		      token_kind_name[tv_iter]);
+	    ret += 2;
+	    goto free_local;
+	  }
 
 	/* check for identifier duplicates in argument list.  */
 	tree dup = is_var_in_list (el->entry, ext_vars);
@@ -1592,10 +1619,11 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 
 	if (expr == iter_var_node)
 	  {
-	    if (!typecheck_options.iter_index)
+	    if (!typecheck_options.iter_index
+	      || !typecheck_options.is_iter_id_allowed)
 	      {
-		error_loc (TREE_LOCATION (expr), "`%s' is allowed only in the "
-		  "definition of recurrent process",
+		error_loc (TREE_LOCATION (expr), 
+		  "wrong place for `%s' variable",
 		  token_kind_name[tv_iter]);
 		return 1;
 	      }
@@ -1900,9 +1928,13 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	  }
 	TREE_TYPE (expr) = TREE_TYPE (TREE_OPERAND (expr, 0));
 
+
 	typecheck_options.iter_index = true;
+	typecheck_options.is_iter_id_allowed = true;
 	ret += typecheck_expression (cond, ext_vars, vars, func_ref);
+	typecheck_options.is_iter_id_allowed = false;
 	typecheck_options.iter_index = false;
+
 
 	/* if we filter multiple variables, the type of filter expression will
 	   be the list of types.  */

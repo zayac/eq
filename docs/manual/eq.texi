@@ -168,8 +168,24 @@ keywords representing greek alphabet letters: @dfn{\alpha}, @dfn{\beta},
 @dfn{\pi}, @dfn{\psi}, @dfn{\rho}, @dfn{\sigma}, @dfn{\tau}, @dfn{\theta},
 @dfn{\upsilon}, @dfn{\xi}, @dfn{\zeta}, @dfn{\iter}.
 
-The last keyword represents an identifier, but can be used only in particular
-cases.
+The last keyword @dfn{\iter} represents an recurrence index of recurrence
+equation. This can be used only in certain cases:
+@cindex \iter
+@enumerate
+  @item in the left part of recurrence equation when providing a recurrent
+  formula;
+  @item in the right part of recurrence equation when we are giving a defintion
+  of a recurrent formula;
+  @item inside filter expression predicate;
+@end enumerate
+
+It is wrong to use @dfn{\iter} variable when:
+@enumerate
+  @item assigning to a non-recurrence variable;
+  @item providing a list of function arguments;
+  @item in recurrence equation defining base cases;
+@end enumerate
+
 
 @node Compiler usage
 @chapter Compiling with @eq{}

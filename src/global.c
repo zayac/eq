@@ -93,6 +93,9 @@ init_global_tree ()
 
   types_init ();
   /* we can assign types only after defined types.  */
+
+  TREE_LOCATION (global_tree[TG_ITER_VAR]).line = 0;
+  TREE_LOCATION (global_tree[TG_ITER_VAR]).col = 0;
   TREE_TYPE (global_tree[TG_ITER_VAR]) = z_type_node;
 }
 
