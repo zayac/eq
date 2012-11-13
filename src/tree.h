@@ -128,6 +128,7 @@ struct tree_function_node
 {
   struct tree_type_base typed;
   struct control_flow_graph *cfg;
+  tree return_values;
   tree operands[];
 };
 
@@ -338,6 +339,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_FUNC(node) ((node)->function_node)
 #define TREE_FUNC_BB_VARS(node) ((node)->function_node.bb_vars)
 #define TREE_FUNC_CFG(node) ((node)->function_node.cfg)
+#define TREE_FUNC_RETURN_VALUES(node) ((node)->function_node.return_values)
 #define TREE_FUNC_NAME(node) ((node)->function_node.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->function_node.operands[1])
 #define TREE_FUNC_ARG_TYPES(node) ((node)->function_node.operands[2])

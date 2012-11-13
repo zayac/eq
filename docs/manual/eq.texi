@@ -122,6 +122,13 @@ case letters are different characters.
 As a source code can be parsed by LaTeX compiler, lexical structures in Eq look
 very similar to those in LaTeX.
 
+@subsection Letters and digits
+@lisp
+letter        = "A" ... "Z" | "a" ... "z"
+decimal_digit = "0" ... "9"
+hex_digit     = "0" ... "9" | "a" ... "f" | "A" ... "F"
+@end lisp
+
 @subsection Comments
 There is two forms of comment:
 @enumerate
@@ -143,11 +150,12 @@ There are six basic token classes: @dfn{keyword}, @dfn{identifier},
 is parsed until @code{EOF} character is occured.
 
 @subsection Identifiers
-An identifier as a sequence of one or more letters and digits with optional
-backslash symbol @code{\} in front.
+An identifier as a sequence of one or more letters and digits.
 @lisp
-identifier = letter @{ letter | digit  @}
+identifier = letter { letter | digit | "\_" }
 @end lisp
+
+A set of certain keywords can be used as identifiers as well.
 
 @subsection Keywords
 The following keywords are reserved and may not be used as identifiers: @dfn{B},
@@ -186,6 +194,39 @@ It is wrong to use @dfn{\iter} variable when:
   @item in recurrence equation defining base cases;
 @end enumerate
 
+The set of keywords can be extended using macroprocessor.
+
+@subsection Operators and Delimiters
+The following tokens are considered as operators, delimiters and other special
+tokens: @dfn{\cap}, @dfn{\cdot},
+@dfn{\cup}, @dfn{\geq}, @dfn{\gets}, @dfn{\gg}, @dfn{\in}, @dfn{\land},
+@dfn{\leq}, @dfn{\ll}, @dfn{\lnot}, @dfn{\lor}, @dfn{\mod}, @dfn{\neq},
+@dfn{\not}, @dfn{\oplus}, @dfn{&}, @dfn{+}, @dfn{|}, @dfn{-}, @dfn{=}, @dfn{^},
+@dfn{_}, @dfn{>}, @dfn{<}, @dfn{,}, @dfn{(}, @dfn{)}, @dfn{[}, @dfn{]},
+@dfn{@{}, @dfn{@}}, @dfn{:}, @dfn{;}.
+
+@subsection Whitespaces
+These character sequences represent whitespaces:
+@dfn{\,}, @dfn{\:}, @dfn{\;}, @dfn{ }, @dfn{\qquad}, @dfn{\quad}.
+
+Basically they are used for visual formatting only, and don't have a semantic
+meaning.
+
+@subsection Integer literals
+@lisp
+int_lit     = decimal_lit | hex_lit
+decimal_lit = ( "1" ... "9" ) { decimal_digit }
+hex_lit     = "\hex" "@{"  hex_digit { hex_digit } "@}"
+@end lisp
+
+@subsection Floating-point literals
+@lisp
+float_lit = decimals "." [ decimals ] [ exponent ] |
+            decimals exponent |
+            "." decimals [ exponent ]
+decimals  = decimal_digit { decimal_digit }
+exponent  = ( "e" | "E" ) [ "+" | "-" ] decimals
+@end lisp
 
 @node Compiler usage
 @chapter Compiling with @eq{}

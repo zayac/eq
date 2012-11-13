@@ -224,7 +224,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		      tree_list_append (delete_list, el->entry);
 		      el->entry = new_node;
 		      /* Clear hash.  */
-		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
+		      // HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		    }
 		  else if (id_el->id_new != NULL
 		      && strcmp (id_el->id_new,
@@ -271,7 +271,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		    }
 		  tree_list_append (delete_list, TREE_OPERAND (node, 1));
 		  TREE_OPERAND_SET (node, 1, new_node);
-		  HASH_FREE (hh, id_el->phi_node, hel, tmp);
+		  // HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		}
 	      else if (id_el->id_new != NULL
 		  && strcmp (id_el->id_new,
@@ -321,7 +321,7 @@ ssa_verify_vars (basic_block bb, tree node)
 			}
 		      tree_list_append (delete_list, TREE_OPERAND (node, i));
 		      TREE_OPERAND_SET (node, i, new_node);
-		      HASH_FREE (hh, id_el->phi_node, hel, tmp);
+		      // HASH_FREE (hh, id_el->phi_node, hel, tmp);
 		    }
 		  else if (id_el->id_new != NULL
 		      && strcmp (id_el->id_new,

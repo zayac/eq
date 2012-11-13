@@ -36,9 +36,9 @@ typecheck_options
   bool iter_index;
   /* indicates are we allowed to use `\iter' variable here.  */
   bool is_iter_id_allowed;
-  /* indicates if `return' statement is found inside a function.  */
-  bool return_found;
-} typecheck_options = {false, false, false};
+  /* a pointer to a `return' statement inside a function.  */
+  tree return_values;
+} typecheck_options = {false, false, NULL};
 
 /* Add a prefix to the string which represents variable name.
    Returns a new string.
@@ -89,13 +89,14 @@ typecheck (void)
       /* Each function has to have a return statement.
 	 However, we check this only if there were no errors inside the
 	 function.  */
-      if (!typecheck_options.return_found && !function_check)
+      if (!typecheck_options.return_values && !function_check)
 	{
 	  error_loc (TREE_LOCATION (tl->entry),
 	    "function `%s' doesn't have any return statement",
 	    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (tl->entry, 0))));
 	}
-      typecheck_options.return_found = false;
+      TREE_FUNC_RETURN_VALUES (tl->entry) = typecheck_options.return_values;
+      typecheck_options.return_values = false;
     }
 
   /* sort recurrent expressions by initial values.  */
@@ -895,7 +896,10 @@ finalize_parallel_loop:
 	      "definition");
 	    return 1;
 	  }
-	typecheck_options.return_found = true;
+	if (typecheck_options.return_values == NULL)
+	  typecheck_options.return_values = make_tree_list ();
+	tree_list_append (typecheck_options.return_values,
+			  TREE_OPERAND (stmt, 0));
       }
       break;
     case PRINT_MARK:

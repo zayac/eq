@@ -240,6 +240,7 @@ free_tree (tree node)
       else if (code == FUNCTION)
 	{
 	  free_cfg (TREE_FUNC_CFG (node));
+	  free_tree (TREE_FUNC_RETURN_VALUES (node));
 	}
       else if (code == LIST)
 	{
