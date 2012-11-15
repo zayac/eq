@@ -83,7 +83,7 @@ basic_block make_bb(struct control_flow_graph*, struct tree_list_element*);
 int controlflow (void);
 int controlflow_function (tree);
 
-void safe_hash_add (struct phi_node**, char*);
+void safe_hash_add (struct phi_node**, tree);
 basic_block controlflow_pass_block (struct control_flow_graph*, 
 				    basic_block, 
 				    struct tree_list_element *el);

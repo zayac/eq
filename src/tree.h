@@ -71,6 +71,7 @@ struct tree_type_base
 {
   struct tree_base base;
   tree type;
+  tree fud_chain;
   unsigned int is_constant:1;
   /* These options are needed while parsing \match.  */
   unsigned argset:1;
@@ -166,6 +167,8 @@ struct tree_identifier_node
   tree name;
   tree source_name;
   tree iter_desc;
+  tree iter_def;
+  tree def;
   unsigned defined:1;
   unsigned with_prefix:1;
 };
@@ -240,6 +243,7 @@ enum tree_global_code
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
 #define TREE_TYPE(node) ((node)->typed.type)
+#define TREE_FUD_CHAIN(node) ((node)->typed.fud_chain)
 #define TYPE_HASH(node) ((node)->type_node)
 #define TYPE_SIZE(node) ((node)->type_node.size)
 #define TYPE_DIM(node) ((node)->type_node.properties.numerical.dim)
@@ -327,7 +331,9 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ID_SOURCE_NAME(node) ((node)->identifier_node.source_name)
 #define TREE_ID_DEFINED(node) ((node)->identifier_node.defined)
 #define TREE_ID_WITH_PREFIX(node) ((node)->identifier_node.with_prefix)
+#define TREE_ID_DEF(node) ((node)->identifier_node.def)
 #define TREE_ID_ITER(node) ((node)->identifier_node.iter_desc)
+#define TREE_ID_ITER_DEF(node) ((node)->identifier_node.iter_def)
 #define is_iter_cases (node) (TREE_CODE (TREE_OPERAND ((node), 1)) == LIST)
 
 #define TREE_ITER_PAIR_LOWER(node) ((node)->iter_pair.lower_index)
@@ -350,7 +356,6 @@ set_tree_operand (tree node, int idx, tree value)
 
 #define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
 
-#define TREE_PHI_NODE(node) ((node)->phi_node.values)
 static inline bool
 is_assignment_operator (enum token_kind tk)
 {

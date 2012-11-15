@@ -34,14 +34,7 @@ do \
 
 struct phi_node
 {
-  char *s;
-  UT_hash_handle hh;
-};
-
-struct phi_node_tree
-{
-  char *s;
-  tree node;
+  tree s;
   UT_hash_handle hh;
 };
 
@@ -51,24 +44,15 @@ struct id_defined
 {
   const char *id;	    /* An original name of the redefined variable.  
 			       Used as a key in a hash table.  */
-  int counter;		    /* A number whose string representation is appended
-			       to a varaible on every redefinition.  Then this 
-			       number is incremented.  */
-  unsigned counter_length;  /* The number of digits in `counter' number. We 
-			       need this while allocating memory for string
-			       representation.  */
-  unsigned divider;	    /* A helper field for fast `counter_length'
-			       variable track. divider = 10^counter_length.  */
-  char* id_new;		    /* A new name for a redefined variable.  */
-
-  struct phi_node *phi_node;/* Information about phi node.  */
+  bool was_modified;
+  struct phi_node *phi_node;/* Information about definitions.  */
   UT_hash_handle hh;
 };
 
 struct id_defined* ssa_copy_var_hash (struct id_defined*);
 void ssa_declare_new_var (basic_block, tree);
-char* ssa_reassign_var (basic_block, tree);
+void ssa_reassign_var (basic_block, tree);
 void ssa_verify_vars (basic_block, tree);
-void ssa_redefine_vars (basic_block, tree);
+void ssa_redefine_vars (basic_block, tree, tree);
 
 #endif /* __SSA_H__ */

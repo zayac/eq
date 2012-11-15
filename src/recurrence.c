@@ -185,6 +185,7 @@ recurrence_validate (tree t)
   int ret = 0;
   struct tree_list_element *el;
   int max_shift = 0, min = 0;
+  t = TREE_ID_ITER_DEF (t);
 
   DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (t))), el)
     {

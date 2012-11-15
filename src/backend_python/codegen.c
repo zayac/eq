@@ -403,7 +403,8 @@ codegen_iterative (FILE* f, tree var)
   struct tree_list_element *el = NULL;
   /* a list shortcut.  */
   struct tree_list_element *first_list_element =
-			  TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (var)));
+			  TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER
+					    (TREE_ID_ITER_DEF (var))));
   fprintf (f, "class _recur_");
   codegen_expression (f, var);
   fprintf (f, ":\n");
@@ -430,7 +431,8 @@ codegen_iterative (FILE* f, tree var)
   fprintf (f, "\tdef generate(self, _iter=None):\n");
   /* set `inside_generator' flag.  */
   codegen_options.inside_generator = true;
-  fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (var)));
+  fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER
+					    (TREE_ID_ITER_DEF (var))));
   fprintf (f, "\t\t__i = __start\n");
   fprintf (f, "\t\t__window = self.window\n");
   fprintf (f, "\t\tif _iter == None:\n");
@@ -522,12 +524,13 @@ int
 codegen_stream (FILE* f, tree var)
 {
   int error = 0;
-  assert (TREE_ID_ITER (var) != NULL, "variable is not a stream");
-  switch (TREE_CODE (TREE_ID_ITER (var)))
+  assert (TREE_ID_ITER (TREE_ID_ITER_DEF (var)) != NULL, 
+	  "variable is not a stream");
+  switch (TREE_CODE (TREE_ID_ITER (TREE_ID_ITER_DEF (var))))
     {
     case FILTER_EXPR:
       {
-	tree filter = TREE_ID_ITER (var);
+	tree filter = TREE_ID_ITER (TREE_ID_ITER_DEF (var));
 	tree parent = TREE_LIST (TREE_OPERAND (filter, 0))->entry;
 	fprintf (f, "class _recur_");
 	codegen_expression (f, var);
@@ -536,7 +539,8 @@ codegen_stream (FILE* f, tree var)
 	codegen_expression (f, parent);
 	fprintf (f, "):\n");
 	fprintf (f, "\tdef generate(self, _iter=None):\n");
-	fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER (parent)));
+	fprintf (f, "\t\t__start = %d\n", TREE_ITER_MIN (TREE_ID_ITER 
+					(TREE_ID_ITER_DEF (parent))));
 	fprintf (f, "\t\t__count = 0\n");
 	fprintf (f, "\t\t");
 	codegen_expression (f, iter_var_node);
@@ -606,8 +610,8 @@ append_construct_list (tree lel)
   if ((TREE_CODE (lel) == CIRCUMFLEX)
    && (TYPE_IS_STREAM (TREE_TYPE (TREE_OPERAND (lel, 0))))
    && (TREE_OPERAND (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (
-	    TREE_OPERAND (lel,
-	    0))))->prev->entry, 0)
+	    TREE_ID_ITER_DEF (TREE_OPERAND (lel,
+	    0)))))->prev->entry, 0)
 	== TREE_OPERAND (lel, 1)))
   {
     tree_list_append (rec_construct_list, TREE_OPERAND (lel,
@@ -704,7 +708,8 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 		    DL_FOREACH (TREE_LIST (TREE_OPERAND (stmt, 0)), el)
 		      {
 			if (TREE_CODE (el->entry) == IDENTIFIER
-			 && TREE_ID_ITER (el->entry) == rel->entry)
+			 && TREE_ID_ITER (TREE_ID_ITER_DEF (el->entry)) 
+							      == rel->entry)
 			  fprintf (f, "_recur_");
 			  codegen_expression (f, el->entry);
 			  fprintf (f, "(locals())\n");
@@ -734,7 +739,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	       types in Eq are static, however in Python they are dynamic ones.
 	       A code for `declare' statement is generated only if the variable is
 	       not a recurrent expression.  */
-	    if (TREE_ID_ITER (el->entry) == NULL)
+	    if (TREE_ID_ITER (TREE_ID_ITER_DEF (el->entry)) == NULL)
 	      {
 		enum tree_code code = TREE_CODE (TREE_TYPE (el->entry));
 
@@ -1006,6 +1011,21 @@ codegen_expression (FILE* f, tree expr)
 	  }
       	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "']");
+#if 0
+	if (TREE_FUD_CHAIN (expr) != NULL)
+	  {
+	    struct tree_list_element *el;
+	    fprintf (f, "{");
+	    DL_FOREACH (TREE_LIST (TREE_FUD_CHAIN (expr)), el)
+	      {
+		fprintf (f, "(%zd, %zd)", TREE_LOCATION (el->entry).line,
+					TREE_LOCATION (el->entry).col);
+		if (el->next != NULL)
+		  fprintf (f, ", ");
+	      }
+	    fprintf (f, "}");
+	  }
+#endif
       }
       break;
 
@@ -1165,19 +1185,6 @@ codegen_expression (FILE* f, tree expr)
     case CONVERT_EXPR:
       {
 	error += codegen_expression (f, TREE_OPERAND (expr, 0));
-      }
-      break;
-
-    case PHI_NODE:
-      {
-	struct phi_node_tree *el, *tmp;
-	fprintf (f, "< ");
-	HASH_ITER (hh, TREE_PHI_NODE (expr), el, tmp)
-	  {
-	    codegen_expression (f, el->node);
-	    fprintf (f, " ");
-	  }
-	fprintf (f, ">");
       }
       break;
 

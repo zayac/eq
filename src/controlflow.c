@@ -87,11 +87,6 @@ free_var_hash (struct id_defined *head)
       struct phi_node *hel, *tmp;
       if (el->phi_node)
 	HASH_FREE (hh, el->phi_node, hel, tmp);
-      if (el->id_new)
-	{
-	  free (el->id_new);
-	  el->id_new = NULL;
-	}
       HASH_DEL (head, el);
       free (el);
     }
@@ -152,20 +147,17 @@ controlflow (void)
   return 0;
 }
 
+
 int
 controlflow_function (tree func)
 {
   basic_block bb;
-  struct tree_list_element *el;
   TREE_FUNC_CFG (func) = make_cfg ();
 #ifdef CFG_OUTPUT
   fprintf (stdout, "digraph %s { ",
     TREE_STRING_CST (TREE_ID_NAME (TREE_FUNC_NAME (func))));
 #endif
   bb = make_bb (TREE_FUNC_CFG (func), TREE_LIST (TREE_OPERAND (func, 4)));
-  /* Add function argument variables in hash.  */
-  DL_FOREACH (TREE_LIST (TREE_OPERAND (func, 1)), el)
-    ssa_declare_new_var (bb, el->entry);
   CFG_ENTRY_BLOCK (TREE_FUNC_CFG (func)) = bb;
   controlflow_pass_block (TREE_FUNC_CFG (func), bb, 
 			  TREE_LIST (TREE_OPERAND (func, 4)));
@@ -179,17 +171,17 @@ controlflow_function (tree func)
 /* Add a variable string to the set explicitly checking 
    the uniqueness.  */
 inline void
-safe_hash_add (struct phi_node **head, char *s)
+safe_hash_add (struct phi_node **head, tree s)
 {
   struct phi_node *el;
-  HASH_FIND_STR (*head, s, el);
+  HASH_FIND_PTR (*head, &s, el);
   if (el != NULL)
     HASH_DEL (*head, el);
   else
     el = (struct phi_node *) malloc (sizeof (struct phi_node));
   memset (el, 0, sizeof (struct phi_node));
   el->s = s;
-  HASH_ADD_KEYPTR (hh, *head, s, strlen (s), el);
+  HASH_ADD_PTR (*head, s, el);
 }
 
 /* A recursive pass extracting new blocks.  */
@@ -245,7 +237,6 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
   if (TREE_CODE (head->entry) == IF_STMT)
     {
       struct id_defined *el_orig, *tmp;
-      bool was_modified_a, was_modified_b;
       basic_block bb_a = make_bb (cfg, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 1)));
       bb_a->var_hash = ssa_copy_var_hash (bb->var_hash);
@@ -257,17 +248,6 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       link_blocks (cfg, bb, bb_a);
       jt1 = controlflow_pass_block (cfg, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
-      /* Merge information about variables defined in outer 
-	 and inner blocks.  */
-      HASH_ITER (hh, bb->var_hash, el_orig, tmp)
-	{
-	  struct id_defined *el_nested;
-	  HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
-	  /* Update information about variable.  */
-	  el_orig->counter = el_nested->counter;
-	  el_orig->counter_length = el_nested->counter_length;
-	  el_orig->divider = el_nested->divider;
-	}
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
 	  bb_b = make_bb (cfg, TREE_LIST (TREE_OPERAND (head->entry, 2)));
@@ -283,69 +263,21 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	  HASH_ITER (hh, bb->var_hash, el_orig, tmp)
 	    {
 	      struct id_defined *el_nested_a, *el_nested_b;
+	      struct phi_node *hel, *hel_tmp;
 	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested_a);
 	      HASH_FIND_STR (bb_b->var_hash, el_orig->id, el_nested_b);
 	      assert (el_nested_a != NULL, "must be defined");
 	      assert (el_nested_b != NULL, "must be defined");
-
-	      /* Update information about variable.  */
-	      el_orig->counter = el_nested_b->counter;
-	      el_orig->counter_length = el_nested_b->counter_length;
-	      el_orig->divider = el_nested_b->divider;
-
-	      was_modified_a = (el_orig->id_new == NULL 
-			    && el_nested_a->id_new != NULL)
-			    || (el_orig->id_new != NULL 
-			     && el_nested_a->id_new != NULL
-		    && strcmp (el_nested_a->id_new, el_orig->id_new));
-	      was_modified_b = (el_orig->id_new == NULL 
-			    && el_nested_b->id_new != NULL)
-			    || (el_orig->id_new != NULL 
-			     && el_nested_b->id_new != NULL
-		    && strcmp (el_nested_b->id_new, el_orig->id_new));
 	      /* Update information about variable if variable was modified
 		 inside the block.  */
-	      if (was_modified_a && was_modified_b) 
-		{
-		  struct phi_node *hel, *tmp;
-		  el_orig->counter = el_nested_b->counter;
-		  el_orig->counter_length = el_nested_b->counter_length;
-		  el_orig->divider = el_nested_b->divider;
-		  if (el_orig->id_new)
-		    free (el_orig->id_new);
-		  el_orig->id_new = strdup (el_nested_b->id_new);
-		  HASH_FREE (hh, el_orig->phi_node, hel, tmp);
-		  safe_hash_add (&el_orig->phi_node, el_nested_b->id_new);
-		  safe_hash_add (&el_orig->phi_node, el_nested_a->id_new);
-		  HASH_ITER (hh, el_nested_b->phi_node, hel, tmp)
-		    safe_hash_add (&el_orig->phi_node, hel->s);
-		  HASH_ITER (hh, el_nested_a->phi_node, hel, tmp)
-		    safe_hash_add (&el_orig->phi_node, hel->s);
-		}
-	      else
-		{
-		  struct id_defined *el_nested = NULL;
-		  struct phi_node *hel, *tmp;
-		  if (was_modified_b)
-		    el_nested = el_nested_b;
-		  else if (was_modified_a)
-		    el_nested = el_nested_a;
-		  if (el_nested != NULL)
-		    {
-		      if (el_orig->id_new)
-			safe_hash_add (&el_orig->phi_node, el_orig->id_new);
-		      else
-			safe_hash_add (&el_orig->phi_node, (char*) el_orig->id);
-		      if (el_nested->id_new)
-			{
-			  safe_hash_add (&el_orig->phi_node, 
-					 el_nested->id_new);
-			  el_orig->id_new = strdup (el_nested->id_new);
-			}
-		      HASH_ITER (hh, el_nested->phi_node, hel, tmp)
-			safe_hash_add (&el_orig->phi_node, hel->s);
-		    }
-		}
+	      if (el_nested_a->was_modified && el_nested_b->was_modified)
+		HASH_FREE (hh, el_orig->phi_node, hel, hel_tmp);
+	      if (el_nested_a->was_modified)
+		HASH_ITER (hh, el_nested_a->phi_node, hel, hel_tmp)
+		  safe_hash_add (&el_orig->phi_node, hel->s);
+	      if (el_nested_b->was_modified)
+		HASH_ITER (hh, el_nested_b->phi_node, hel, hel_tmp)
+		  safe_hash_add (&el_orig->phi_node, hel->s);
 	    }
 	}
       else
@@ -354,22 +286,10 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	    {
 	      struct id_defined *el_nested;
 	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
-	      /* update information about variable if variable was modified
-		 inside the block.  */
-	      if (el_nested != NULL
-	       && ((el_orig->id_new == NULL && el_nested->id_new != NULL)
-	       || (el_orig->id_new != NULL
-	        && el_nested->id_new != NULL
-		&& strcmp (el_nested->id_new, el_orig->id_new))))
+	      if (el_nested != NULL && el_nested->was_modified)
 		{
-		  struct phi_node *hel, *tmp;
-		  if (el_orig->id_new)
-		    safe_hash_add (&el_orig->phi_node, el_orig->id_new);
-		  else
-		    safe_hash_add (&el_orig->phi_node, (char*) el_orig->id);
-		  if (el_nested->id_new)
-		    safe_hash_add (&el_orig->phi_node, el_nested->id_new);
-		  HASH_ITER (hh, el_nested->phi_node, hel, tmp)
+		  struct phi_node *hel, *hel_tmp;
+		  HASH_ITER (hh, el_nested->phi_node, hel, hel_tmp)
 		    safe_hash_add (&el_orig->phi_node, hel->s);
 		}
 	    }

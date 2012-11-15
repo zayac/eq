@@ -102,7 +102,8 @@ typecheck (void)
   /* sort recurrent expressions by initial values.  */
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     {
-      DL_SORT (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (tl->entry))),
+      DL_SORT (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (
+	       TREE_ID_ITER_DEF (tl->entry)))),
 	       recurrence_sort);
     }
 
@@ -334,9 +335,15 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	  || (var = is_var_in_list (lhs, ext_vars)) != NULL)
 	{
 	  /* Replace the variable with a variable from the list. */
+	  tree tmp = tree_copy (var);
+	  TREE_LOCATION (tmp) = TREE_LOCATION (lhs);
+	  if (TREE_ID_ITER_DEF (var) != NULL)
+	    TREE_ID_ITER_DEF (tmp) = TREE_ID_ITER_DEF (var);
+	  else
+	    TREE_ID_ITER_DEF (tmp) = var;
 	  free_tree (lhs);
-	  el->entry = var;
-	  lhs = var;
+	  el->entry = tmp;
+	  lhs = tmp;
 	}
       else if ((var = function_exists (TREE_STRING_CST (TREE_ID_NAME (lhs))))
 	|| (var = function_proto_exists (TREE_STRING_CST (TREE_ID_NAME (lhs)))))
@@ -389,9 +396,15 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
       if ((var = is_var_in_list (id, vars)) != NULL
        || (var = is_var_in_list (id, ext_vars)) != NULL)
 	{
+	  tree tmp = tree_copy (var);
+	  TREE_LOCATION (tmp) = TREE_LOCATION (id);
+	  if (TREE_ID_ITER_DEF (var) != NULL)
+	    TREE_ID_ITER_DEF (tmp) = TREE_ID_ITER_DEF (var);
+	  else
+	    TREE_ID_ITER_DEF (tmp) = var;
 	  free_tree (id);
-	  TREE_OPERAND_SET (lhs, 0, var);
-	  id = var;
+	  TREE_OPERAND_SET (lhs, 0, tmp);
+	  id = tmp;
 	}
       else if ((var = function_exists (TREE_STRING_CST (TREE_ID_NAME (id))))
 	|| (var = function_proto_exists (TREE_STRING_CST (TREE_ID_NAME (id)))))
@@ -430,16 +443,17 @@ typecheck_assign_index (tree lhs, tree rhs)
   else
     id = TREE_OPERAND (TREE_OPERAND (lhs, 0), 0);
 
-  if (TREE_ID_ITER (id) == NULL)
+  if (TREE_ID_ITER (TREE_ID_ITER_DEF (id)) == NULL)
     {
-      TREE_ID_ITER (id) = make_tree (ITER_EXPR);
-      TREE_ITER_LIST (TREE_ID_ITER (id)) = make_tree_list ();
+      TREE_ID_ITER (TREE_ID_ITER_DEF (id)) = make_tree (ITER_EXPR);
+      TREE_ITER_LIST (TREE_ID_ITER (TREE_ID_ITER_DEF(id))) = make_tree_list ();
       tree_list_append (iter_var_list, id);
     }
   else
     {
       struct tree_list_element *el;
-      DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (id))), el)
+      DL_FOREACH (TREE_LIST (TREE_ITER_LIST (TREE_ID_ITER (TREE_ID_ITER_DEF
+      (id)))), el)
 	{
 	  tree index = TREE_OPERAND (el->entry, 0);
 	  if ((TREE_OPERAND (lhs, 1) == iter_var_node
@@ -468,7 +482,7 @@ typecheck_assign_index (tree lhs, tree rhs)
   if (TREE_CODE (TREE_OPERAND (lhs, 0)) == LOWER)
     TREE_ITER_PAIR_LOWER (iter_pair) = TREE_OPERAND (TREE_OPERAND (lhs, 0), 1);
 
-  tree_list_append (TREE_ITER_LIST (TREE_ID_ITER (id)), iter_pair);
+  tree_list_append (TREE_ITER_LIST (TREE_ID_ITER (TREE_ID_ITER_DEF (id))), iter_pair);
   return ret;
 }
 
@@ -480,9 +494,9 @@ typecheck_assign_stream (tree lhs, tree rhs)
 					    " is not a stream");
   assert (TREE_CODE (lhs) == IDENTIFIER, "left part of the statement "
 					 "is not an identifier");
-  if (TREE_ID_ITER (lhs) == NULL)
+  if (TREE_ID_ITER (TREE_ID_ITER_DEF (lhs)) == NULL)
     {
-      TREE_ID_ITER (lhs) = rhs;
+      TREE_ID_ITER (TREE_ID_ITER_DEF (lhs)) = rhs;
       tree_list_append (stream_list, lhs);
     }
   else
@@ -1232,8 +1246,14 @@ associate_variables (tree t, tree ext_vars, tree vars)
 	    {
 	      if (var != id)
 		{
+		  tree tmp = tree_copy (var);
+		  TREE_LOCATION (tmp) = TREE_LOCATION (id);
+		  if (TREE_ID_ITER_DEF (var) != NULL)
+		    TREE_ID_ITER_DEF (tmp) = TREE_ID_ITER_DEF (var);
+		  else
+		    TREE_ID_ITER_DEF (tmp) = var;
 		  tree_list_append (delete_list, id);
-		  TREE_OPERAND_SET (t, i, var);
+		  TREE_OPERAND_SET (t, i, tmp);
 		}
 	    }
 	}
@@ -1292,8 +1312,10 @@ typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref,
 	    }
 	  else
 	    {
+	      tree tmp = tree_copy (var);
+	      TREE_LOCATION (tmp) = TREE_LOCATION (el->entry);
 	      free_tree (el->entry);
-	      el->entry = var;
+	      el->entry = tmp;
 	      if (TREE_TYPE (el->entry) != z_type_node
 		  && TREE_TYPE (el->entry) != n_type_node)
 		{
@@ -1908,9 +1930,15 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 
 	    if ((var = is_var_in_list (id, iter_var_list)) != NULL)
 	      {
+		tree tmp = tree_copy (var);
+		TREE_LOCATION (tmp) = TREE_LOCATION (id);
+		if (TREE_ID_ITER_DEF (var) != NULL)
+		  TREE_ID_ITER_DEF (tmp) = TREE_ID_ITER_DEF (var);
+		else
+		  TREE_ID_ITER_DEF (tmp) = var;
 		free_tree (id);
-		el->entry = var;
-		id = var;
+		el->entry = tmp;
+		id = tmp;
 	      }
 	    else
 	      {

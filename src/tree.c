@@ -101,8 +101,6 @@ get_tree_size (enum tree_code code)
 	return ops + sizeof (struct tree_list_node);
       else if (code == ITER_EXPR)
 	return ops + sizeof (struct tree_rec_expr_node);
-      else if (code == PHI_NODE)
-	return ops + sizeof (struct tree_phi_node);
       else if (code == ITER_PAIR)
 	return ops + sizeof (struct tree_iter_pair);
       else if (code == ERROR_MARK)
@@ -256,16 +254,6 @@ free_tree (tree node)
 	{
 	  free_tree (TREE_ITER_LIST (node));
 	}
-      else if (code == PHI_NODE)
-	{
-	  struct phi_node_tree *el, *tmp;
-	  HASH_ITER (hh, TREE_PHI_NODE (node), el, tmp)
-	    {
-	      HASH_DEL (TREE_PHI_NODE (node), el);
-	      free_tree (el->node);
-	      free (el);
-	    }
-	}
       break;
     case tcl_constant:
       if (code == STRING_CST)
@@ -298,7 +286,10 @@ free_tree (tree node)
   /* Types are stored in global hash table. That's why we delete them
      separetely.  */
   if (TREE_CODE_TYPED (code))
-    TREE_TYPE (node) = NULL;
+    {
+      TREE_TYPE (node) = NULL;
+      free_tree (TREE_FUD_CHAIN (node));
+    }
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {
       free_tree (TREE_OPERAND (node, i));
@@ -454,6 +445,7 @@ make_identifier_tok (struct token * tok)
   TREE_ID_SOURCE_NAME (t) = make_string_cst_tok (tok);
   TREE_ID_DEFINED (t) = false;
   TREE_ID_ITER (t) = NULL;
+  TREE_ID_ITER_DEF (t) = t;
   TREE_LOCATION (t) = token_location (tok);
   return t;
 }
