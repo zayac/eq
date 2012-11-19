@@ -16,7 +16,10 @@
 #ifndef __DATAFLOW_H__
 #define __DATAFLOW_H__
 
-int dataflow (void);
-tree dataflow_function (tree);
+#include "print.h"
 
+int dataflow (void);
+void dataflow_mark_redundant_code (tree);
+tree dataflow_function (tree);
+//tree dataflow_chain (xfile*, tree);
 #endif /* __DATAFLOW_H__ */

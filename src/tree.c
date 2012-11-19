@@ -150,6 +150,10 @@ make_tree (enum tree_code code)
   tree ret = (tree) malloc (size);
   memset (ret, 0, size);
   TREE_CODE_SET (ret, code);
+  
+  /* All statements are redundant by default.
+     Dataflow analysis is intended to correct this.  */
+  TREE_IS_REDUNDANT (ret) = true;
 
   if (TREE_CODE_TYPED (code))
     TREE_TYPE (ret) = NULL;
@@ -234,11 +238,13 @@ free_tree (tree node)
 	  free_tree (TREE_ID_ITER (node));
 	  free_tree (TREE_ID_NAME (node));
 	  free_tree (TREE_ID_SOURCE_NAME (node));
+	  free_tree (TREE_ID_UD_CHAIN (node));
+	  free_list (TREE_ID_DU_CHAIN (node));
 	}
       else if (code == FUNCTION)
 	{
 	  free_cfg (TREE_FUNC_CFG (node));
-	  free_tree (TREE_FUNC_RETURN_VALUES (node));
+	  free_list (TREE_FUNC_RETURN (node));
 	}
       else if (code == LIST)
 	{
@@ -288,7 +294,6 @@ free_tree (tree node)
   if (TREE_CODE_TYPED (code))
     {
       TREE_TYPE (node) = NULL;
-      free_tree (TREE_FUD_CHAIN (node));
     }
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {

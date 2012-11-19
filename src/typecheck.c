@@ -37,7 +37,7 @@ typecheck_options
   /* indicates are we allowed to use `\iter' variable here.  */
   bool is_iter_id_allowed;
   /* a pointer to a `return' statement inside a function.  */
-  tree return_values;
+  tree return_stmts;
 } typecheck_options = {false, false, NULL};
 
 /* Add a prefix to the string which represents variable name.
@@ -89,14 +89,14 @@ typecheck (void)
       /* Each function has to have a return statement.
 	 However, we check this only if there were no errors inside the
 	 function.  */
-      if (!typecheck_options.return_values && !function_check)
+      if (!typecheck_options.return_stmts && !function_check)
 	{
 	  error_loc (TREE_LOCATION (tl->entry),
 	    "function `%s' doesn't have any return statement",
 	    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (tl->entry, 0))));
 	}
-      TREE_FUNC_RETURN_VALUES (tl->entry) = typecheck_options.return_values;
-      typecheck_options.return_values = false;
+      TREE_FUNC_RETURN (tl->entry) = typecheck_options.return_stmts;
+      typecheck_options.return_stmts = NULL;
     }
 
   /* sort recurrent expressions by initial values.  */
@@ -910,10 +910,9 @@ finalize_parallel_loop:
 	      "definition");
 	    return 1;
 	  }
-	if (typecheck_options.return_values == NULL)
-	  typecheck_options.return_values = make_tree_list ();
-	tree_list_append (typecheck_options.return_values,
-			  TREE_OPERAND (stmt, 0));
+	if (typecheck_options.return_stmts == NULL)
+	  typecheck_options.return_stmts = make_tree_list ();
+	tree_list_append (typecheck_options.return_stmts, stmt);
       }
       break;
     case PRINT_MARK:

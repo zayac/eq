@@ -162,9 +162,16 @@ ssa_verify_vars (basic_block bb, tree node)
 		{
 		  struct phi_node *hel, *tmp;
 		  HASH_SORT (id_el->phi_node, pointer_sort);
-		  TREE_FUD_CHAIN (el->entry) = make_tree_list ();
+		  /* Create use-def and def-use chain.  */
+		  TREE_ID_UD_CHAIN (el->entry) = make_tree_list ();
 		  HASH_ITER (hh, id_el->phi_node, hel, tmp)
-		    tree_list_append (TREE_FUD_CHAIN (el->entry), hel->s);
+		    {
+		      tree_list_append (TREE_ID_UD_CHAIN (el->entry), hel->s);
+		      if (TREE_ID_DU_CHAIN (hel->s) == NULL)
+			TREE_ID_DU_CHAIN (hel->s) = make_tree_list ();
+		      tree_list_append (TREE_ID_DU_CHAIN (hel->s), 
+					el->entry);
+		    }
 		}
 	    }
 	  else
@@ -184,10 +191,17 @@ ssa_verify_vars (basic_block bb, tree node)
 	    {
 	      struct phi_node *hel, *tmp;
 	      HASH_SORT (id_el->phi_node, pointer_sort);
-	      TREE_FUD_CHAIN (TREE_OPERAND (node, 1)) = make_tree_list ();
+	      TREE_ID_UD_CHAIN (TREE_OPERAND (node, 1)) = make_tree_list ();
+	      /* Create use-def and def-use chain.  */
 	      HASH_ITER (hh, id_el->phi_node, hel, tmp)
-		tree_list_append (TREE_FUD_CHAIN (TREE_OPERAND (node, 1)),
-				  hel->s);
+		{
+		  tree_list_append (TREE_ID_UD_CHAIN (TREE_OPERAND (node, 1)),
+				    hel->s);
+		  if (TREE_ID_DU_CHAIN (hel->s) == NULL)
+		    TREE_ID_DU_CHAIN (hel->s) = make_tree_list ();
+		  tree_list_append (TREE_ID_DU_CHAIN (hel->s), 
+				    TREE_OPERAND (node, 1));
+		}
 	    }
 	}
       else
@@ -210,10 +224,18 @@ ssa_verify_vars (basic_block bb, tree node)
 		{
 		  struct phi_node *hel, *tmp;
 		  HASH_SORT (id_el->phi_node, pointer_sort);
-		  TREE_FUD_CHAIN (TREE_OPERAND (node, i)) = make_tree_list ();
+		  /* Create use-def and def-use chain.  */
+		  TREE_ID_UD_CHAIN (TREE_OPERAND (node, i)) = make_tree_list ();
 		  HASH_ITER (hh, id_el->phi_node, hel, tmp)
-		    tree_list_append (TREE_FUD_CHAIN (TREE_OPERAND (node, i)),
-				      hel->s);
+		    {
+		      tree_list_append (TREE_ID_UD_CHAIN (
+					    TREE_OPERAND (node, i)),
+					hel->s);
+		      if (TREE_ID_DU_CHAIN (hel->s) == NULL)
+			TREE_ID_DU_CHAIN (hel->s) = make_tree_list ();
+		      tree_list_append (TREE_ID_DU_CHAIN (hel->s), 
+					TREE_OPERAND (node, i));
+		    }
 		}
 	    }
 	  else

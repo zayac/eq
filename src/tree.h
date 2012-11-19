@@ -57,6 +57,9 @@ struct tree_base
 {
   struct location loc;
   enum tree_code code;
+  /* indicate if node is redundant in terms of reachability from return
+     value.  */
+  unsigned is_redundant:1;
 };
 
 /* Base tree with operands pointer */
@@ -71,7 +74,6 @@ struct tree_type_base
 {
   struct tree_base base;
   tree type;
-  tree fud_chain;
   unsigned int is_constant:1;
   /* These options are needed while parsing \match.  */
   unsigned argset:1;
@@ -129,7 +131,7 @@ struct tree_function_node
 {
   struct tree_type_base typed;
   struct control_flow_graph *cfg;
-  tree return_values;
+  tree return_stmts;
   tree operands[];
 };
 
@@ -168,7 +170,12 @@ struct tree_identifier_node
   tree source_name;
   tree iter_desc;
   tree iter_def;
+  /* Statement with the definition of current variable.  */
   tree def;
+  /* a use-definition chain for curent variable.  */
+  tree ud_chain;
+  /* a definition-use chain for current variable.  */
+  tree du_chain;
   unsigned defined:1;
   unsigned with_prefix:1;
 };
@@ -243,7 +250,6 @@ enum tree_global_code
 #define TREE_CODE_SET(node, value) ((node)->base.code = (value))
 
 #define TREE_TYPE(node) ((node)->typed.type)
-#define TREE_FUD_CHAIN(node) ((node)->typed.fud_chain)
 #define TYPE_HASH(node) ((node)->type_node)
 #define TYPE_SIZE(node) ((node)->type_node.size)
 #define TYPE_DIM(node) ((node)->type_node.properties.numerical.dim)
@@ -334,7 +340,11 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ID_DEF(node) ((node)->identifier_node.def)
 #define TREE_ID_ITER(node) ((node)->identifier_node.iter_desc)
 #define TREE_ID_ITER_DEF(node) ((node)->identifier_node.iter_def)
-#define is_iter_cases (node) (TREE_CODE (TREE_OPERAND ((node), 1)) == LIST)
+#define TREE_ID_UD_CHAIN(node) ((node)->identifier_node.ud_chain)
+#define TREE_ID_DU_CHAIN(node) ((node)->identifier_node.du_chain)
+#define is_iter_cases(node) (TREE_CODE (TREE_OPERAND ((node), 1)) == LIST)
+
+#define TREE_IS_REDUNDANT(node) ((node)->base.is_redundant)
 
 #define TREE_ITER_PAIR_LOWER(node) ((node)->iter_pair.lower_index)
 
@@ -345,7 +355,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_FUNC(node) ((node)->function_node)
 #define TREE_FUNC_BB_VARS(node) ((node)->function_node.bb_vars)
 #define TREE_FUNC_CFG(node) ((node)->function_node.cfg)
-#define TREE_FUNC_RETURN_VALUES(node) ((node)->function_node.return_values)
+#define TREE_FUNC_RETURN(node) ((node)->function_node.return_stmts)
 #define TREE_FUNC_NAME(node) ((node)->function_node.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->function_node.operands[1])
 #define TREE_FUNC_ARG_TYPES(node) ((node)->function_node.operands[2])

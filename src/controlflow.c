@@ -137,14 +137,18 @@ make_bb (struct control_flow_graph* cfg, struct tree_list_element *head) {
 int
 controlflow (void)
 {
+  int function_check = 0;
 #ifdef CFG_OUTPUT
   fprintf (stdout, "Control flow graph:\n");
 #endif
   struct tree_list_element *tl;
   DL_FOREACH (TREE_LIST (function_list), tl)
-    controlflow_function (tl->entry);
-  printf ("note: finished generating CFG.\n");
-  return 0;
+    function_check += controlflow_function (tl->entry);
+  if (function_check)
+    printf ("note: finiched generating CFG, errors found.\n");
+  else
+    printf ("note: finished generating CFG  [ok].\n");
+  return function_check;
 }
 
 

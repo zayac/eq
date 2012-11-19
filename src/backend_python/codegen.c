@@ -168,19 +168,19 @@ codegen (char *file)
   fprintf (f, "from numpy import array\n");
   fprintf (f, "from math import *\n\n");
 
-  codegen_get_gen_last_value_function (f);
-  codegen_genar_function (f);
+  function_error += codegen_get_gen_last_value_function (f);
+  function_error += codegen_genar_function (f);
 
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     {
       level = 0;
-      codegen_iterative (f, tl->entry);
+      function_error += codegen_iterative (f, tl->entry);
     }
 
   DL_FOREACH (TREE_LIST (stream_list), tl)
     {
       level = 0;
-      codegen_stream (f, tl->entry);
+      function_error += codegen_stream (f, tl->entry);
     }
 
   DL_FOREACH (TREE_LIST (function_list), tl)
@@ -191,11 +191,15 @@ codegen (char *file)
   fprintf (f, "\nif version_info < (3, 0):\n\trange = xrange\n");
   fprintf (f, "\nif __name__ == '__main__':\n\t__main()\n");
   fclose (f);
-  printf ("note: finished generating code.\n");
 
   free_tree (rec_construct_list);
 
   free (filename);
+  
+  if (function_error)
+    printf ("note: finiched generating python code, errors found\n");
+  else
+    printf ("note: finished generating python code  [ok].\n");
 
   return function_error;
 }
@@ -1011,12 +1015,15 @@ codegen_expression (FILE* f, tree expr)
 	  }
       	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "']");
-#if 0
-	if (TREE_FUD_CHAIN (expr) != NULL)
+
+#if 0 
+	if (TREE_IS_REDUNDANT (expr))
+	  fprintf (f, "<R>");
+	if (TREE_ID_UD_CHAIN (expr) != NULL)
 	  {
 	    struct tree_list_element *el;
 	    fprintf (f, "{");
-	    DL_FOREACH (TREE_LIST (TREE_FUD_CHAIN (expr)), el)
+	    DL_FOREACH (TREE_LIST (TREE_ID_UD_CHAIN (expr)), el)
 	      {
 		fprintf (f, "(%zd, %zd)", TREE_LOCATION (el->entry).line,
 					TREE_LOCATION (el->entry).col);

@@ -22,6 +22,7 @@
 #include "print.h"
 #include "matcher.h"
 #include "controlflow.h"
+#include "dataflow.h"
 #include "codegen.h"
 
 #include <stdlib.h>
@@ -37,7 +38,8 @@ enum
 {
   OPT_BREAK_PARSER = 0,
   OPT_BREAK_TYPECHECK,
-  OPT_BREAK_CONTROLFLOW
+  OPT_BREAK_CONTROLFLOW,
+  OPT_BREAK_DATAFLOW
 };
 
 char *const p_opts[] = {
@@ -51,6 +53,7 @@ char *const b_opts[] = {
   [OPT_BREAK_PARSER] = "parser",
   [OPT_BREAK_TYPECHECK] = "typecheck",
   [OPT_BREAK_CONTROLFLOW] = "controlflow",
+  [OPT_BREAK_DATAFLOW] = "dataflow",
   NULL
 };
 
@@ -140,6 +143,8 @@ main (int argc, char *argv[])
 	      break;
 	    case OPT_BREAK_CONTROLFLOW:
 	      options.break_option = break_controlflow;
+	    case OPT_BREAK_DATAFLOW:
+	      options.break_option = break_dataflow;
 	      break;
 	    default:
 	      fprintf (stderr, "unknown -B suboption `%s'\n", value);
@@ -236,6 +241,12 @@ main (int argc, char *argv[])
     controlflow ();
 
   if (options.break_option != break_controlflow
+   && options.break_option != break_typecheck
+   && options.break_option != break_parser && !ret)
+    dataflow ();
+
+  if (options.break_option != break_dataflow
+   && options.break_option != break_controlflow
    && options.break_option != break_typecheck
    && options.break_option != break_parser && !ret)
     codegen (src_name);
