@@ -18,17 +18,32 @@
 #include "global.h"
 #include "dataflow.h"
 
-/* A code is marked as redundant, if it's not used for calculating return
+/* A statement is marked as redundant, if it's not used for calculating return
    value.
-   Basically this marks *nonredundant* nodes, because each node is redundant by
-   default.  */
+   Basically this marks *nonredundant* statements, because each node is 
+   redundant by default.  */
 void
 dataflow_mark_redundant_code (tree stmt)
 {
   struct tree_list_element *el;
   int i;
-  TREE_IS_REDUNDANT (stmt) = false;
-  if (TREE_CODE (stmt) == LIST)
+  if (stmt == NULL)
+    return;
+  if (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_statement)
+    {
+      if (TREE_STMT_REDUNDANCE_CHECKED (stmt))
+	return;
+      TREE_STMT_REDUNDANCE_CHECKED (stmt) = true;
+      TREE_STMT_IS_REDUNDANT (stmt) = false;
+      if (TREE_STMT_PARENT_IF (stmt) != NULL)
+	dataflow_mark_redundant_code (TREE_STMT_PARENT_IF (stmt));
+    }
+  if (TREE_CODE (stmt) == IF_STMT)
+    {
+      dataflow_mark_redundant_code (TREE_OPERAND (stmt, 0));
+      return;
+    }
+  else if (TREE_CODE (stmt) == LIST)
     {
       DL_FOREACH (TREE_LIST (stmt), el)
 	dataflow_mark_redundant_code (el->entry);
@@ -48,7 +63,6 @@ dataflow_mark_redundant_code (tree stmt)
 int
 dataflow (void)
 {
-
   struct tree_list_element *tl, *tle;
   DL_FOREACH (TREE_LIST (function_list), tl)
     {

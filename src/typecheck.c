@@ -38,7 +38,10 @@ typecheck_options
   bool is_iter_id_allowed;
   /* a pointer to a `return' statement inside a function.  */
   tree return_stmts;
-} typecheck_options = {false, false, NULL};
+  /* a pointer to the `if' statement which is an immediate parent of current 
+     block.  */
+  tree parent_if_stmt;
+} typecheck_options = {false, false, NULL, NULL};
 
 /* Add a prefix to the string which represents variable name.
    Returns a new string.
@@ -514,6 +517,9 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;
 
+  if (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_statement)
+    TREE_STMT_PARENT_IF (stmt) = typecheck_options.parent_if_stmt;
+
   switch (TREE_CODE (stmt))
     {
     case ASSIGN_STMT:
@@ -719,7 +725,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
       }
       break;
 
-    case PARALLEL_LOOP_EXPR:
+    case PARALLEL_LOOP_STMT:
       {
 	struct tree_list_element *el, *tmp;
 	tree var = TREE_OPERAND (stmt, 0);
@@ -825,6 +831,7 @@ finalize_parallel_loop:
 
     case IF_STMT:
       {
+	tree previous_if_parent;
 	tree condition = TREE_OPERAND (stmt, 0);
 	tree tr_stmts = TREE_OPERAND (stmt, 1);
 	tree fs_stmts = TREE_OPERAND (stmt, 2);
@@ -844,6 +851,12 @@ finalize_parallel_loop:
 	   memory is allocated.  */
 	tree_list_combine (ext_vars, vars);
 	new_scope = make_tree_list ();
+	
+	/* Every statement has reference to it's immediate `if' statement
+	   parent.  */
+	previous_if_parent = typecheck_options.parent_if_stmt;
+	typecheck_options.parent_if_stmt = stmt;
+
 	ret += typecheck_stmt_list (tr_stmts, ext_vars, new_scope, func_ref);
 	tree_list_append (delete_list, new_scope);
 	/* Another scope for "else" statement list.  */
@@ -854,6 +867,8 @@ finalize_parallel_loop:
 						  new_scope, func_ref);
 	    tree_list_append (delete_list, new_scope);
 	  }
+
+	typecheck_options.parent_if_stmt = previous_if_parent;
 	/* split combined lists back.  */
 	tree_list_split (ext_vars, vars);
       }

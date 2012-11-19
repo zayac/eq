@@ -129,7 +129,7 @@ get_tree_size (enum tree_code code)
 	return size + ops;
 
     case tcl_statement:
-      return size + ops;
+      return ops + sizeof (struct tree_stmt_node);
 
     default:
       unreachable (0);
@@ -153,7 +153,8 @@ make_tree (enum tree_code code)
   
   /* All statements are redundant by default.
      Dataflow analysis is intended to correct this.  */
-  TREE_IS_REDUNDANT (ret) = true;
+  if (TREE_CODE_CLASS (code) == tcl_statement)
+    TREE_STMT_IS_REDUNDANT (ret) = true;
 
   if (TREE_CODE_TYPED (code))
     TREE_TYPE (ret) = NULL;
@@ -661,7 +662,7 @@ make_return (tree a, struct location loc)
 tree
 make_parallel_loop (tree idx, tree cond, tree expr)
 {
-  tree t = make_tree (PARALLEL_LOOP_EXPR);
+  tree t = make_tree (PARALLEL_LOOP_STMT);
   TREE_OPERAND_SET (t, 0, idx);
   TREE_OPERAND_SET (t, 1, cond);
   TREE_OPERAND_SET (t, 2, expr);

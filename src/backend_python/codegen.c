@@ -466,7 +466,7 @@ codegen_iterative (FILE* f, tree var)
 	  && (el->next != NULL || TREE_OPERAND (el->entry, 0) == iter_var_node))
 	{
 	  fprintf (f, "\t\t\tif __i - __start >= self.size-1:\n");
-	  if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == PARALLEL_LOOP_EXPR)
+	  if (TREE_CODE (TREE_OPERAND (el->entry, 1)) == PARALLEL_LOOP_STMT)
 	    {
 	      int old_level = level;
 	      fprintf (f, "\t\t\t\t");
@@ -630,6 +630,11 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
   int error = 0;
   struct tree_list_element *el, *tmp;
   indent (f, level);
+#if 0
+  if (TREE_STMT_IS_REDUNDANT (stmt))
+    fprintf (f, "<R>");
+#endif
+
   switch (TREE_CODE (stmt))
     {
     case ASSIGN_STMT:
@@ -788,7 +793,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
 	  }
       }
       break;
-    case PARALLEL_LOOP_EXPR:
+    case PARALLEL_LOOP_STMT:
       {
 	tree id;
 	int old_level = level;
@@ -1016,9 +1021,7 @@ codegen_expression (FILE* f, tree expr)
       	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "']");
 
-#if 0 
-	if (TREE_IS_REDUNDANT (expr))
-	  fprintf (f, "<R>");
+#if 0
 	if (TREE_ID_UD_CHAIN (expr) != NULL)
 	  {
 	    struct tree_list_element *el;

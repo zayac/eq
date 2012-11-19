@@ -262,7 +262,7 @@ print_expression (xfile *  xf, tree exp)
 	print_expression (xf, TREE_OPERAND (exp, 0));
 	break;
       }
-    case PARALLEL_LOOP_EXPR:
+    case PARALLEL_LOOP_STMT:
       {
 	struct tree_list_element *tle = NULL;
 	print_expression (xf, TREE_OPERAND (exp, 0));

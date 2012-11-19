@@ -57,9 +57,6 @@ struct tree_base
 {
   struct location loc;
   enum tree_code code;
-  /* indicate if node is redundant in terms of reachability from return
-     value.  */
-  unsigned is_redundant:1;
 };
 
 /* Base tree with operands pointer */
@@ -113,6 +110,17 @@ struct tree_type_node
   union type_properties properties;
   UT_hash_handle hh;
   tree list;
+};
+
+struct tree_stmt_node
+{
+  struct tree_type_base typed;
+  tree parent_if;
+  /* indicate if statement is redundant in terms of reachability from return
+     value.  */
+  unsigned is_redundant:1;
+  unsigned redundance_checked:1;
+  tree operands[];
 };
 
 struct tree_list_element
@@ -211,6 +219,7 @@ union tree_node
   struct tree_type_base typed;
   struct tree_type_base_op typed_op;
   struct tree_type_node type_node;
+  struct tree_stmt_node stmt_node;
   struct tree_function_node function_node;
   struct tree_identifier_node identifier_node;
   struct tree_list_node list_node;
@@ -284,7 +293,9 @@ get_tree_operand (tree node, int idx)
 
   if (TREE_CODE_OPERANDS (code) > 0)
     {
-      if (code == CIRCUMFLEX)
+      if (TREE_CODE_CLASS (code) == tcl_statement)
+	return node->stmt_node.operands[idx];
+      else if (code == CIRCUMFLEX)
 	return node->circumflex_op_node.operands[idx];
       else if (code == ITER_PAIR)
 	return node->iter_pair.operands[idx];
@@ -308,7 +319,9 @@ set_tree_operand (tree node, int idx, tree value)
 
   if (TREE_CODE_OPERANDS (code) > 0)
     {
-      if (code == CIRCUMFLEX)
+      if (TREE_CODE_CLASS (code) == tcl_statement)
+	node->stmt_node.operands[idx] = value;
+      else if (code == CIRCUMFLEX)
 	node->circumflex_op_node.operands[idx] = value;
       else if (code == ITER_PAIR)
 	node->iter_pair.operands[idx] = value;
@@ -344,7 +357,10 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_ID_DU_CHAIN(node) ((node)->identifier_node.du_chain)
 #define is_iter_cases(node) (TREE_CODE (TREE_OPERAND ((node), 1)) == LIST)
 
-#define TREE_IS_REDUNDANT(node) ((node)->base.is_redundant)
+#define TREE_STMT_IS_REDUNDANT(node) ((node)->stmt_node.is_redundant)
+#define TREE_STMT_REDUNDANCE_CHECKED(node) \
+			      ((node)->stmt_node.redundance_checked)
+#define TREE_STMT_PARENT_IF(node) ((node)->stmt_node.parent_if)
 
 #define TREE_ITER_PAIR_LOWER(node) ((node)->iter_pair.lower_index)
 

@@ -117,9 +117,9 @@ DEF_TREE_CODE (LOR_EXPR, "lor_expr", tcl_expression, 2, true)
 /* Array expressions.  */
 DEF_TREE_CODE (MATRIX_EXPR, "matrix_expr", tcl_expression, 1, true)
 
-/* Related to With Loop.  */
-DEF_TREE_CODE (PARALLEL_LOOP_EXPR, "parallel_loop_expr", 
-	       tcl_expression, 3, false)
+/* Related to parallel loop statement.  */
+DEF_TREE_CODE (PARALLEL_LOOP_STMT, "parallel_loop_stmt", 
+	       tcl_statement, 3, false)
 DEF_TREE_CODE (CASE_EXPR, "case_expr", tcl_expression, 2, false)
 DEF_TREE_CODE (OTHERWISE_EXPR, "otherwise_expr", tcl_expression, 0, false)
 
