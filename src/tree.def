@@ -46,9 +46,6 @@ DEF_TREE_CODE (PRINT_MARK, "print_mark", tcl_misc, 1, false)
    or list of arguments in the function call.  */
 DEF_TREE_CODE (LIST, "tree_list", tcl_misc, 0, false)
 
-/* Dummy statement inserted for techical reason.  */
-DEF_TREE_CODE (DUMMY_NODE, "dummy_node", tcl_misc, 0, false)
-
 /* Type nodes.  */
 DEF_TREE_CODE (B_TYPE, "boolean_type", tcl_type, 0, false)
 DEF_TREE_CODE (N_TYPE, "natural_type", tcl_type, 0, false)
@@ -140,3 +137,6 @@ DEF_TREE_CODE (CONVERT_EXPR, "convert_expr", tcl_expression, 2, true)
 DEF_TREE_CODE (RETURN_STMT, "return_stmt", tcl_statement, 1, false)
 DEF_TREE_CODE (DECLARE_STMT, "declare_stmt", tcl_statement, 2, true)
 DEF_TREE_CODE (ASSIGN_STMT, "assign_stmt", tcl_statement, 2, true)
+
+/* Dummy statement inserted for techical reason.  */
+DEF_TREE_CODE (DUMMY_NODE, "dummy_node", tcl_statement, 0, false)

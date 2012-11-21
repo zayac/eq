@@ -141,7 +141,8 @@ dataflow (void)
 				tle->entry);
 	    }
 	}
-      dataflow_schedule (TREE_FUNC_ENTRY (tl->entry));
+      TREE_FUNC_SCHEDULE (tl->entry) = 
+		    dataflow_schedule (TREE_FUNC_ENTRY (tl->entry));
     }
   printf ("note: finished data flow analysis  [ok]\n");
   return 0;
@@ -164,7 +165,37 @@ dataflow_get_use_list (tree node, struct tree_hash_node **hash)
       dataflow_get_use_list (TREE_OPERAND (node, 0), hash);
       return;
     }
+  
+  /* Resolve control flow dependencies.  */
+  if (TREE_CODE (node) == IF_STMT)
+    {
+      struct tree_list_element *el;
+      int i;
+      for (i = 1; i < 3; i++)
+	{
+	  tree op = TREE_OPERAND (node, i);
+	  if (op == NULL)
+	    break;
+	  DL_FOREACH (TREE_LIST (TREE_OPERAND (node, i)), el)
+	    {
+	      if (!TREE_STMT_IS_REDUNDANT (el->entry))
+		{
+		  struct tree_hash_node *hash_el;
+		  TREE_STMT_DEF_NUMBER (el->entry)--;
+		  if (TREE_STMT_DEF_NUMBER (el->entry) == 0)
+		    {
+			   hash_el = (struct tree_hash_node *)
+			    malloc (sizeof (struct tree_hash_node));
+			  hash_el->s = el->entry;
+			  HASH_ADD_PTR (*hash, s, hash_el);
+		    }
+		}
+	    }
+	}
+      return;
+    }
 
+  /* Resolve data flow dependencies.  */
   if (TREE_CODE (node) == IDENTIFIER && node != iter_var_node)
     {
       if (TREE_ID_DU_CHAIN (node) != NULL)
@@ -172,23 +203,26 @@ dataflow_get_use_list (tree node, struct tree_hash_node **hash)
 	  struct tree_list_element *el;
 	  DL_FOREACH (TREE_LIST (TREE_ID_DU_CHAIN (node)), el)
 	    {
-	      struct tree_hash_node *hash_el;
-	      /* Decrease a number of link nodes.  */
-	      TREE_STMT_DEF_NUMBER (TREE_ID_DEF (el->entry))--;
-	      /* When all previous nodes were proceeded, we add the statement
-		 into the table.  */
-	      if (TREE_STMT_DEF_NUMBER (TREE_ID_DEF (el->entry)) == 0)
+	      if (!TREE_STMT_IS_REDUNDANT (TREE_ID_DEF (el->entry)))
 		{
-		  hash_el = (struct tree_hash_node *)
-		    malloc (sizeof (struct tree_hash_node));
-		  hash_el->s = TREE_ID_DEF (el->entry);
-		  HASH_ADD_PTR (*hash, s, hash_el);
+		  struct tree_hash_node *hash_el;
+		  /* Decrease a number of link nodes.  */
+		  TREE_STMT_DEF_NUMBER (TREE_ID_DEF (el->entry))--;
+		  /* When all previous nodes were proceeded, we add the 
+		     statement into the table.  */
+		  if (TREE_STMT_DEF_NUMBER (TREE_ID_DEF (el->entry)) == 0)
+		    {
+		      hash_el = (struct tree_hash_node *)
+			malloc (sizeof (struct tree_hash_node));
+		      hash_el->s = TREE_ID_DEF (el->entry);
+		      HASH_ADD_PTR (*hash, s, hash_el);
+		    }
 		}
 	    }
 	}
     }
 
-  /* A recursive descent rouint.  */
+  /* A recursive descent rouinte.  */
   if (TREE_CODE (node) == LIST)
     DL_FOREACH (TREE_LIST (node), el)
       dataflow_get_use_list (el->entry, hash);
@@ -202,11 +236,11 @@ dataflow_get_use_list (tree node, struct tree_hash_node **hash)
 tree
 dataflow_schedule (tree entry_list)
 {
-  struct tree_list_element *el, *tel;
+  struct tree_list_element *el;
   tree return_list = make_tree_list ();
   struct tree_hash_node *hash = NULL;
   bool clean_entry_list = false;
-  /* `entry_list' is a queue for BFS algorithm.  */
+  /* `entry_list' is a FIFO queue for BFS algorithm.  */
   do
     {
       tree instr_list = make_tree_list ();
@@ -215,8 +249,7 @@ dataflow_schedule (tree entry_list)
 	{
 	  tree_list_append (instr_list, el->entry);
 	  dataflow_get_use_list (el->entry, &hash);
-	  printf ("%zd %d\n", TREE_LOCATION (el->entry).line,
-		  TREE_STMT_DEF_NUMBER (el->entry));
+	  printf ("%zd\n", TREE_LOCATION (el->entry).line);
 	}
       printf ("---\n");
       tree_list_append (return_list,  instr_list);
@@ -230,6 +263,7 @@ dataflow_schedule (tree entry_list)
 	  if (entry_list == NULL)
 	    entry_list = make_tree_list ();
 	  tree_list_append (entry_list, hel->s);
+	  free (hel);
 	}
     } while (entry_list != NULL);
   return return_list;  

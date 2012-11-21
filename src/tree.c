@@ -244,8 +244,18 @@ free_tree (tree node)
 	}
       else if (code == FUNCTION)
 	{
+	  struct tree_list_element *el;
 	  free_cfg (TREE_FUNC_CFG (node));
-	  free_list (TREE_FUNC_RETURN (node));
+	  if (TREE_FUNC_RETURN (node) != NULL)
+	    free_list (TREE_FUNC_RETURN (node));
+	  if (TREE_FUNC_ENTRY (node) != NULL)
+	    free_list (TREE_FUNC_ENTRY (node));
+	  if (TREE_FUNC_SCHEDULE (node) != NULL)
+	    {
+	      DL_FOREACH (TREE_LIST (TREE_FUNC_SCHEDULE (node)), el)
+		free_list (el->entry);
+	      free_list (TREE_FUNC_SCHEDULE (node));
+	    }
 	}
       else if (code == LIST)
 	{

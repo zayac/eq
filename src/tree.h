@@ -147,6 +147,7 @@ struct tree_function_node
   tree entry_stmts;
   /* A list of return statements.  */
   tree return_stmts;
+  tree schedule;
   tree operands[];
 };
 
@@ -381,6 +382,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_FUNC_CFG(node) ((node)->function_node.cfg)
 #define TREE_FUNC_ENTRY(node) ((node)->function_node.entry_stmts)
 #define TREE_FUNC_RETURN(node) ((node)->function_node.return_stmts)
+#define TREE_FUNC_SCHEDULE(node) ((node)->function_node.schedule)
 #define TREE_FUNC_NAME(node) ((node)->function_node.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->function_node.operands[1])
 #define TREE_FUNC_ARG_TYPES(node) ((node)->function_node.operands[2])

@@ -211,7 +211,6 @@ controlflow_pass_block (tree func, basic_block bb,
 	 to outer scope.  */
       join_bb->var_hash = ssa_copy_var_hash (bb->var_hash);
       link_blocks (cfg, join_tail1, join_bb);
-      ret = join_bb;
 #ifdef CFG_OUTPUT
       fprintf (stdout, "%u->%u; ", join_tail1->id, join_bb->id);
 #endif
@@ -233,10 +232,12 @@ controlflow_pass_block (tree func, basic_block bb,
 	  link_blocks (cfg, bb, join_bb);
 	}
       join_tail2 = NULL;
-      bb = join_bb;
     }
   /* Perform variable replacement.  */
   ssa_verify_vars (bb, head->entry, head->entry);
+  /* Count control flow dependency.  */
+  if (TREE_STMT_PARENT_IF (head->entry) != NULL)
+    TREE_STMT_DEF_NUMBER (head->entry)++;
   /* `if' statement is an indicator of a `branch node'.
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
@@ -269,8 +270,8 @@ controlflow_pass_block (tree func, basic_block bb,
 	    {
 	      struct id_defined *el_nested_a, *el_nested_b;
 	      struct tree_hash_node *hel, *hel_tmp;
-	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested_a);
-	      HASH_FIND_STR (bb_b->var_hash, el_orig->id, el_nested_b);
+	      HASH_FIND_STR (jt1->var_hash, el_orig->id, el_nested_a);
+	      HASH_FIND_STR (jt2->var_hash, el_orig->id, el_nested_b);
 	      assert (el_nested_a != NULL, "must be defined");
 	      assert (el_nested_b != NULL, "must be defined");
 	      /* Update information about variable if variable was modified
@@ -279,10 +280,16 @@ controlflow_pass_block (tree func, basic_block bb,
 		HASH_FREE (hh, el_orig->phi_node, hel, hel_tmp);
 	      if (el_nested_a->was_modified)
 		HASH_ITER (hh, el_nested_a->phi_node, hel, hel_tmp)
-		  safe_hash_add (&el_orig->phi_node, hel->s);
+		  {
+		    safe_hash_add (&el_orig->phi_node, hel->s);
+		    el_orig->was_modified = true;
+		  }
 	      if (el_nested_b->was_modified)
 		HASH_ITER (hh, el_nested_b->phi_node, hel, hel_tmp)
-		  safe_hash_add (&el_orig->phi_node, hel->s);
+		  {
+		    safe_hash_add (&el_orig->phi_node, hel->s);
+		    el_orig->was_modified = true;
+		  }
 	    }
 	}
       else
@@ -290,12 +297,15 @@ controlflow_pass_block (tree func, basic_block bb,
 	  HASH_ITER (hh, bb->var_hash, el_orig, tmp)
 	    {
 	      struct id_defined *el_nested;
-	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
+	      HASH_FIND_STR (jt1->var_hash, el_orig->id, el_nested);
 	      if (el_nested != NULL && el_nested->was_modified)
 		{
 		  struct tree_hash_node *hel, *hel_tmp;
 		  HASH_ITER (hh, el_nested->phi_node, hel, hel_tmp)
-		    safe_hash_add (&el_orig->phi_node, hel->s);
+		    {
+		      safe_hash_add (&el_orig->phi_node, hel->s);
+		      el_orig->was_modified = true;
+		    }
 		}
 	    }
 	}
