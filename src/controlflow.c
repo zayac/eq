@@ -84,7 +84,7 @@ free_var_hash (struct id_defined *head)
   struct id_defined *el, *tmp;
   HASH_ITER (hh, head, el, tmp)
     {
-      struct phi_node *hel, *tmp;
+      struct tree_hash_node *hel, *tmp;
       if (el->phi_node)
 	HASH_FREE (hh, el->phi_node, hel, tmp);
       HASH_DEL (head, el);
@@ -163,7 +163,7 @@ controlflow_function (tree func)
 #endif
   bb = make_bb (TREE_FUNC_CFG (func), TREE_LIST (TREE_OPERAND (func, 4)));
   CFG_ENTRY_BLOCK (TREE_FUNC_CFG (func)) = bb;
-  controlflow_pass_block (TREE_FUNC_CFG (func), bb, 
+  controlflow_pass_block (func, bb, 
 			  TREE_LIST (TREE_OPERAND (func, 4)));
   CFG_EXIT_BLOCK (TREE_FUNC_CFG (func)) = bb->prev;
 #ifdef CFG_OUTPUT
@@ -175,24 +175,25 @@ controlflow_function (tree func)
 /* Add a variable string to the set explicitly checking 
    the uniqueness.  */
 inline void
-safe_hash_add (struct phi_node **head, tree s)
+safe_hash_add (struct tree_hash_node **head, tree s)
 {
-  struct phi_node *el;
+  struct tree_hash_node *el;
   HASH_FIND_PTR (*head, &s, el);
   if (el != NULL)
     HASH_DEL (*head, el);
   else
-    el = (struct phi_node *) malloc (sizeof (struct phi_node));
-  memset (el, 0, sizeof (struct phi_node));
+    el = (struct tree_hash_node *) malloc (sizeof (struct tree_hash_node));
+  memset (el, 0, sizeof (struct tree_hash_node));
   el->s = s;
   HASH_ADD_PTR (*head, s, el);
 }
 
 /* A recursive pass extracting new blocks.  */
 basic_block
-controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
+controlflow_pass_block (tree func, basic_block bb,
 			struct tree_list_element *head)
 {
+  struct control_flow_graph *cfg = TREE_FUNC_CFG (func);
   /* If at least one of these blocks is not NULL, then we need to create a new
      `join' block.
      If `join_tail2' is NULL, then { bb, join_tail1 } => new_block,
@@ -235,7 +236,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       bb = join_bb;
     }
   /* Perform variable replacement.  */
-  ssa_verify_vars (bb, head->entry);
+  ssa_verify_vars (bb, head->entry, head->entry);
   /* `if' statement is an indicator of a `branch node'.
      Two new blocks need to be created.  */
   if (TREE_CODE (head->entry) == IF_STMT)
@@ -250,7 +251,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
       fprintf (stdout, "%u->%u; ", bb->id, bb_a->id);
 #endif
       link_blocks (cfg, bb, bb_a);
-      jt1 = controlflow_pass_block (cfg, bb_a, 
+      jt1 = controlflow_pass_block (func, bb_a, 
 			      TREE_LIST (TREE_OPERAND (head->entry, 1)));
       if (TREE_OPERAND (head->entry, 2) != NULL)
 	{
@@ -260,14 +261,14 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 #ifdef CFG_OUTPUT
 	  fprintf (stdout, "%u->%u; ", bb->id, bb_b->id);
 #endif
-	  jt2 = controlflow_pass_block (cfg, bb_b, 
+	  jt2 = controlflow_pass_block (func, bb_b, 
 				  TREE_LIST (TREE_OPERAND (head->entry, 2)));
 	  /* Merge information about variables defined in outer 
 	     and inner blocks.  */
 	  HASH_ITER (hh, bb->var_hash, el_orig, tmp)
 	    {
 	      struct id_defined *el_nested_a, *el_nested_b;
-	      struct phi_node *hel, *hel_tmp;
+	      struct tree_hash_node *hel, *hel_tmp;
 	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested_a);
 	      HASH_FIND_STR (bb_b->var_hash, el_orig->id, el_nested_b);
 	      assert (el_nested_a != NULL, "must be defined");
@@ -292,7 +293,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
 	      HASH_FIND_STR (bb_a->var_hash, el_orig->id, el_nested);
 	      if (el_nested != NULL && el_nested->was_modified)
 		{
-		  struct phi_node *hel, *hel_tmp;
+		  struct tree_hash_node *hel, *hel_tmp;
 		  HASH_ITER (hh, el_nested->phi_node, hel, hel_tmp)
 		    safe_hash_add (&el_orig->phi_node, hel->s);
 		}
@@ -304,7 +305,7 @@ controlflow_pass_block (struct control_flow_graph *cfg, basic_block bb,
     }
 
   if (head->next != NULL)
-    ret = controlflow_pass_block (cfg, bb, head->next);
+    ret = controlflow_pass_block (func, bb, head->next);
   else
     bb->tail = head;
   return ret;

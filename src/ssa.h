@@ -32,7 +32,7 @@ do \
   head = NULL; \
 } while (0)
 
-struct phi_node
+struct tree_hash_node
 {
   tree s;
   UT_hash_handle hh;
@@ -45,14 +45,14 @@ struct id_defined
   const char *id;	    /* An original name of the redefined variable.  
 			       Used as a key in a hash table.  */
   bool was_modified;
-  struct phi_node *phi_node;/* Information about definitions.  */
+  struct tree_hash_node *phi_node;/* Information about definitions.  */
   UT_hash_handle hh;
 };
 
 struct id_defined* ssa_copy_var_hash (struct id_defined*);
 void ssa_declare_new_var (basic_block, tree);
 void ssa_reassign_var (basic_block, tree);
-void ssa_verify_vars (basic_block, tree);
+void ssa_verify_vars (basic_block, tree, tree);
 void ssa_redefine_vars (basic_block, tree, tree);
 
 #endif /* __SSA_H__ */

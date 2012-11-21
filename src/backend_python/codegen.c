@@ -630,7 +630,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
   int error = 0;
   struct tree_list_element *el, *tmp;
   indent (f, level);
-#if 0
+#if 1
   if (TREE_STMT_IS_REDUNDANT (stmt))
     fprintf (f, "<R>");
 #endif
@@ -1021,7 +1021,7 @@ codegen_expression (FILE* f, tree expr)
       	if (codegen_options.is_var_in_arg && expr != iter_var_node)
 	  fprintf (f, "']");
 
-#if 0
+#if 1
 	if (TREE_ID_UD_CHAIN (expr) != NULL)
 	  {
 	    struct tree_list_element *el;

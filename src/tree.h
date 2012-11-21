@@ -115,11 +115,15 @@ struct tree_type_node
 struct tree_stmt_node
 {
   struct tree_type_base typed;
+  /* A reference to the closest `if' parent statement.  */
   tree parent_if;
-  /* indicate if statement is redundant in terms of reachability from return
+  /* Indicate if statement is redundant in terms of reachability from return
      value.  */
   unsigned is_redundant:1;
+  /* Set this field to true, if we already performed a redundancy check with
+     this node.  */
   unsigned redundance_checked:1;
+  unsigned def_number;
   tree operands[];
 };
 
@@ -139,6 +143,9 @@ struct tree_function_node
 {
   struct tree_type_base typed;
   struct control_flow_graph *cfg;
+  /* A list of statements from which function can start execution.  */
+  tree entry_stmts;
+  /* A list of return statements.  */
   tree return_stmts;
   tree operands[];
 };
@@ -196,12 +203,12 @@ struct tree_iter_pair
 };
 
 /* Structure declaration, which is defined in ssa.c.  */
-struct phi_node_tree;
+struct tree_hash_node_tree;
 
 struct tree_phi_node
 {
   struct tree_type_base typed;
-  struct phi_node_tree *values;
+  struct tree_hash_node_tree *values;
 };
 
 struct tree_rec_expr_node
@@ -361,6 +368,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_STMT_REDUNDANCE_CHECKED(node) \
 			      ((node)->stmt_node.redundance_checked)
 #define TREE_STMT_PARENT_IF(node) ((node)->stmt_node.parent_if)
+#define TREE_STMT_DEF_NUMBER(node) ((node)->stmt_node.def_number)
 
 #define TREE_ITER_PAIR_LOWER(node) ((node)->iter_pair.lower_index)
 
@@ -371,6 +379,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_FUNC(node) ((node)->function_node)
 #define TREE_FUNC_BB_VARS(node) ((node)->function_node.bb_vars)
 #define TREE_FUNC_CFG(node) ((node)->function_node.cfg)
+#define TREE_FUNC_ENTRY(node) ((node)->function_node.entry_stmts)
 #define TREE_FUNC_RETURN(node) ((node)->function_node.return_stmts)
 #define TREE_FUNC_NAME(node) ((node)->function_node.operands[0])
 #define TREE_FUNC_ARGS(node) ((node)->function_node.operands[1])

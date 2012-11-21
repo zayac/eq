@@ -27,7 +27,7 @@ ssa_copy_var_hash (struct id_defined *hash)
   struct id_defined *new_hash = NULL, *el, *tmp;
   HASH_ITER (hh, hash, el, tmp)
     {
-      struct phi_node *hel, *htmp;
+      struct tree_hash_node *hel, *htmp;
       struct id_defined* el_copy = (struct id_defined*)
 				   malloc (sizeof (struct id_defined));
       el_copy->id = el->id;
@@ -35,8 +35,8 @@ ssa_copy_var_hash (struct id_defined *hash)
       el_copy->phi_node = NULL;
       HASH_ITER (hh, el->phi_node, hel, htmp)
 	{
-	  struct phi_node *phi_node = (struct phi_node *)
-				      malloc (sizeof (struct phi_node));
+	  struct tree_hash_node *phi_node = (struct tree_hash_node *)
+				      malloc (sizeof (struct tree_hash_node));
 	  phi_node->s = hel->s;
 	  HASH_ADD_PTR (el_copy->phi_node, s, phi_node);
 	}
@@ -53,7 +53,7 @@ ssa_declare_new_var (basic_block bb, tree var)
 {
   char* s;
   struct id_defined *id_el = NULL;
-  struct phi_node *phi_node = (struct phi_node *)
+  struct tree_hash_node *phi_node = (struct tree_hash_node *)
 			      malloc (sizeof (struct id_defined));
 
   assert (TREE_CODE (var) == IDENTIFIER, "identifier expected");
@@ -74,10 +74,10 @@ ssa_reassign_var (basic_block bb, tree var)
   struct id_defined *id_el = NULL;
   char* source_name = TREE_STRING_CST (TREE_ID_NAME (var));
   HASH_FIND_STR (bb->var_hash, source_name, id_el);
-  struct phi_node *el, *phi_tmp;
+  struct tree_hash_node *el, *phi_tmp;
   if (id_el != NULL)
     {
-      struct phi_node *phi_node = (struct phi_node *)
+      struct tree_hash_node *phi_node = (struct tree_hash_node *)
 				  malloc (sizeof (struct id_defined));
       id_el->was_modified = true;
       HASH_FREE (hh, id_el->phi_node, el, phi_tmp);
@@ -132,7 +132,7 @@ ssa_redefine_vars (basic_block bb, tree node, tree assign_node)
 }
 
 /* Callback to sort pointers inside utarray.  */
-static int pointer_sort(struct phi_node *a, struct phi_node *b)
+static int pointer_sort(struct tree_hash_node *a, struct tree_hash_node *b)
 {
   if (a->s < b->s)
     return -1;
@@ -143,7 +143,7 @@ static int pointer_sort(struct phi_node *a, struct phi_node *b)
 }
 
 void
-ssa_verify_vars (basic_block bb, tree node)
+ssa_verify_vars (basic_block bb, tree node, tree stmt)
 {
   enum tree_code code = TREE_CODE (node);
   struct tree_list_element *el;
@@ -160,22 +160,24 @@ ssa_verify_vars (basic_block bb, tree node)
 		  TREE_STRING_CST (TREE_ID_NAME (el->entry)), id_el);
 	      if (id_el != NULL)
 		{
-		  struct phi_node *hel, *tmp;
+		  struct tree_hash_node *hel, *tmp;
 		  HASH_SORT (id_el->phi_node, pointer_sort);
 		  /* Create use-def and def-use chain.  */
 		  TREE_ID_UD_CHAIN (el->entry) = make_tree_list ();
 		  HASH_ITER (hh, id_el->phi_node, hel, tmp)
 		    {
 		      tree_list_append (TREE_ID_UD_CHAIN (el->entry), hel->s);
+		      TREE_STMT_DEF_NUMBER (stmt)++;
 		      if (TREE_ID_DU_CHAIN (hel->s) == NULL)
 			TREE_ID_DU_CHAIN (hel->s) = make_tree_list ();
 		      tree_list_append (TREE_ID_DU_CHAIN (hel->s), 
 					el->entry);
 		    }
 		}
+	      TREE_ID_DEF (el->entry) = stmt;
 	    }
 	  else
-	    ssa_verify_vars (bb, el->entry);
+	    ssa_verify_vars (bb, el->entry, stmt);
 	  if (TREE_CODE (el->entry) == IF_STMT)
 	    break;
 	}
@@ -189,7 +191,7 @@ ssa_verify_vars (basic_block bb, tree node)
 	      TREE_STRING_CST (TREE_ID_NAME (node)), id_el);
 	  if (id_el != NULL)
 	    {
-	      struct phi_node *hel, *tmp;
+	      struct tree_hash_node *hel, *tmp;
 	      HASH_SORT (id_el->phi_node, pointer_sort);
 	      TREE_ID_UD_CHAIN (TREE_OPERAND (node, 1)) = make_tree_list ();
 	      /* Create use-def and def-use chain.  */
@@ -197,16 +199,27 @@ ssa_verify_vars (basic_block bb, tree node)
 		{
 		  tree_list_append (TREE_ID_UD_CHAIN (TREE_OPERAND (node, 1)),
 				    hel->s);
+		  TREE_STMT_DEF_NUMBER (stmt)++;
 		  if (TREE_ID_DU_CHAIN (hel->s) == NULL)
 		    TREE_ID_DU_CHAIN (hel->s) = make_tree_list ();
 		  tree_list_append (TREE_ID_DU_CHAIN (hel->s), 
 				    TREE_OPERAND (node, 1));
 		}
 	    }
+	  TREE_ID_DEF (TREE_OPERAND (node, 1)) = stmt;
 	}
       else
-	ssa_verify_vars (bb, TREE_OPERAND (node, 1));
+	ssa_verify_vars (bb, TREE_OPERAND (node, 1), stmt);
       ssa_redefine_vars (bb, TREE_OPERAND (node, 0), node);
+#if 0
+      if (ssa_is_entry_point (TREE_OPERAND (node, 1), TREE_OPERAND (func, 1)))
+	{
+	  /* Append statement into function's entry points list.  */
+	  if (TREE_FUNC_ENTRY (func) == NULL)
+	    TREE_FUNC_ENTRY (func) = make_tree_list ();
+	  tree_list_append (TREE_FUNC_ENTRY (func), node);
+	}
+#endif
     }
   else
     {
@@ -222,7 +235,7 @@ ssa_verify_vars (basic_block bb, tree node)
 		  TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (node, i))), id_el);
 	      if (id_el != NULL)
 		{
-		  struct phi_node *hel, *tmp;
+		  struct tree_hash_node *hel, *tmp;
 		  HASH_SORT (id_el->phi_node, pointer_sort);
 		  /* Create use-def and def-use chain.  */
 		  TREE_ID_UD_CHAIN (TREE_OPERAND (node, i)) = make_tree_list ();
@@ -231,15 +244,17 @@ ssa_verify_vars (basic_block bb, tree node)
 		      tree_list_append (TREE_ID_UD_CHAIN (
 					    TREE_OPERAND (node, i)),
 					hel->s);
+		      TREE_STMT_DEF_NUMBER (stmt)++;
 		      if (TREE_ID_DU_CHAIN (hel->s) == NULL)
 			TREE_ID_DU_CHAIN (hel->s) = make_tree_list ();
 		      tree_list_append (TREE_ID_DU_CHAIN (hel->s), 
 					TREE_OPERAND (node, i));
 		    }
 		}
+	      TREE_ID_DEF (TREE_OPERAND (node, i)) = stmt;
 	    }
 	  else
-	    ssa_verify_vars (bb, TREE_OPERAND (node, i));
+	    ssa_verify_vars (bb, TREE_OPERAND (node, i), stmt);
 	}
     }
 }

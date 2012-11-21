@@ -2882,19 +2882,28 @@ tree
 handle_assign (struct parser * parser, tree prefix_id)
 {
   tree id = NULL, expr = NULL;
-
+  tree ret;
+  struct location loc;
   if (prefix_id == NULL)
+    {
       id = handle_list (parser, handle_idx, tv_comma);
+      loc = TREE_LOCATION (TREE_LIST (id)->entry);
+    }
   else
-    id = prefix_id;
+    {
+      id = prefix_id;
+      loc = TREE_LOCATION (TREE_LIST (id)->entry);
+    }
 
   if (!parser_forward_tval (parser, tv_gets))
     goto error;
 
   expr = handle_list (parser, handle_expr, tv_comma);
 
-  return make_binary_op (ASSIGN_STMT, id, expr);
+  ret = make_binary_op (ASSIGN_STMT, id, expr);
+  TREE_LOCATION (ret) = loc;
 
+  return ret;
 error:
   free_tree (id);
   free_tree (expr);
