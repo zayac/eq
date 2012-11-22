@@ -151,6 +151,7 @@ ssa_verify_vars (basic_block bb, tree node, tree stmt)
 {
   enum tree_code code;
   struct tree_list_element *el;
+  static bool link_deps = true;
   int i;
 
   if (node == NULL)
@@ -158,7 +159,16 @@ ssa_verify_vars (basic_block bb, tree node, tree stmt)
 
   code = TREE_CODE (node);
 
-  if (TREE_CODE (node) == IDENTIFIER)
+  if (code == LOWER)
+    {
+      bool tmp_link = link_deps;
+      link_deps = true;
+      ssa_verify_vars (bb, TREE_OPERAND (node, 0), stmt);
+      link_deps = tmp_link;
+      return;
+    }
+
+  if (code == IDENTIFIER && link_deps)
     {
       struct id_defined *id_el = NULL;
       HASH_FIND_STR (bb->var_hash,
@@ -198,6 +208,9 @@ ssa_verify_vars (basic_block bb, tree node, tree stmt)
   else if (code == ASSIGN_STMT)
     {
       ssa_verify_vars (bb, TREE_OPERAND (node, 1), stmt);
+      link_deps = false;
+      ssa_verify_vars (bb, TREE_OPERAND (node, 0), stmt);
+      link_deps = true;
       ssa_redefine_vars (bb, TREE_OPERAND (node, 0), stmt);
       return;
     }
