@@ -1158,6 +1158,7 @@ handle_indexes (struct parser * parser, tree prefix)
 	  identifier = TREE_OPERAND (up, 0);
 	  TREE_OPERAND_SET (up, 0, low);
 	  TREE_OPERAND_SET (low, 0, identifier);
+	  TREE_LOCATION (low) = TREE_LOCATION (identifier);
 	  return up;
 	}
       else
@@ -1173,7 +1174,10 @@ handle_indexes (struct parser * parser, tree prefix)
 	  parser_unget (parser);
 	  low = handle_lower (parser);
 	  if (low != NULL && low != error_mark_node)
-	    TREE_OPERAND_SET (low, 0, prefix);
+	    {
+	      TREE_OPERAND_SET (low, 0, prefix);
+	      TREE_LOCATION (low) = TREE_LOCATION (prefix);
+	    }
 	  else
 	    return error_mark_node;
 	}

@@ -29,9 +29,9 @@ void
 dataflow_mark_redundant_code (tree stmt)
 {
   struct tree_list_element *el;
-  int i;
-  if (stmt == NULL)
-    return;
+  
+  assert (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_statement,
+	  "this function is compatible with statements only");
 
   if (TREE_CODE_CLASS (TREE_CODE (stmt)) == tcl_statement)
     {
@@ -45,75 +45,14 @@ dataflow_mark_redundant_code (tree stmt)
       if (TREE_STMT_PARENT_IF (stmt) != NULL)
 	dataflow_mark_redundant_code (TREE_STMT_PARENT_IF (stmt));
     }
-  /* In case `if' statement we want to check just predicate, not inner blocks.
-     Basically, this is because we checked them already if we reached this
-     statement.  */
-  if (TREE_CODE (stmt) == IF_STMT)
-    {
-      dataflow_mark_redundant_code (TREE_OPERAND (stmt, 0));
-      return;
-    }
-  else if (TREE_CODE (stmt) == LIST)
-    {
-      DL_FOREACH (TREE_LIST (stmt), el)
-	dataflow_mark_redundant_code (el->entry);
-    }
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (stmt)); i++)
-    {
-      dataflow_mark_redundant_code (TREE_OPERAND (stmt, i));
-    }
+  if (TREE_CODE (stmt) == LIST)
+    DL_FOREACH (TREE_LIST (stmt), el)
+      dataflow_mark_redundant_code (el->entry);
   /* We get definition nodes from use-def chains check statements related to
      them.  */
-  if (TREE_CODE (stmt) == IDENTIFIER && stmt != iter_var_node
-   && TREE_ID_UD_CHAIN (stmt) != NULL)
-    {
-      DL_FOREACH (TREE_LIST (TREE_ID_UD_CHAIN (stmt)), el)
-	dataflow_mark_redundant_code (TREE_ID_DEF (el->entry));
-    }
-}
-
-/* We run this function to check either statement has `def' dependencies. If
-   not, it can be used as an function entry statement.
-   The first argument is a statement to check, and the second one is function
-   argument list.  */
-bool
-dataflow_is_entry_point (tree node, tree args)
-{
-  struct tree_list_element *el;
-  int i;
-  if (node == NULL)
-    return true;
-
-  /* A redundant statement can be considered as entry point.  */
-  if (TREE_CODE_CLASS (TREE_CODE (node)) == tcl_statement
-   && TREE_STMT_IS_REDUNDANT (node))
-    return false;
-
-  if (TREE_CODE (node) == IDENTIFIER && node != iter_var_node)
-    {
-      /* This indicated that node does not have `def' dependencies.  */
-      if (TREE_ID_UD_CHAIN (node) == NULL)
-	return true;
-      else
-	return false;
-    }
- 
-  /* In case if statement we need to validate conditional expression only.  */
-  if (TREE_CODE (node) == IF_STMT)
-    return dataflow_is_entry_point (TREE_OPERAND (node, 0), args);
-
-  /* A recursive descent routing.  */
-  if (TREE_CODE (node) == LIST)
-    DL_FOREACH (TREE_LIST (node), el)
-      {
-	if (!dataflow_is_entry_point (el->entry, args))
-	  return false;
-      }
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (node)); i++)
-    if (!dataflow_is_entry_point (TREE_OPERAND (node, i), args))
-      return false;
-
-  return true;
+  else if (TREE_STMT_DEFS (stmt) != NULL)
+    DL_FOREACH (TREE_LIST (TREE_STMT_DEFS (stmt)), el)
+      dataflow_mark_redundant_code (el->entry);
 }
 
 int
@@ -132,8 +71,8 @@ dataflow (void)
       DL_FOREACH (TREE_LIST (TREE_OPERAND (tl->entry, 4)), tle)
 	{
 	  /* Entry statements are combined into a separate list.  */
-	  if (dataflow_is_entry_point (tle->entry, 
-				       TREE_OPERAND (tl->entry, 1)))
+	  if (TREE_STMT_DEFS (tle->entry) == NULL
+	   && !TREE_STMT_IS_REDUNDANT (tle->entry))
 	    {
 	      if (TREE_FUNC_ENTRY (tl->entry) == NULL)
 		TREE_FUNC_ENTRY (tl->entry) = make_tree_list ();
@@ -152,20 +91,27 @@ dataflow (void)
    To satisfy all dependency links we add statement into table only when all
    previous statements were proceeded.  */
 void
-dataflow_get_use_list (tree node, struct tree_hash_node **hash)
+dataflow_get_use_list (tree node, tree queue)
 {
   struct tree_list_element *el;
-  int i;
 
-  if (node == NULL)
-    return;
+  assert (TREE_CODE_CLASS (TREE_CODE (node)) == tcl_statement,
+	  "this function is compatible with statements only");
 
-  if (TREE_CODE (node) == ASSIGN_STMT)
-    {
-      dataflow_get_use_list (TREE_OPERAND (node, 0), hash);
-      return;
-    }
-  
+  if (TREE_STMT_USES (node) != NULL)
+      DL_FOREACH (TREE_LIST (TREE_STMT_USES (node)), el)
+	{
+	  if (!TREE_STMT_IS_REDUNDANT (el->entry))
+	    {
+	      /* Decrease a number of link nodes.  */
+	      TREE_STMT_DEF_NUMBER (el->entry)--;
+	      /* When all previous nodes were proceeded, we add the 
+		 statement into the table.  */
+	      if (TREE_STMT_DEF_NUMBER (el->entry) == 0)
+		tree_list_append (queue, el->entry);
+	    }
+	}
+
   /* Resolve control flow dependencies.  */
   if (TREE_CODE (node) == IF_STMT)
     {
@@ -180,54 +126,19 @@ dataflow_get_use_list (tree node, struct tree_hash_node **hash)
 	    {
 	      if (!TREE_STMT_IS_REDUNDANT (el->entry))
 		{
-		  struct tree_hash_node *hash_el;
 		  TREE_STMT_DEF_NUMBER (el->entry)--;
 		  if (TREE_STMT_DEF_NUMBER (el->entry) == 0)
-		    {
-			   hash_el = (struct tree_hash_node *)
-			    malloc (sizeof (struct tree_hash_node));
-			  hash_el->s = el->entry;
-			  HASH_ADD_PTR (*hash, s, hash_el);
-		    }
+		    tree_list_append (queue, el->entry);
 		}
 	    }
 	}
       return;
     }
 
-  /* Resolve data flow dependencies.  */
-  if (TREE_CODE (node) == IDENTIFIER && node != iter_var_node)
-    {
-      if (TREE_ID_DU_CHAIN (node) != NULL)
-	{
-	  struct tree_list_element *el;
-	  DL_FOREACH (TREE_LIST (TREE_ID_DU_CHAIN (node)), el)
-	    {
-	      if (!TREE_STMT_IS_REDUNDANT (TREE_ID_DEF (el->entry)))
-		{
-		  struct tree_hash_node *hash_el;
-		  /* Decrease a number of link nodes.  */
-		  TREE_STMT_DEF_NUMBER (TREE_ID_DEF (el->entry))--;
-		  /* When all previous nodes were proceeded, we add the 
-		     statement into the table.  */
-		  if (TREE_STMT_DEF_NUMBER (TREE_ID_DEF (el->entry)) == 0)
-		    {
-		      hash_el = (struct tree_hash_node *)
-			malloc (sizeof (struct tree_hash_node));
-		      hash_el->s = TREE_ID_DEF (el->entry);
-		      HASH_ADD_PTR (*hash, s, hash_el);
-		    }
-		}
-	    }
-	}
-    }
-
   /* A recursive descent rouinte.  */
   if (TREE_CODE (node) == LIST)
     DL_FOREACH (TREE_LIST (node), el)
-      dataflow_get_use_list (el->entry, hash);
-  for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (node)); i++)
-    dataflow_get_use_list (TREE_OPERAND (node, i), hash);
+      dataflow_get_use_list (el->entry, queue);
 }
 
 /* Schedule statements returning *a list of statement lists* in the result.
@@ -238,17 +149,15 @@ dataflow_schedule (tree entry_list)
 {
   struct tree_list_element *el;
   tree return_list = make_tree_list ();
-  struct tree_hash_node *hash = NULL;
+  tree queue = make_tree_list ();
   bool clean_entry_list = false;
-  /* `entry_list' is a FIFO queue for BFS algorithm.  */
   do
     {
       tree instr_list = make_tree_list ();
-      struct tree_hash_node *hel, *tmp;
       DL_FOREACH (TREE_LIST (entry_list), el)
 	{
 	  tree_list_append (instr_list, el->entry);
-	  dataflow_get_use_list (el->entry, &hash);
+	  dataflow_get_use_list (el->entry, queue);
 	  printf ("%zd\n", TREE_LOCATION (el->entry).line);
 	}
       printf ("---\n");
@@ -257,14 +166,10 @@ dataflow_schedule (tree entry_list)
 	free_list (entry_list);
       entry_list = NULL;
       clean_entry_list = true;
-      HASH_ITER (hh, hash, hel, tmp)
-	{
-	  HASH_DEL (hash, hel);
-	  if (entry_list == NULL)
-	    entry_list = make_tree_list ();
-	  tree_list_append (entry_list, hel->s);
-	  free (hel);
-	}
-    } while (entry_list != NULL);
+      entry_list = queue;
+      queue = make_tree_list ();
+    } while (TREE_LIST (entry_list) != NULL);
+  free (entry_list);
+  free (queue);
   return return_list;  
 }

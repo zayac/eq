@@ -294,6 +294,10 @@ free_tree (tree node)
       break;
 
     case tcl_statement:
+      if (TREE_STMT_DEFS (node) != NULL)
+	free_list (TREE_STMT_DEFS (node));
+      if (TREE_STMT_USES (node) != NULL)
+	free_list (TREE_STMT_USES (node));
       break;
     default:
       unreachable (0);
