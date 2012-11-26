@@ -250,6 +250,8 @@ free_tree (tree node)
 	    free_list (TREE_FUNC_RETURN (node));
 	  if (TREE_FUNC_ENTRY (node) != NULL)
 	    free_list (TREE_FUNC_ENTRY (node));
+	  if (TREE_FUNC_PRINT (node) != NULL)
+	    free_list (TREE_FUNC_PRINT (node));
 	  if (TREE_FUNC_SCHEDULE (node) != NULL)
 	    {
 	      DL_FOREACH (TREE_LIST (TREE_FUNC_SCHEDULE (node)), el)
@@ -864,10 +866,10 @@ tree_compare (tree left, tree right)
       if (TYPE_IS_STREAM (left) != TYPE_IS_STREAM (right))
 	return false;
       if (TREE_CODE (left) == FUNCTION_TYPE)
-	return tree_compare (TREE_FUNC_ARG_TYPES (left),
-			     TREE_FUNC_ARG_TYPES (right))
-	    && tree_compare (TREE_FUNC_RET_TYPE (left),
-			     TREE_FUNC_RET_TYPE (right));
+	return tree_compare (TYPE_FUNCTION_ARGS (left),
+			     TYPE_FUNCTION_ARGS (right))
+	    && tree_compare (TYPE_FUNCTION_RET (left),
+			     TYPE_FUNCTION_RET (right));
       else
 	return tree_compare (TYPE_DIM (left), TYPE_DIM (right))
 	    && tree_compare (TYPE_SHAPE (left), TYPE_SHAPE (right));

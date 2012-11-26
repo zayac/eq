@@ -164,11 +164,11 @@ ssa_verify_vars (basic_block bb, tree node, tree stmt)
       bool tmp_link = link_deps;
       link_deps = true;
       ssa_verify_vars (bb, TREE_OPERAND (node, 0), stmt);
+      ssa_verify_vars (bb, TREE_OPERAND (node, 1), stmt);
       link_deps = tmp_link;
       return;
     }
-
-  if (code == IDENTIFIER && link_deps)
+  else if (code == IDENTIFIER && link_deps)
     {
       struct id_defined *id_el = NULL;
       HASH_FIND_STR (bb->var_hash,
@@ -200,11 +200,9 @@ ssa_verify_vars (basic_block bb, tree node, tree stmt)
       TREE_ID_DEF (node) = stmt;
       return;
     }
-
-  if (code == LIST)
+  else if (code == LIST)
     DL_FOREACH (TREE_LIST (node), el)
       ssa_verify_vars (bb, el->entry, stmt);
-  
   else if (code == ASSIGN_STMT)
     {
       ssa_verify_vars (bb, TREE_OPERAND (node, 1), stmt);
@@ -214,6 +212,17 @@ ssa_verify_vars (basic_block bb, tree node, tree stmt)
       ssa_redefine_vars (bb, TREE_OPERAND (node, 0), stmt);
       return;
     }
+  else if (code == PARALLEL_LOOP_STMT)
+    {
+      ssa_verify_vars (bb, TREE_OPERAND (node, 1), stmt);
+      ssa_verify_vars (bb, TREE_OPERAND (node, 2), stmt);
+      link_deps = false;
+      ssa_verify_vars (bb, TREE_OPERAND (node, 0), stmt);
+      link_deps = true;
+      ssa_redefine_vars (bb, TREE_OPERAND (node, 0), stmt);
+      return;
+    }
+
   for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
     {
       if (code == IF_STMT && i > 0)

@@ -65,8 +65,13 @@ dataflow (void)
 
 	 FIXME We need to remove from the AST and deallocate such statements in
 	 the future.*/
+      assert (TREE_FUNC_RETURN (tl->entry) != NULL,
+	      "there should be at least one return statement");
       DL_FOREACH (TREE_LIST (TREE_FUNC_RETURN (tl->entry)), tle)
 	dataflow_mark_redundant_code (tle->entry);
+      if (TREE_FUNC_PRINT (tl->entry) != NULL)
+	DL_FOREACH (TREE_LIST (TREE_FUNC_PRINT (tl->entry)), tle)
+	  dataflow_mark_redundant_code (tle->entry);
 
       DL_FOREACH (TREE_LIST (TREE_OPERAND (tl->entry, 4)), tle)
 	{

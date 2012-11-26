@@ -232,6 +232,7 @@ controlflow_pass_block (tree func, basic_block bb,
 	  link_blocks (cfg, bb, join_bb);
 	}
       join_tail2 = NULL;
+      ret = join_bb;
     }
   /* Perform variable replacement.  */
   ssa_verify_vars (bb, head->entry, head->entry);

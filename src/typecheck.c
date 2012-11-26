@@ -36,12 +36,14 @@ typecheck_options
   bool iter_index;
   /* indicates are we allowed to use `\iter' variable here.  */
   bool is_iter_id_allowed;
-  /* a pointer to a `return' statement inside a function.  */
+  /* pointers to `return' statements inside a function.  */
   tree return_stmts;
+  /* pointers to `print' statements inside a function.  */
+  tree print_stmts;
   /* a pointer to the `if' statement which is an immediate parent of current 
      block.  */
   tree parent_if_stmt;
-} typecheck_options = {false, false, NULL, NULL};
+} typecheck_options = {false, false, NULL, NULL, NULL};
 
 /* Add a prefix to the string which represents variable name.
    Returns a new string.
@@ -99,7 +101,9 @@ typecheck (void)
 	    TREE_STRING_CST (TREE_ID_NAME (TREE_OPERAND (tl->entry, 0))));
 	}
       TREE_FUNC_RETURN (tl->entry) = typecheck_options.return_stmts;
+      TREE_FUNC_PRINT (tl->entry) = typecheck_options.print_stmts;
       typecheck_options.return_stmts = NULL;
+      typecheck_options.print_stmts = NULL;
     }
 
   /* sort recurrent expressions by initial values.  */
@@ -556,7 +560,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 #ifdef DISABLE_FCF
       	    if (TREE_CODE (TREE_TYPE (rhs)) == FUNCTION_TYPE)
 	      {
-		error_loc (TREE_LOCATION (rhs),
+	error_loc (TREE_LOCATION (rhs),
 		  "Functions are second-class objects. "
 		  "You aren't allowed to assign function to a variable");
 		return 1;
@@ -940,6 +944,10 @@ finalize_parallel_loop:
 	    if (tmp_ret > 0)
 	      ret += tmp_ret;
 	  }
+	if (typecheck_options.print_stmts == NULL)
+	  typecheck_options.print_stmts = make_tree_list ();
+	tree_list_append (typecheck_options.print_stmts, stmt);
+
       }
       break;
     default:
@@ -1074,8 +1082,8 @@ typecheck_function (tree func_ref)
   if (TREE_OPERAND (func_ref, 4) != NULL)
     {
       ext_vars = tree_copy (TREE_OPERAND (func_ref, 1));
-      ret =typecheck_stmt_list (TREE_OPERAND (func_ref, 4), ext_vars,
-							    vars, func_ref);
+      ret = typecheck_stmt_list (TREE_OPERAND (func_ref, 4), ext_vars,
+							     vars, func_ref);
     }
 free_local:
   /* Free list with local variables.  */
