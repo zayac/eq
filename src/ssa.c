@@ -96,12 +96,16 @@ ssa_append_var_definition (basic_block bb, tree var)
   char* source_name = TREE_STRING_CST (TREE_ID_NAME (var));
   struct tree_hash_node *phi_node;
   HASH_FIND_STR (bb->var_hash, source_name, id_el);
-  assert (id_el != NULL,
-	  "We assume that addition is valid only for predefined variables");
-  phi_node = (struct tree_hash_node *) malloc (sizeof (struct id_defined));
-  id_el->was_modified = true;
-  phi_node->s = var;
-  HASH_ADD_PTR (id_el->phi_node, s, phi_node);
+  /* id_el == NULL is the case when array is given as a function argument.  */
+  if (id_el == NULL)
+    ssa_reassign_var (bb, var);
+  else
+    {
+      phi_node = (struct tree_hash_node *) malloc (sizeof (struct id_defined));
+      id_el->was_modified = true;
+      phi_node->s = var;
+      HASH_ADD_PTR (id_el->phi_node, s, phi_node);
+    }
 }
 
 /* Search subtree for a identifier node. If found, substitute this with a

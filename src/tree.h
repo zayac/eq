@@ -124,6 +124,7 @@ struct tree_stmt_node
      this node.  */
   unsigned redundance_checked:1;
   unsigned def_number;
+  unsigned is_recurrence_def;
   /* Statements which the current statement is dependent on.  */
   tree defs;
   /* Statements which are dependent on the current statement.  */
@@ -376,6 +377,7 @@ set_tree_operand (tree node, int idx, tree value)
 			      ((node)->stmt_node.redundance_checked)
 #define TREE_STMT_PARENT_IF(node) ((node)->stmt_node.parent_if)
 #define TREE_STMT_DEF_NUMBER(node) ((node)->stmt_node.def_number)
+#define TREE_STMT_IS_RECURRENCE_DEF(node) ((node)->stmt_node.is_recurrence_def)
 #define TREE_STMT_DEFS(node) ((node)->stmt_node.defs)
 #define TREE_STMT_USES(node) ((node)->stmt_node.uses)
 

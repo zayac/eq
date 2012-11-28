@@ -28,7 +28,7 @@ option (CFG_OUTPUT "output control flow graph" ON)
 option (RELASE "build the compiler with highest optimisations" OFF)
 
 # A list of available backends
-set (BACKENDS python haskell)
+set (BACKENDS python sac)
 
 # Select one of backends
 if (NOT BACKEND_LANG)
@@ -187,11 +187,14 @@ foreach (test ${error_tests})
   error_test (${test} ${opt})
 endforeach ()
 
-# include files for error-testing
-file (GLOB_RECURSE error_tests "tests/codegen_tests_python/fail_tests/*.tex")
-foreach (test ${error_tests})
-  error_test (${test} "")
-endforeach ()
+
+if ("${BACKEND_LANG}" STREQUAL "python")
+  # include files for error-testing
+  file (GLOB_RECURSE error_tests "tests/codegen_tests_python/fail_tests/*.tex")
+  foreach (test ${error_tests})
+    error_test (${test} "")
+  endforeach ()
+endif()
 
 # include files for flow graph testing
 file (GLOB cfg_tests "tests/cfg_tests/*.tex")

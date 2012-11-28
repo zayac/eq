@@ -228,6 +228,10 @@ decimals  = decimal_digit { decimal_digit }
 exponent  = ( "e" | "E" ) [ "+" | "-" ] decimals
 @end lisp
 
+@subsection String literals
+@fixme{At the moment string literals are supported by lexer only. Need to
+construct semantics for working with them.}
+
 @node Compiler usage
 @chapter Compiling with @eq{}
 

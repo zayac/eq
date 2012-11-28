@@ -17,7 +17,7 @@ In order to build the compiler do the following:
 
 CMake cache variables can be defined:
   -DBUILD_LEXER=[ON|<OFF>]	      = Select either to build the lexer only.
-  -DBACKEND_LANG=[<python>]	      = Select compiler's backend.
+  -DBACKEND_LANG=[<python>|sac]	      = Select compiler's backend.
   -DFIRST_CLASS_FUNCTIONS=[<ON>|OFF]  = Enable or disable functions as
 					a first-class objects.
   -DCFG_OUTPUT=[<ON>|OFF]	      = Enable a flow graph output in

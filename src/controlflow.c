@@ -188,6 +188,41 @@ safe_hash_add (struct tree_hash_node **head, tree s)
   HASH_ADD_PTR (*head, s, el);
 }
 
+bool is_stmt_defines_recurrence (tree node)
+{
+  enum tree_code code;
+  int i;
+  
+  if (node == NULL)
+    return false;
+
+  code = TREE_CODE (node);
+
+  if (code == ASSIGN_STMT || code == PARALLEL_LOOP_STMT)
+    return is_stmt_defines_recurrence (TREE_OPERAND (node, 0));
+  else if (code == CIRCUMFLEX)
+    return true;
+
+  if (TREE_CODE_CLASS (code) != tcl_statement)
+    {
+      if (code == LIST)
+	{
+	  struct tree_list_element *el;
+	  DL_FOREACH (TREE_LIST (node), el)
+	    {
+	      if (is_stmt_defines_recurrence (el->entry))
+		return true;
+	    }
+	}
+      for (i = 0; i < TREE_CODE_OPERANDS (code); i++)
+	{
+	  if (is_stmt_defines_recurrence (TREE_OPERAND (node, i)))
+	    return true;
+	}
+    }
+  return false;
+}
+
 /* A recursive pass extracting new blocks.  */
 basic_block
 controlflow_pass_block (tree func, basic_block bb,
@@ -234,8 +269,12 @@ controlflow_pass_block (tree func, basic_block bb,
       join_tail2 = NULL;
       ret = join_bb;
     }
+
+  TREE_STMT_IS_RECURRENCE_DEF (head->entry) = 
+	      is_stmt_defines_recurrence (head->entry);
   /* Perform variable replacement.  */
-  ssa_verify_vars (bb, head->entry, head->entry);
+  if (!TREE_STMT_IS_RECURRENCE_DEF (head->entry))
+    ssa_verify_vars (bb, head->entry, head->entry);
   /* Count control flow dependency.  */
   if (TREE_STMT_PARENT_IF (head->entry) != NULL)
     TREE_STMT_DEF_NUMBER (head->entry)++;
