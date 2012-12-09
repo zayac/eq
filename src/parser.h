@@ -18,15 +18,15 @@
 
 #include "eq.h"
 
-struct parser
+struct eq_parser
 {
-  struct lexer *lex;
+  struct eq_lexer *lex;
 
   /* Buffer and lengths associated with buffer.
      Buffer holds up-to BUF_SIZE tokens, which means
      that it is possible to look BUF_SIZE tokens
      forward.  */
-  struct token **token_buffer;
+  struct eq_token **token_buffer;
   size_t buf_size;
   size_t buf_start, buf_end, unget_idx;
   bool buf_empty;
@@ -47,24 +47,24 @@ struct parser
 __BEGIN_DECLS
 #define TOKEN_CLASS(a, b) \
 static inline bool \
-token_is_ ## a (struct token *  tok, enum token_kind tkind) \
+eq_token_is_ ## a (struct eq_token *  tok, enum eq_token_kind tkind) \
 { \
-  return token_class (tok) == tok_ ## a && token_value (tok) == tkind; \
+  return eq_token_class (tok) == tok_ ## a && eq_token_value (tok) == tkind; \
 }
 #include "token_class.def"
 #undef TOKEN_CLASS
 static inline bool
-token_is_number (struct token *tok)
+eq_token_is_number (struct eq_token *tok)
 {
-  return (token_class (tok) == tok_realnum
-	  || token_class (tok) == tok_intnum);
+  return (eq_token_class (tok) == tok_realnum
+	  || eq_token_class (tok) == tok_intnum);
 }
 
-int parse (struct parser *);
-bool parser_init (struct parser *, struct lexer *);
-bool parser_finalize (struct parser *);
+int eq_parse (struct eq_parser *);
+bool eq_parser_init (struct eq_parser *, struct eq_lexer *);
+bool eq_parser_finalize (struct eq_parser *);
 /* FIXME These functions should be static at some point.  */
-struct token *parser_get_token (struct parser *);
+/*struct token *parser_get_token (struct parser *);
 void parser_unget (struct parser *);
 
 struct token *parser_get_until_one_of_val (struct parser *, int, ...);
@@ -113,6 +113,7 @@ tree handle_print (struct parser *);
 bool handle_match (struct parser *);
 tree handle_proto (struct parser *);
 tree handle_functiontype (struct parser *);
+*/
 
 #define PARSER_MATCH_EXPR_ALLOWED(parser) ((parser)->match_expr_allowed)
 __END_DECLS

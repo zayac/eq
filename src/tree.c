@@ -399,7 +399,7 @@ free_tree_type (tree node, bool hard)
 
 tree
 make_function (tree name, tree args, tree arg_types, tree ret, tree instrs,
-	       struct location loc)
+	       struct eq_location loc)
 {
   tree t = make_tree (FUNCTION);
   TREE_OPERAND_SET (t, 0, name);
@@ -434,30 +434,30 @@ make_string_cst_str (const char *value)
 }
 
 tree
-make_string_cst_tok (struct token * tok)
+make_string_cst_tok (struct eq_token * tok)
 {
   tree t;
   const char *str;
 
-  assert (token_class (tok) == tok_id
-	  || token_class (tok) == tok_keyword,
+  assert (eq_token_class (tok) == tok_id
+	  || eq_token_class (tok) == tok_keyword,
 	  "attempt to build sting_cst from %s",
-	  token_class_as_string (token_class (tok)));
+	  eq_token_class_as_string (eq_token_class (tok)));
 
-  str = token_as_string (tok);
+  str = eq_token_as_string (tok);
   t = make_string_cst_str (str);
-  TREE_LOCATION (t) = token_location (tok);
+  TREE_LOCATION (t) = eq_token_location (tok);
   return t;
 }
 
 tree
-make_identifier_tok (struct token * tok)
+make_identifier_tok (struct eq_token * tok)
 {
   tree t;
-  assert (is_id (tok, false), "attempt to build identifier from %s",
-	  token_class_as_string (token_class (tok)));
+  assert (eq_is_id (tok, false), "attempt to build identifier from %s",
+	  eq_token_class_as_string (eq_token_class (tok)));
 
-  if (token_value (tok) == tv_iter)
+  if (eq_token_value (tok) == tv_iter)
     return iter_var_node;
 
   t = make_tree (IDENTIFIER);
@@ -468,7 +468,7 @@ make_identifier_tok (struct token * tok)
   TREE_ID_DEFINED (t) = false;
   TREE_ID_ITER (t) = NULL;
   TREE_ID_ITER_DEF (t) = t;
-  TREE_LOCATION (t) = token_location (tok);
+  TREE_LOCATION (t) = eq_token_location (tok);
   return t;
 }
 
@@ -491,36 +491,36 @@ make_integer_cst (int value)
 }
 
 tree
-make_integer_tok (struct token * tok)
+make_integer_tok (struct eq_token * tok)
 {
   tree t;
-  assert (token_class (tok) == tok_intnum,
+  assert (eq_token_class (tok) == tok_intnum,
 	  "attempt to build integer number from %s",
-	  token_class_as_string (token_class (tok)));
+	  eq_token_class_as_string (eq_token_class (tok)));
 
   t = make_tree (INTEGER_CST);
-  TREE_INTEGER_CST (t) = atoll (token_as_string (tok));
+  TREE_INTEGER_CST (t) = atoll (eq_token_as_string (tok));
   TREE_CONSTANT (t) = true;
   assert (TREE_CODE_TYPED (INTEGER_CST), "real number has to have a type");
   TREE_TYPE (t) = z_type_node;
-  TREE_LOCATION (t) = token_location (tok);
+  TREE_LOCATION (t) = eq_token_location (tok);
   return t;
 }
 
 tree
-make_real_tok (struct token * tok)
+make_real_tok (struct eq_token * tok)
 {
   tree t;
-  assert (token_class (tok) == tok_realnum,
+  assert (eq_token_class (tok) == tok_realnum,
 	  "attempt to build real number from %s",
-	  token_class_as_string (token_class (tok)));
+	  eq_token_class_as_string (eq_token_class (tok)));
 
   t = make_tree (REAL_CST);
-  TREE_REAL_CST (t) = atof (token_as_string (tok));
+  TREE_REAL_CST (t) = atof (eq_token_as_string (tok));
   TREE_CONSTANT (t) = true;
   assert (TREE_CODE_TYPED (REAL_CST), "real number has to have a type");
   TREE_TYPE (t) = r_type_node;
-  TREE_LOCATION (t) = token_location (tok);
+  TREE_LOCATION (t) = eq_token_location (tok);
   return t;
 }
 
@@ -646,7 +646,7 @@ make_binary_op (enum tree_code code, tree lhs, tree rhs)
 }
 
 tree
-make_matrix (tree list, struct location loc)
+make_matrix (tree list, struct eq_location loc)
 {
   tree t;
   t = make_tree (MATRIX_EXPR);
@@ -656,7 +656,7 @@ make_matrix (tree list, struct location loc)
 }
 
 tree
-make_genar (tree a, tree b, struct location loc)
+make_genar (tree a, tree b, struct eq_location loc)
 {
   tree t;
   t = make_tree (GENAR_EXPR);
@@ -667,7 +667,7 @@ make_genar (tree a, tree b, struct location loc)
 }
 
 tree
-make_return (tree a, struct location loc)
+make_return (tree a, struct eq_location loc)
 {
   tree t = make_tree (RETURN_STMT);
   TREE_OPERAND_SET (t, 0, a);
@@ -687,7 +687,7 @@ make_parallel_loop (tree idx, tree cond, tree expr)
 }
 
 tree
-make_unary_op (enum tree_code code, tree val, struct location loc)
+make_unary_op (enum tree_code code, tree val, struct eq_location loc)
 {
   tree t;
   assert (TREE_CODE_CLASS (code) == tcl_expression
@@ -702,10 +702,10 @@ make_unary_op (enum tree_code code, tree val, struct location loc)
 }
 
 tree
-make_assign (enum token_kind tk, tree lhs, tree rhs)
+make_assign (enum eq_token_kind tk, tree lhs, tree rhs)
 {
   assert (is_assignment_operator (tk), "attempt to make assignment from %s",
-	  token_kind_as_string (tk));
+	  eq_token_kind_as_string (tk));
 
   switch (tk)
     {

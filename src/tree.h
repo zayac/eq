@@ -55,7 +55,7 @@ typedef union tree_node *tree;
 /* Basic information each node should have.  */
 struct tree_base
 {
-  struct location loc;
+  struct eq_location loc;
   enum tree_code code;
 };
 
@@ -405,7 +405,7 @@ set_tree_operand (tree node, int idx, tree value)
 #define TREE_CIRCUMFLEX_INDEX_STATUS(node) ((node)->circumflex_op_node.is_index)
 
 static inline bool
-is_assignment_operator (enum token_kind tk)
+is_assignment_operator (enum eq_token_kind tk)
 {
   switch (tk)
     {
@@ -421,24 +421,24 @@ tree make_tree (enum tree_code);
 void free_tree (tree);
 void free_tree_type (tree, bool);
 void free_atomic_trees (void);
-tree make_string_cst_tok (struct token *);
+tree make_string_cst_tok (struct eq_token *);
 tree make_string_cst_str (const char *);
-tree make_identifier_tok (struct token *);
+tree make_identifier_tok (struct eq_token *);
 tree make_integer_cst (int);
-tree make_integer_tok (struct token *);
-tree make_real_tok (struct token *);
+tree make_integer_tok (struct eq_token *);
+tree make_real_tok (struct eq_token *);
 tree make_tree_list (void);
 bool tree_list_append (tree, tree);
-tree make_function (tree, tree, tree, tree, tree, struct location);
+tree make_function (tree, tree, tree, tree, tree, struct eq_location);
 tree make_type (enum tree_code);
 tree change_stream_prop (tree);
 tree make_binary_op (enum tree_code, tree, tree);
-tree make_unary_op (enum tree_code, tree, struct location);
-tree make_matrix (tree, struct location);
-tree make_genar (tree, tree, struct location);
+tree make_unary_op (enum tree_code, tree, struct eq_location);
+tree make_matrix (tree, struct eq_location);
+tree make_genar (tree, tree, struct eq_location);
 tree make_parallel_loop (tree, tree, tree);
-tree make_return (tree, struct location);
-tree make_assign (enum token_kind, tree, tree);
+tree make_return (tree, struct eq_location);
+tree make_assign (enum eq_token_kind, tree, tree);
 tree make_convert (tree, tree);
 tree tree_list_copy (tree);
 tree tree_copy (tree);

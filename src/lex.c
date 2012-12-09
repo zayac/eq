@@ -22,7 +22,7 @@
 
 #define TOKEN_KIND(a, b) b,
 #define KEYWORD(a, b, c, d) d,
-const char *token_kind_name[] = {
+const char *eq_token_kind_name[] = {
 #include "token_kind.def"
 #include "keywords.def"
 };
@@ -31,7 +31,7 @@ const char *token_kind_name[] = {
 #undef KEYWORD
 
 #define KEYWORD(a, b, c, d) tok_ ## b,
-const enum token_class keyword_type[] =
+const enum eq_token_class eq_keyword_type[] =
 {
 #include "keywords.def"
 };
@@ -39,21 +39,21 @@ const enum token_class keyword_type[] =
 #undef KEYWORD
 
 #define KEYWORD(a, b, c, d) c,
-const bool is_token_id[] = {
+const bool eq_is_token_id[] = {
 #include "keywords.def"
 };
 
 #undef KEYWORD
 
 #define TOKEN_CLASS(a, b) b,
-const char *token_class_name[] = {
+const char *eq_token_class_name[] = {
 #include "token_class.def"
 };
 
 #undef TOKEN_CLASS
 
 #define DELIMITER(a) a,
-const char *token_delimiters[] = {
+const char *eq_token_delimiters[] = {
 #include "delimiters.def"
 };
 
@@ -61,8 +61,8 @@ const char *token_delimiters[] = {
 
 
 /* This is a pointer to the first token from keywords.def  */
-const char **keywords = &token_kind_name[(int) tv_boolean];
-size_t keywords_length = tok_kind_length - tv_boolean;
+const char **eq_keywords = &eq_token_kind_name[(int) tv_boolean];
+size_t eq_keywords_length = eq_tok_kind_length - tv_boolean;
 
 
 /* Binary search function to search string in a char** table.  */
@@ -90,18 +90,34 @@ kw_bsearch (const char *key, const char *table[], size_t len)
 /* Initialize lexer LEX with a file name FNAME and
    set initial parameters of the lexer.  */
 bool
-lexer_init (struct lexer * lex, const char *fname)
+eq_lexer_init (struct eq_lexer * lex, const char *fname)
+{
+  FILE *f = fopen (fname, "r");
+
+  if (!f)
+    {
+      warn ("error opening file `%s'", fname);
+      return false;
+    }
+
+  return eq_lexer_init_file (lex,  f, fname);
+}
+
+/* Initialize lexer LEX with a file FILE, which is open
+   by external program and the name FNAME that matches
+   FILE.  Set initial parameters of the lexer.  */
+bool
+eq_lexer_init_file (struct eq_lexer * lex, FILE * f, const char *fname)
 {
   assert (fname != NULL, "lexer initialized with empty filename");
   assert (lex != NULL, "lexer memory is not allocated");
+  assert (f != NULL, "invalid file passed to lexer");
 
   lex->hex_number = false;
   lex->is_eof = false;
-  lex->loc = (struct location)
-  {
-  1, 0};
+  lex->loc = (struct eq_location){1, 0};
   lex->fname = fname;
-  lex->file = fopen (fname, "r");
+  lex->file = f;
   lex->error_notifications = false;
   if (!lex->file)
     {
@@ -115,7 +131,7 @@ lexer_init (struct lexer * lex, const char *fname)
 
 /* Actions before deallocating lexer.  */
 bool
-lexer_finalize (struct lexer * lex)
+eq_lexer_finalize (struct eq_lexer * lex)
 {
   fclose (lex->file);
   return true;
@@ -125,7 +141,7 @@ lexer_finalize (struct lexer * lex)
 /* Gets one character from the file, is end of file is
    reached, it will return EOF in all the consequent calls.  */
 static inline char
-lexer_getch (struct lexer *lex)
+lexer_getch (struct eq_lexer *lex)
 {
   int ch;
 
@@ -152,7 +168,7 @@ lexer_getch (struct lexer *lex)
 /* Put character back on the stream of the lexer.
    Consequent lexer_getch should return exactly this character.  */
 static inline void
-lexer_ungetch (struct lexer *lex, char ch)
+lexer_ungetch (struct eq_lexer *lex, char ch)
 {
   if (ch == '\n')
     lex->loc.line--;
@@ -195,8 +211,8 @@ buffer_add_char (char **buffer, char **index, size_t * size, char c)
 }
 
 /* Internal function to read until the end of comment.  */
-static inline enum token_class
-lexer_read_comments (struct lexer *lex, char **buf, size_t * size)
+static inline enum eq_token_class
+lexer_read_comments (struct eq_lexer *lex, char **buf, size_t * size)
 {
   char *index = *buf;
 
@@ -220,8 +236,8 @@ lexer_read_comments (struct lexer *lex, char **buf, size_t * size)
 
 /* Internal function to read until the end of string/char ignoring
 escape sequences. */
-static inline enum token_class
-lexer_read_string (struct lexer *lex, char **buf, size_t * size, char c)
+static inline enum eq_token_class
+lexer_read_string (struct eq_lexer *lex, char **buf, size_t * size, char c)
 {
   char *index = *buf;
   const char stop = c;
@@ -266,7 +282,7 @@ lexer_read_string (struct lexer *lex, char **buf, size_t * size, char c)
 
 /* Function to read a hex number */
 static inline void
-lexer_read_hex_number (struct lexer *lex, struct token *tok, char **buf,
+lexer_read_hex_number (struct eq_lexer *lex, struct eq_token *tok, char **buf,
 		       size_t * size, char c)
 {
   char *index = *buf;
@@ -287,7 +303,7 @@ lexer_read_hex_number (struct lexer *lex, struct token *tok, char **buf,
 /* Internal function to read a string,
    checking if it is a keyword, an operator or id */
 static inline void
-lexer_read_keyword (struct lexer *lex, struct token *tok, char **buf,
+lexer_read_keyword (struct eq_lexer *lex, struct eq_token *tok, char **buf,
 		    size_t * size, char c)
 {
   char *index = *buf;
@@ -315,16 +331,16 @@ lexer_read_keyword (struct lexer *lex, struct token *tok, char **buf,
   lexer_ungetch (lex, c);
   buffer_add_char (buf, &index, size, 0);
 
-  search = kw_bsearch (*buf, keywords, keywords_length);
+  search = kw_bsearch (*buf, eq_keywords, eq_keywords_length);
 
-  if (search != keywords_length)
+  if (search != eq_keywords_length)
     {
       if (*buf)
 	free (*buf);
       *size = 0;
       *buf = NULL;
-      tval_tok_init (tok, keyword_type[search],
-		     (enum token_kind) (search + tv_boolean));
+      tval_tok_init (tok, eq_keyword_type[search],
+		     (enum eq_token_kind) (search + tv_boolean));
       return;
     }
 
@@ -341,8 +357,8 @@ lexer_read_keyword (struct lexer *lex, struct token *tok, char **buf,
 }
 
 /* Internal function to read until the end of number.  */
-static inline enum token_class
-lexer_read_number (struct lexer *lex, char **buf, size_t * size, char c)
+static inline enum eq_token_class
+lexer_read_number (struct eq_lexer *lex, char **buf, size_t * size, char c)
 {
   bool isreal = false;
   bool saw_dot = false;
@@ -442,12 +458,12 @@ return_unknown:
 
 /* Reads the stream from lexer and returns dynamically allocated token
    of the appropriate type.  */
-struct token *
-lexer_get_token (struct lexer *lex)
+struct eq_token *
+eq_lexer_get_token (struct eq_lexer *lex)
 {
   char c;
-  struct location loc;
-  struct token *tok = (struct token *) malloc (sizeof (struct token));
+  struct eq_location loc;
+  struct eq_token *tok = (struct eq_token *) malloc (sizeof (struct eq_token));
   tok->uses_buf = false;
   size_t buf_size = 16;
   char *buf = NULL;
@@ -653,31 +669,31 @@ return_token:
 /* If the value of the token needs a character buffer or it is
    stored as an enum token_kind variable.  */
 inline bool
-token_uses_buf (struct token * tok)
+eq_token_uses_buf (struct eq_token * tok)
 {
   return tok->uses_buf;
 }
 
 /* String representation of the token TOK.  */
 const char *
-token_as_string (struct token *tok)
+eq_token_as_string (struct eq_token *tok)
 {
 
-  if (token_uses_buf (tok))
+  if (eq_token_uses_buf (tok))
     return tok->value.cval;
   else
-    return token_kind_name[(int) tok->value.tval];
+    return eq_token_kind_name[(int) tok->value.tval];
 }
 
 
 /* Prints the token.  */
 void
-token_print (struct token *tok)
+eq_token_print (struct eq_token *tok)
 {
-  const char *tokval = token_as_string (tok);
+  const char *tokval = eq_token_as_string (tok);
 
   (void) fprintf (stdout, "%d:%d %s ", (int) tok->loc.line,
-		  (int) tok->loc.col, token_class_name[(int) tok->tok_class]);
+		  (int) tok->loc.col, eq_token_class_name[(int) tok->tok_class]);
 
   if (tok->tok_class != tok_unknown)
     (void) fprintf (stdout, "['%s']\n", tokval);
@@ -690,18 +706,18 @@ token_print (struct token *tok)
 /* Copy token. Also copies string if necessary.
    Memory allocation is done too.
  */
-struct token *
-token_copy (struct token *tok)
+struct eq_token *
+eq_token_copy (struct eq_token *tok)
 {
-  struct token *ret;
+  struct eq_token *ret;
   if (tok == NULL)
     return NULL;
 
-  ret = (struct token *) malloc (sizeof (struct token));
+  ret = (struct eq_token *) malloc (sizeof (struct eq_token));
   ret->loc = tok->loc;
   ret->tok_class = tok->tok_class;
-  ret->uses_buf = token_uses_buf (tok);
-  if (token_uses_buf (tok))
+  ret->uses_buf = eq_token_uses_buf (tok);
+  if (eq_token_uses_buf (tok))
     ret->value.cval = strdup (tok->value.cval);
   else
     ret->value.tval = tok->value.tval;
@@ -712,7 +728,7 @@ token_copy (struct token *tok)
    It doesn't take into consideration token locations
  */
 int
-token_compare (struct token *first, struct token *second)
+eq_token_compare (struct eq_token *first, struct eq_token *second)
 {
   if (first == second)
     return 0;
@@ -724,15 +740,15 @@ token_compare (struct token *first, struct token *second)
     return 1;
 
   /* Compare by buffer usage  */
-  if (token_uses_buf (first) != token_uses_buf (second))
+  if (eq_token_uses_buf (first) != eq_token_uses_buf (second))
     {
-      if (!token_uses_buf (first))
+      if (!eq_token_uses_buf (first))
 	return -1;
       else
 	return 1;
     }
 
-  if (token_uses_buf (first))
+  if (eq_token_uses_buf (first))
     return strcmp (first->value.cval, second->value.cval);
   else
     {
@@ -748,10 +764,10 @@ token_compare (struct token *first, struct token *second)
 
 /* Is needed to concatenate a possible delimiter with \left or \right token.  */
 bool
-token_is_delimiter (struct token * tok)
+eq_token_is_delimiter (struct eq_token * tok)
 {
-  size_t delimiters_length = sizeof (token_delimiters) / sizeof (char *);
-  size_t ret = kw_bsearch (token_as_string (tok), token_delimiters,
+  size_t delimiters_length = sizeof (eq_token_delimiters) / sizeof (char *);
+  size_t ret = kw_bsearch (eq_token_as_string (tok), eq_token_delimiters,
 			   delimiters_length);
   return ret != delimiters_length;
 
@@ -759,11 +775,11 @@ token_is_delimiter (struct token * tok)
 
 /* Deallocates the memory that token occupies.  */
 void
-token_free (struct token *tok)
+eq_token_free (struct eq_token *tok)
 {
   assert (tok, "attempt to free NULL token");
 
-  if (token_uses_buf (tok) && tok->value.cval)
+  if (eq_token_uses_buf (tok) && tok->value.cval)
     free (tok->value.cval);
   free (tok);
   tok = NULL;
@@ -772,14 +788,14 @@ token_free (struct token *tok)
 
 /* Main function if you want to test lexer part only.  */
 #ifdef LEXER_BINARY
-int error_count = 0;
-int warning_count = 0;
+int eq_error_count = 0;
+int eq_warning_count = 0;
 
 int
 main (int argc, char *argv[])
 {
-  struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
-  struct token *tok = NULL;
+  struct eq_lexer *lex = (struct eq_lexer *) malloc (sizeof (struct eq_lexer));
+  struct eq_token *tok = NULL;
 
   if (argc <= 1)
     {
@@ -787,17 +803,17 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
-  if (!lexer_init (lex, argv[1]))
+  if (!eq_lexer_init (lex, argv[1]))
     goto cleanup;
 
-  while ((tok = lexer_get_token (lex))->tok_class != tok_eof)
+  while ((tok = eq_lexer_get_token (lex))->tok_class != tok_eof)
     {
-      token_print (tok);
-      token_free (tok);
+      eq_token_print (tok);
+      eq_token_free (tok);
     }
 
-  token_free (tok);
-  lexer_finalize (lex);
+  eq_token_free (tok);
+  eq_lexer_finalize (lex);
 
 cleanup:
   if (lex)

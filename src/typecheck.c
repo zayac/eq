@@ -118,13 +118,13 @@ typecheck (void)
   DL_FOREACH (TREE_LIST (iter_var_list), tl)
     recurrence_validate (tl->entry);
 
-  if (function_check || error_count > 0)
+  if (function_check || eq_error_count > 0)
     printf ("note: finished typechecking, %i error(s) found.\n",
-	    error_count);
+	    eq_error_count);
   else
     printf ("note: finished typechecking  [ok].\n");
 
-  return function_check || error_count;
+  return function_check || eq_error_count;
 }
 
 int
@@ -297,7 +297,7 @@ typecheck_recurrent (tree expr)
 error:
   error_loc (TREE_LOCATION (expr), "the index of recurrent expression must"
     " be either a constant or a linear expression with "
-    "`%s' and a constant", token_kind_name[tv_iter]);
+    "`%s' and a constant", eq_token_kind_name[tv_iter]);
   return 1;
 }
 
@@ -329,7 +329,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	{
 	  error_loc (TREE_LOCATION (lhs), "`%s' is allowed only in "
 		"recurrent equations",
-		token_kind_name[tv_iter]);
+		eq_token_kind_name[tv_iter]);
 	  return 1;
 	}
 
@@ -372,7 +372,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 	{
 	  error_loc (TREE_LOCATION (index),
 		     "only `%s' or integer constant is allowed here",
-		     token_kind_name[tv_iter]);
+		     eq_token_kind_name[tv_iter]);
 	  ret += 1;
 	  return ret;
 	}
@@ -748,7 +748,7 @@ typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 	      {
 		error_loc (TREE_LOCATION (TREE_OPERAND (var, 1)),
 			   "only `%s' or integer constant is allowed here",
-			   token_kind_name[tv_iter]);
+			   eq_token_kind_name[tv_iter]);
 		ret += 1;
 	      }
 	    else if (TREE_OPERAND (var, 1) == iter_var_node)
@@ -986,7 +986,7 @@ typecheck_function (tree func_ref)
 	    error_loc (TREE_LOCATION (el->entry),
 		      "`%s' is not allowed in function arguments "
 		      "declarations",
-		      token_kind_name[tv_iter]);
+		      eq_token_kind_name[tv_iter]);
 	    ret += 2;
 	    goto free_local;
 	  }
@@ -1672,7 +1672,7 @@ typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 	      {
 		error_loc (TREE_LOCATION (expr), 
 		  "wrong place for `%s' variable",
-		  token_kind_name[tv_iter]);
+		  eq_token_kind_name[tv_iter]);
 		return 1;
 	      }
 	    return 0;

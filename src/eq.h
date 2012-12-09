@@ -22,10 +22,17 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#ifndef __cplusplus
-typedef unsigned char bool;
-#define true 1
-#define false 0
+#ifndef SAC_SOURCE
+#  ifndef __cplusplus
+      typedef unsigned char bool;
+      #define true 1
+      #define false 0
+#  endif
+#else
+   /* bool type is defined by SAC.
+      XXX what if sizeof (bool) won't match?  */
+   #define false FALSE
+   #define true TRUE
 #endif
 
 #ifdef __cplusplus
@@ -51,8 +58,8 @@ xfprintf (FILE * f, const char *fmt, ...)
 }
 
 
-extern int error_count;
-extern int warning_count;
+extern int eq_error_count;
+extern int eq_warning_count;
 
 #define assert(expr, ...) \
   ((expr) ? (void)0 \
@@ -73,72 +80,72 @@ extern int warning_count;
     (void) fprintf (stderr, "error:%d:%d: ", (int)loc.line, (int)loc.col); \
     (void) fprintf (stderr, "[line=%i]  ", __LINE__); \
     (void) xfprintf (stderr, __VA_ARGS__); \
-    ++error_count; \
+    ++eq_error_count; \
   } while (0)
 
 #define error( ...) \
   do {  \
     (void) fprintf (stderr, "error: "); \
     (void) xfprintf (stderr, __VA_ARGS__); \
-    ++error_count; \
+    ++eq_error_count; \
   } while (0)
 
 #define warning_loc(loc, ...) \
   do {  \
     (void) fprintf (stderr, "warning:%d:%d: ", (int)loc.line, (int)loc.col); \
     (void) xfprintf (stderr, __VA_ARGS__); \
-    ++ warning_count; \
+    ++ eq_warning_count; \
   } while (0)
 
 #define warning(...) \
   do {  \
     (void) fprintf (stderr, "warning: "); \
     (void) xfprintf (stderr, __VA_ARGS__); \
-    ++ warning_count; \
+    ++ eq_warning_count; \
   } while (0)
 
 #define TOKEN_KIND(a, b) a,
 #define KEYWORD(a, b, c, d) tv_ ## a,
-enum token_kind
+enum eq_token_kind
 {
 #include "token_kind.def"
 #include "keywords.def"
-  tok_kind_length
+  eq_tok_kind_length
 };
 #undef TOKEN_KIND
 #undef KEYWORD
 
 #define TOKEN_CLASS(a, b) tok_ ## a,
-enum token_class
+enum eq_token_class
 {
 #include "token_class.def"
-  tok_class_length
+  eq_tok_class_length
 };
 #undef TOKEN_CLASS
 
-struct location
+struct eq_location
 {
   size_t line, col;
 };
 
-struct token
+struct eq_token
 {
-  struct location loc;
-  enum token_class tok_class;
+  struct eq_location loc;
+  enum eq_token_class tok_class;
   bool uses_buf;
   union
   {
     char *cval;
-    enum token_kind tval;
+    enum eq_token_kind tval;
   } value;
 };
 
-struct lexer
+struct eq_lexer
 {
   const char *fname;
   FILE *file;
-  struct location loc;
-  struct token curtoken;
+  struct eq_location loc;
+  struct eq_token curtoken;
   bool is_eof;
   /* if set true, a token consisting of digits and a-f
      letters will be considering as number.  */
@@ -165,7 +172,6 @@ struct eq_options
   enum break_options break_option;
 };
 
-extern struct eq_options options;
 
 #define tval_tok_init(_tok, _cls, _val)             \
     do {                                            \
@@ -179,28 +185,29 @@ extern struct eq_options options;
       (_tok)->value.cval = _val;                    \
     } while (0)
 
-extern const char *token_class_name[];
-extern const char *token_kind_name[];
-extern const bool is_token_id[];
+extern const char *eq_token_class_name[];
+extern const char *eq_token_kind_name[];
+extern const bool eq_is_token_id[];
 
-#define token_kind_as_string(tkind) token_kind_name[(int) tkind]
-#define token_value(tok)            (tok)->value.tval
-#define token_class(tok)            (tok)->tok_class
-#define token_class_as_string(tcls) token_class_name[(int) tcls]
-#define token_location(tok)         (tok)->loc
+#define eq_token_kind_as_string(tkind) eq_token_kind_name[(int) tkind]
+#define eq_token_value(tok)            (tok)->value.tval
+#define eq_token_class(tok)            (tok)->tok_class
+#define eq_token_class_as_string(tcls) eq_token_class_name[(int) tcls]
+#define eq_token_location(tok)         (tok)->loc
 
 
 __BEGIN_DECLS
-bool lexer_init (struct lexer *, const char *);
-bool lexer_finalize (struct lexer *);
-bool is_id (struct token *, bool);
-bool token_is_delimiter (struct token *);
-struct token *lexer_get_token (struct lexer *);
-struct token *token_copy (struct token *);
-int token_compare (struct token *, struct token *);
-void token_free (struct token *);
-void token_print (struct token *);
-const char *token_as_string (struct token *);
-bool token_uses_buf (struct token *);
+bool eq_lexer_init (struct eq_lexer *, const char *);
+bool eq_lexer_init_file (struct eq_lexer *, FILE *, const char *);
+bool eq_lexer_finalize (struct eq_lexer *);
+bool eq_is_id (struct eq_token *, bool);
+bool eq_token_is_delimiter (struct eq_token *);
+struct eq_token *eq_lexer_get_token (struct eq_lexer *);
+struct eq_token *eq_token_copy (struct eq_token *);
+int eq_token_compare (struct eq_token *, struct eq_token *);
+void eq_token_free (struct eq_token *);
+void eq_token_print (struct eq_token *);
+const char *eq_token_as_string (struct eq_token *);
+bool eq_token_uses_buf (struct eq_token *);
 __END_DECLS
 #endif /* __EQ_H__  */

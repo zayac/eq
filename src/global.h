@@ -29,8 +29,8 @@ extern tree function_proto_list;
 /* Trees we are to remove in the end.  */
 extern tree delete_list;
 
-extern int error_count;
-extern int warning_count;
+extern int eq_error_count;
+extern int eq_warning_count;
 extern tree global_tree[];
 
 void init_global (void);

@@ -33,7 +33,7 @@ add_match (const char *key, struct token_list_el *match, tree replace)
   MATCHER_MATCH (el) = match;
   MATCHER_REPLACE (el) = replace;
   HASH_ADD_KEYPTR (hh, matches, key, strlen (key), el);
-  //HASH_ADD (hh, matches, key, sizeof (struct token), el);
+  //HASH_ADD (hh, matches, key, sizeof (struct eq_token), el);
 
 }
 
@@ -47,7 +47,7 @@ delete_match (struct match_table *del)
   /* Free match list  */
   LL_FOREACH_SAFE (MATCHER_MATCH (del), el, tmp)
   {
-    token_free (el->value);
+    eq_token_free (el->value);
     free (el);
   }
 
@@ -127,23 +127,23 @@ free_tree_list (struct tree_list_el *list)
 }
 
 tree
-perform_transform (struct parser *parser)
+perform_transform (struct eq_parser *parser)
 {
   tree ret = NULL, tmp = NULL;
   struct tree_list_el *tmp_expr = NULL;
   struct tree_list_el *exprs = NULL;
   struct match_table *record = NULL;
-  struct token *tok = parser_get_token (parser);
+  struct eq_token *tok = parser_get_token (parser);
 
   parser_unget (parser);
-  record = find_match (token_as_string (tok));
+  record = find_match (eq_token_as_string (tok));
 
   if (record != NULL)
     {
       struct token_list_el *el = NULL;
       LL_FOREACH (MATCHER_MATCH (record), el)
       {
-	if (token_is_keyword (el->value, tv_expr))
+	if (eq_token_is_keyword (el->value, tv_expr))
 	  {
 	    tmp = handle_expr (parser);
 	    if (tmp != error_mark_node)
@@ -157,7 +157,7 @@ perform_transform (struct parser *parser)
 	      }
 	    else
 	      {
-		struct token *tmp = NULL;
+		struct eq_token *tmp = NULL;
 		free_tree_list (exprs);
 		/* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
 		   we are inside another \match,
@@ -165,7 +165,7 @@ perform_transform (struct parser *parser)
 		if (PARSER_MATCH_EXPR_ALLOWED (parser))
 		  {
 		    parser_unget (parser);
-		    if (!token_is_operator
+		    if (!eq_token_is_operator
 			(parser_get_token (parser), tv_rbrace))
 		      parser_get_until_tval (parser, tv_rbrace);
 		  }
@@ -174,7 +174,7 @@ perform_transform (struct parser *parser)
 		    tmp =
 		      parser_get_until_one_of_val (parser, 2, tv_lend,
 						   tv_qendif);
-		    if (tmp != NULL && token_class (tmp) != tok_eof)
+		    if (tmp != NULL && eq_token_class (tmp) != tok_eof)
 		      parser_unget (parser);
 		  }
 		return error_mark_node;
@@ -185,13 +185,13 @@ perform_transform (struct parser *parser)
 	    tok = parser_get_token (parser);
 	    if (tok->tok_class == tok_unknown)
 	      tok->tok_class = tok_keyword;
-	    if (token_compare (tok, el->value))
+	    if (eq_token_compare (tok, el->value))
 	      {
-		struct token *tmp = NULL;
+		struct eq_token *tmp = NULL;
 		free_tree_list (exprs);
-		error_loc (token_location (tok),
+		error_loc (eq_token_location (tok),
 			   "invalid token for macros `%s` ",
-			   token_as_string (tok));
+			   eq_token_as_string (tok));
 		/* if PARSER_MATCH_EXPR_ALLOWED flag is set, then
 		   we are inside another \match,
 		   and we are to skip until right brace.  */
@@ -201,7 +201,7 @@ perform_transform (struct parser *parser)
 		  tmp =
 		    parser_get_until_one_of_val (parser, 2, tv_lend,
 						 tv_qendif);
-		if (token_class (tmp) != tok_eof)
+		if (eq_token_class (tmp) != tok_eof)
 		  parser_unget (parser);
 		return error_mark_node;
 	      }
@@ -262,18 +262,18 @@ validate_match (struct token_list_el * left, tree right)
   bool ret = true;
   assert (left != NULL && right != NULL, "arguments can't be NULL");
 
-  if ((!(token_class (left->value) == tok_keyword && left->value->uses_buf))
-      && !(is_id (left->value, false)))
+  if ((!(eq_token_class (left->value) == tok_keyword && left->value->uses_buf))
+      && !(eq_is_id (left->value, false)))
     {
-      error_loc (token_location (left->value),
+      error_loc (eq_token_location (left->value),
 		 "a new keyword or id token is allowed here only. `%s` found",
-		 token_as_string (left->value));
+		 eq_token_as_string (left->value));
       ret = false;
     }
 
   LL_FOREACH (left, tmp)
   {
-    if (token_is_keyword (tmp->value, tv_expr))
+    if (eq_token_is_keyword (tmp->value, tv_expr))
       number++;
   }
   return validate_tree (number, right) && ret;
@@ -303,7 +303,7 @@ print_matches ()
     fprintf (stdout, "Transformation: \n");
     LL_FOREACH (MATCHER_MATCH (current), el)
     {
-      fprintf (stdout, "%s ", token_as_string (el->value));
+      fprintf (stdout, "%s ", eq_token_as_string (el->value));
     }
     fprintf (stdout, " ->     \n");
     print_expression (xf, MATCHER_REPLACE (current));

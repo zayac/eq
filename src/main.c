@@ -24,6 +24,7 @@
 #include "controlflow.h"
 #include "dataflow.h"
 #include "codegen.h"
+#include "options.h"
 
 #include <stdlib.h>
 #include <getopt.h>
@@ -61,7 +62,6 @@ void usage (void);
 void version (void);
 
 static char *progname;
-struct eq_options options;
 
 void
 usage (void)
@@ -93,19 +93,18 @@ main (int argc, char *argv[])
   extern int optind;
   struct tree_list_element *tle;
 
-  struct lexer *lex = (struct lexer *) malloc (sizeof (struct lexer));
-  struct parser *parser = (struct parser *) malloc (sizeof (struct parser));
+  struct eq_lexer *lex = (struct eq_lexer *) malloc (sizeof (struct eq_lexer));
+  struct eq_parser *parser = (struct eq_parser *) malloc (sizeof (struct eq_parser));
 
   init_global ();
   init_global_tree ();
+  init_options ();
 
   progname = strrchr (argv[0], '/');
   if (NULL == progname)
     progname = argv[0];
   else
     progname++;
-
-  memset (&options, 0, sizeof (options));
 
   while (-1 != (c = getopt (argc, argv, "B:P:V")))
     switch (c)
@@ -177,7 +176,7 @@ main (int argc, char *argv[])
     }
 
   /* Initialize the lexer.  */
-  if (!lexer_init (lex, *argv))
+  if (!eq_lexer_init (lex, *argv))
     {
       fprintf (stderr, "%s cannot create a lexer for file `%s'\n", progname,
 	       *argv);
@@ -204,9 +203,9 @@ main (int argc, char *argv[])
 
 
   /* Initialize the parser.  */
-  parser_init (parser, lex);
+  eq_parser_init (parser, lex);
 
-  if ((ret += parse (parser)) == 0 && options.break_option != break_parser)
+  if ((ret += eq_parse (parser)) == 0 && options.break_option != break_parser)
     ret += typecheck ();
 
   /* printing debug routine.  */
@@ -216,17 +215,8 @@ main (int argc, char *argv[])
 
       printf ("\n######### Output ########\n");
 
-      DL_FOREACH (TREE_LIST (function_list), tle)
-	{
-	  if (tle->entry != error_mark_node)
-	    {
-	      print_expression (xf, tle->entry);
-	      if (tle->next != NULL)
-		printf ("\n");
-	    }
-	  else
-	    printf ("Errors in function\n\n");
-	}
+      print_program (xf);
+
       xfile_finalize (xf);
     }
 
@@ -254,7 +244,7 @@ main (int argc, char *argv[])
 
   free (src_name);
 cleanup:
-  parser_finalize (parser);
+  eq_parser_finalize (parser);
   finalize_global_tree ();
   finalize_global ();
 

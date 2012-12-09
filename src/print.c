@@ -17,8 +17,28 @@
 #include "tree.h"
 #include "print.h"
 #include "global.h"
+#include "options.h"
+#include "utlist.h"
 
 static int level = 0;
+
+void
+print_program (xfile *xf)
+{
+  struct tree_list_element *tle;
+  
+  DL_FOREACH (TREE_LIST (function_list), tle)
+  {
+    if (tle->entry != error_mark_node)
+      {
+        print_expression (xf, tle->entry);
+        if (tle->next != NULL)
+  	printf ("\n");
+      }
+    else
+      printf ("Errors in function\n\n");
+  }
+}
 
 #define indent(xf, x)			    \
     do {				    \

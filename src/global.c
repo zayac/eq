@@ -25,11 +25,11 @@
 
 /* Variable that is going to be increased every
    time when an error is happening.  */
-int error_count = 0;
+int eq_error_count = 0;
 
 /* Variable that is going to be increased every
    time when an error is happening.  */
-int warning_count = 0;
+int eq_warning_count = 0;
 
 /* A global list to store functions.  */
 tree function_list = NULL;
@@ -60,8 +60,8 @@ init_global ()
   stream_list = make_tree_list ();
   iter_var_list = make_tree_list ();
   delete_list = make_tree_list ();
-  error_count = 0;
-  warning_count = 0;
+  eq_error_count = 0;
+  eq_warning_count = 0;
 }
 
 void
@@ -82,7 +82,7 @@ init_global_tree ()
   global_tree[TG_ITER_VAR] = (tree) malloc (sizeof (struct tree_identifier_node));
   
   TREE_ID_NAME (global_tree[TG_ITER_VAR])
-      = make_string_cst_str (token_kind_name[tv_iter]);
+      = make_string_cst_str (eq_token_kind_name[tv_iter]);
   TREE_ID_DEFINED (global_tree[TG_ITER_VAR]) = true;
   TREE_ID_ITER (global_tree[TG_ITER_VAR]) = NULL;
   TREE_CONSTANT (global_tree[TG_ITER_VAR]) = false;

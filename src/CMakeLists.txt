@@ -13,15 +13,18 @@
 #  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+
 # EQ library files
 set (eqlib_src
 global.c  lex.c  
 parser.c  print.c  
-tree.c	  matcher.c
+tree.c	  #matcher.c
 types.c	  typecheck.c
 ssa.c controlflow.c
-dataflow.c
+dataflow.c options.c
 backend_${BACKEND_LANG}/codegen.c
 xfile.c	  recurrence.c)
-add_library (eqlib ${eqlib_src})
+add_library (eqlib STATIC ${eqlib_src})
 
+# installing a library into $PREFIX/lib
+install (TARGETS eqlib DESTINATION lib)

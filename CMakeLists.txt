@@ -55,12 +55,12 @@ endif()
 if (RELEASE)
   set (CFLAGS "-O3 -fomit-frame-pointer -Wall -Wextra -Wstrict-prototypes "
 	      "-pedantic -std=c99 -D_BSD_SOURCE"
-	      " -D_GNU_SOURCE -pedantic")
+	      " -D_GNU_SOURCE -pedantic -fPIC")
   message(STATUS "Compiling release version")
 else()
   set (CFLAGS "-g -gdwarf-2 -g3 -Wall -Wextra -Wstrict-prototypes "
 	      "-pedantic -std=c99 -D_BSD_SOURCE"
-	      " -D_GNU_SOURCE -pedantic")
+	      " -D_GNU_SOURCE -pedantic -fPIC")
   message(STATUS "Compiling debug version")
 endif()
 
@@ -103,6 +103,22 @@ else()
   add_executable (eq src/main.c)
   target_link_libraries (eq eqlib)
 endif()
+
+
+# Installing eq binary, libraries and include files.
+set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/local")
+if (BUILD_LEXER)
+  install (TARGETS eq DESTINATION bin)
+else()
+  install (TARGETS eq DESTINATION bin)
+  file (GLOB headers "${PROJECT_SOURCE_DIR}/src/*.h")
+  file (GLOB defs "${PROJECT_SOURCE_DIR}/src/*.def")
+  install (FILES ${headers} ${defs} DESTINATION include/eq)
+endif()
+
+
+
+
 # Testing routines
 enable_testing ()
 

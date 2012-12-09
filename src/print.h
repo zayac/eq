@@ -20,5 +20,6 @@
 
 int print_expression (xfile *, tree);
 int print_type (xfile *, tree t);
+void print_program (xfile *);
 
 #endif /* __PRINT_H__  */

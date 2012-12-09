@@ -12,6 +12,8 @@
    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  */
+#ifndef __MATCHER_H__
+#define __MATCHER_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +25,7 @@
 
 struct token_list_el
 {
-  struct token *value;
+  struct eq_token *value;
   struct token_list_el *next;
 };
 
@@ -65,7 +67,9 @@ void matcher_init (void);
 void add_match (const char *, struct token_list_el *, tree);
 void delete_match (struct match_table *);
 struct match_table *find_match (const char *);
-tree perform_transform (struct parser *);
+tree perform_transform (struct eq_parser *);
 bool validate_match (struct token_list_el *, tree);
 void matcher_finalize (void);
 void print_matches (void);
+
+#endif /* __MATCHER_H__ */
