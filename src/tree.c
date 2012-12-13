@@ -79,7 +79,7 @@ tree_to_str (tree t)
   return ret;
 }
 
-size_t
+static size_t
 get_tree_size (enum tree_code code)
 {
   size_t size, ops;
@@ -702,23 +702,6 @@ make_unary_op (enum tree_code code, tree val, struct eq_location loc)
 }
 
 tree
-make_assign (enum eq_token_kind tk, tree lhs, tree rhs)
-{
-  assert (is_assignment_operator (tk), "attempt to make assignment from %s",
-	  eq_token_kind_as_string (tk));
-
-  switch (tk)
-    {
-    case tv_gets:
-      return make_binary_op (ASSIGN_STMT, lhs, rhs);
-    default:
-      unreachable ("assignment creation failed");
-    }
-
-  return error_mark_node;
-}
-
-tree
 make_convert (tree from, tree to)
 {
   tree t = make_binary_op (CONVERT_EXPR, from, to);
@@ -726,7 +709,7 @@ make_convert (tree from, tree to)
   return t;
 }
 
-tree
+static tree
 tree_list_copy (tree lst)
 {
   tree cpy;
@@ -905,7 +888,8 @@ tree_compare (tree left, tree right)
   return true;
 }
 
-tree eliminate_list (tree expr)
+tree
+eliminate_list (tree expr)
 {
   tree tmp = expr;
   assert (TREE_CODE (expr) == LIST, "list tree expected");
@@ -914,7 +898,8 @@ tree eliminate_list (tree expr)
   return expr;
 }
 
-int equal_list_sizes (tree left, tree right)
+static int 
+equal_list_sizes (tree left, tree right)
 {
   struct tree_list_element *lel = NULL, *rel =NULL;
   assert (TREE_CODE (left) == LIST && TREE_CODE (right) == LIST,

@@ -520,7 +520,8 @@ eq_parser_finalize (struct eq_parser * parser)
   return true;
 }
 
-/* Check either token is a valid id.  */
+/* Check either token is a valid id.
+   `error' indicates either error needs to be shown.  */
 bool
 eq_is_id (struct eq_token * tok, bool error)
 {

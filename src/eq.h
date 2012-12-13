@@ -198,7 +198,6 @@ extern const bool eq_is_token_id[];
 
 __BEGIN_DECLS
 bool eq_lexer_init (struct eq_lexer *, const char *);
-bool eq_lexer_init_file (struct eq_lexer *, FILE *, const char *);
 bool eq_lexer_finalize (struct eq_lexer *);
 bool eq_is_id (struct eq_token *, bool);
 bool eq_token_is_delimiter (struct eq_token *);

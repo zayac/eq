@@ -211,12 +211,12 @@ struct tree_iter_pair
 };
 
 /* Structure declaration, which is defined in ssa.c.  */
-struct tree_hash_node_tree;
+struct tree_hash_node;
 
 struct tree_phi_node
 {
   struct tree_type_base typed;
-  struct tree_hash_node_tree *values;
+  struct tree_hash_node *values;
 };
 
 struct tree_rec_expr_node
@@ -416,7 +416,6 @@ is_assignment_operator (enum eq_token_kind tk)
     }
 }
 
-size_t get_tree_size (enum tree_code);
 tree make_tree (enum tree_code);
 void free_tree (tree);
 void free_tree_type (tree, bool);
@@ -438,16 +437,13 @@ tree make_matrix (tree, struct eq_location);
 tree make_genar (tree, tree, struct eq_location);
 tree make_parallel_loop (tree, tree, tree);
 tree make_return (tree, struct eq_location);
-tree make_assign (enum eq_token_kind, tree, tree);
 tree make_convert (tree, tree);
-tree tree_list_copy (tree);
 tree tree_copy (tree);
 bool tree_compare (tree, tree);
 void tree_list_combine (tree, tree);
 void tree_list_split (tree, tree);
 void free_list (tree);
 tree eliminate_list (tree);
-int  equal_list_sizes (tree, tree);
 char* tree_to_str (tree);
 
 #endif /* __TREE_H__  */

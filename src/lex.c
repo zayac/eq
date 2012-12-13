@@ -64,6 +64,8 @@ const char *eq_token_delimiters[] = {
 const char **eq_keywords = &eq_token_kind_name[(int) tv_boolean];
 size_t eq_keywords_length = eq_tok_kind_length - tv_boolean;
 
+static bool
+eq_lexer_init_file (struct eq_lexer * lex, FILE * f, const char *fname);
 
 /* Binary search function to search string in a char** table.  */
 static inline size_t
@@ -106,7 +108,7 @@ eq_lexer_init (struct eq_lexer * lex, const char *fname)
 /* Initialize lexer LEX with a file FILE, which is open
    by external program and the name FNAME that matches
    FILE.  Set initial parameters of the lexer.  */
-bool
+static bool
 eq_lexer_init_file (struct eq_lexer * lex, FILE * f, const char *fname)
 {
   assert (fname != NULL, "lexer initialized with empty filename");

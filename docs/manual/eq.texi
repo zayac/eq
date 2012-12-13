@@ -339,6 +339,193 @@ Stop after the parsing phase.
 @node Implementation details
 @chapter Implementation details
 
+@section Lexer
+Lexer parses input text file(s), converting a sequence of characters into
+sequence of tokens. The main work takes place inside @file{lex.c}.
+@example
+struct eq_token
+@{
+  struct eq_location loc;
+  enum eq_token_class tok_class;
+  bool uses_buf;
+  union
+  @{
+    char *cval;
+    enum eq_token_kind tval;
+  @} value;
+@};
+@end example
+This is a structure to store token value. Each token is associated with a
+class. A list of classes can be found inside @file{token_class.def}. Tokens are
+divided into two categories: those, that use additional memory, and those that
+don't. Identifier @dfn{tok_id} and unknown tokens @dfn{tok_unknown} use
+additional memory to store it's literal name. If extra memory is not used, than
+a value from @dfn{eq_token_kind_name} array is associated with the token.
+Values for tokens are defined in @file{token_kind.def} (for operators) and in
+@file{keywords.def} (for operators and keywords). @code{eq_lexer_get_token}
+function reads the next sequence of characters from input file, constructs and
+returns a new token structure.
+
+These methods of lexer module are public:
+@itemize
+@item
+@code{bool eq_lexer_init (struct eq_lexer *, const char *)} -- initialize lexer 
+structure with a given file name. Initial parameters are set.
+
+@item
+@code{bool eq_lexer_finalize (struct eq_lexer *)} -- actions to perform before
+deallocating lexer. This doesn't deallocate lexer structure!
+
+@item
+@code{bool eq_is_id (struct eq_token *, bool)} -- check either token is a valid
+identifier. The second argument indicates either error needs to be shown in
+case token is not a valid id.
+
+@item
+@code{bool eq_token_is_delimiter (struct eq_token *)} -- checks either token is
+a valid delimiter. A list of delimiters can be found in @file{delimiters.def}.
+Delimiters are introduced for usage with LaTeX @dfn{\left} and @dfn{\right}
+keywords. If a sequence of tokens @code{\left <delimiter_token>} or
+@code{\right <delimiter_token>} is found, then the first token should be
+ignored by parser, as it affects only visual appearance in LaTeX.
+
+@item
+@code{struct eq_token *eq_lexer_get_token (struct eq_lexer *)} -- the main
+lexer function which reads the next sequence of characters from input file,
+constructs and returns a new token.
+
+@item
+@code{struct eq_token *eq_token_copy (struct eq_token *)} -- copies a token
+allocating new memory. A memory for a string is copied if necessary too.
+
+@item
+@code{int eq_token_compare (struct eq_token *, struct eq_token *)} -- compares
+two tokens. It doesn't take into consideration token locations.
+
+@item
+@code{void eq_token_free (struct eq_token *)} -- deallocate the memory that
+token occupies. If token uses additional memory for string, it is deallocated
+too.
+
+@item
+@code{void eq_token_print (struct eq_token *)} -- print token. Used mainly for
+debug output.
+
+@item
+@code{const char *eq_token_as_string (struct eq_token *)} -- return
+string that represents token value (works for tokens with and without
+additional memory used).
+
+@item
+@code{bool eq_token_uses_buf (struct eq_token *)} -- indicate either token uses
+extra memory.
+@end itemize
+
+@section Parser
+A parser builds an hierarchical tree structure from sequence of tokens. The
+tree structure is predefined by grammar rules which are described in
+@file{parser.c}. During parsing a macroprocessor is used as well.
+
+The parser calls @code{eq_lexer_get_token} function until EOF token found. All
+recent tokens are stored in token buffer @code{token_buffer} inside
+@code{struct eq_parser} structure. Physically token is parsed and put into
+token array once only. When @code{eq_parser_unget} is called, then the array
+index pointer is decrease, when @code{eq_parser_get_token} is called again,
+then the pointer is increased, and a corresponding value from the buffer is
+returned. It should be noticed that the buffer size @code{buf_size} could
+affect parsing correctness, so that not more than @code{buf_size} tokens can be
+looked ahead.
+
+Compiler supports hexidecimal numbers only on the stage of lexer. The parser
+converts hexidecimal numbers to decimal inside @code{eq_parser_get_token}
+function.
+
+The parser uses grammar rules described in BNF to build subtrees for
+expressions, which are combined into a separate tree for each function.
+All function trees are stored in @code{function_list} list. Function prototypes
+are stored separately in @code{function_proto_list}.
+
+@section Tree structure
+The tree structure is described in @code{tree.h}. All nodes are members of
+@code{union tree_node}. All fundamental types are described in @code{tree.def}.
+For each type we define node identifier, string representation, node type,
+number of arguments, and either node has a type property. Also there type nodes
+which additional properties:
+@itemize
+@item
+@code{struct tree_type_node} -- this node has hash table and list properties.
+We use this for storing types. Basically, there is only one instance of each
+type only. Therefore, we check type existance using search in hash table.
+
+@item
+@code{struct tree_stmt_node} -- Statement node has additional properties which
+we use in data flow analysis stage.
+
+@item
+@code{struct tree_list_node} -- a list node. This is widely used structure in
+compiler for storing all kind of nodes in a list.
+
+@item
+@code{struct tree_list_element} -- a single element of a list.
+
+@item
+@code{struct tree_function_node} -- a control flow graph is stored inside
+function node. Also we store lists of entry points, return statements and print
+statements inside function. A schedule represents a list of list of statements
+which are possible to execute simultaneously. This are structures used in data
+flow analysis and which will be necessary during future translation.
+
+@item
+@code{struct tree_circumflex_op_node} -- a circumflex node can be one of two
+types. With the circumflex we denote a numerical power operator or recurrence
+equation index reference. @code{is_index} field inside circumflex node is true
+if this node is related to a recurrence equation.
+
+@item
+@code{struct tree_identifier_node} -- in identifier node we store an original
+variable name (@code{source_name}). This is necessary, because not all
+characters from front-end can be supported by backend language. We also store
+reference (@code{iter_def}) to a variable node which stores a description of a
+recurrence. @code{iter_desc} is a list of nodes describing recurrence. All the
+other fields (@code{def}, @code{ud_chain}, @code{du_chain}) are used during
+data flow analysis.
+
+@item
+@code{struct tree_iter_pair} -- used to store a relation between index of
+recurrence expression and it's definition. In parallel loops
+(@code{PARALLEL_LOOP} node) we use also lower indices in the left part of the
+statement. To not lose this information we put it into @code{lower_index}
+field.
+
+@item
+@code{struct tree_hash_node} -- used during single assignment stage. This is a
+hash table where we store a list of possible values for phi nodes.
+
+@item
+@code{struct tree_phi_node} -- we don't use this node during parsing stage,
+however during single assignment stage we insert phi nodes into syntax tree for
+data flow analysis.
+
+@item
+@code{struct tree_rec_expr_node} -- a description of recurrence expression.
+@code{min_value} is the lowest index of a base case for a described recurrence
+equation. @code{size} is a number of base cases necessary to describe a
+recurrence equation. @code{list} represents a list of all recurrence cases.
+@end itemize
+
+Tree node usually is constructed using @code{make_tree} function.
+
+@section Macroprocessor/Matcher
+Macroprocessor or matcher transforms a sequence of tokens into a custom
+tree 
+
+@section Type checking
+
+@section Control flow analysis
+
+@section Data flow analysis
+
+@section Code generation
 
 @node Known problems
 @chapter Known problems
