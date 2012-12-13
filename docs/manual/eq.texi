@@ -152,7 +152,7 @@ is parsed until @code{EOF} character is occured.
 @subsection Identifiers
 An identifier as a sequence of one or more letters and digits.
 @lisp
-identifier = letter { letter | digit | "\_" }
+identifier = letter @{ letter | digit | "\_" @}
 @end lisp
 
 A set of certain keywords can be used as identifiers as well.
@@ -215,8 +215,8 @@ meaning.
 @subsection Integer literals
 @lisp
 int_lit     = decimal_lit | hex_lit
-decimal_lit = ( "1" ... "9" ) { decimal_digit }
-hex_lit     = "\hex" "@{"  hex_digit { hex_digit } "@}"
+decimal_lit = ( "1" ... "9" ) @{ decimal_digit @}
+hex_lit     = "\hex" "@{"  hex_digit @{ hex_digit @} "@}"
 @end lisp
 
 @subsection Floating-point literals
@@ -224,7 +224,7 @@ hex_lit     = "\hex" "@{"  hex_digit { hex_digit } "@}"
 float_lit = decimals "." [ decimals ] [ exponent ] |
             decimals exponent |
             "." decimals [ exponent ]
-decimals  = decimal_digit { decimal_digit }
+decimals  = decimal_digit @{ decimal_digit @}
 exponent  = ( "e" | "E" ) [ "+" | "-" ] decimals
 @end lisp
 
