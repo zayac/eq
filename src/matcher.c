@@ -33,12 +33,10 @@ add_match (const char *key, struct token_list_el *match, tree replace)
   MATCHER_MATCH (el) = match;
   MATCHER_REPLACE (el) = replace;
   HASH_ADD_KEYPTR (hh, matches, key, strlen (key), el);
-  //HASH_ADD (hh, matches, key, sizeof (struct eq_token), el);
-
 }
 
 /* Removes match rule from the hash table  */
-void
+static void
 delete_match (struct match_table *del)
 {
   struct token_list_el *el;
@@ -72,8 +70,8 @@ find_match (const char *str)
    The old tree is freed.
    In other case there the there is a recursive descent, in the end the
    same tree is returned.  */
-tree
-connect_nodes (tree t, const struct tree_list_el * list)
+static tree
+connect_nodes (tree t, const struct tree_list_element * list)
 {
   int i;
 
@@ -99,7 +97,7 @@ connect_nodes (tree t, const struct tree_list_el * list)
       int counter;
       for (counter = 1; counter < TREE_ARG (t); counter++)
 	list = list->next;
-      return tree_copy (list->value);
+      return tree_copy (list->entry);
     }
 
   for (i = 0; i < TREE_CODE_OPERANDS (TREE_CODE (t)); i++)
@@ -112,26 +110,12 @@ connect_nodes (tree t, const struct tree_list_el * list)
   return t;
 }
 
-
-void
-free_tree_list (struct tree_list_el *list)
-{
-  struct tree_list_el *tmp = NULL;
-  struct tree_list_el *el = NULL;
-  LL_FOREACH_SAFE (list, el, tmp)
-  {
-    LL_DELETE (list, el);
-    free_tree (el->value);
-    free (el);
-  }
-}
-
 tree
 perform_transform (struct eq_parser *parser)
 {
   tree ret = NULL, tmp = NULL;
-  struct tree_list_el *tmp_expr = NULL;
-  struct tree_list_el *exprs = NULL;
+  struct tree_list_element *tmp_expr = NULL;
+  struct tree_list_element *exprs = NULL;
   struct match_table *record = NULL;
   struct eq_token *tok = parser_get_token (parser);
 
@@ -149,9 +133,9 @@ perform_transform (struct eq_parser *parser)
 	    if (tmp != error_mark_node)
 	      {
 		tmp_expr =
-		  (struct tree_list_el *)
-		  malloc (sizeof (struct tree_list_el));
-		tmp_expr->value = tmp;
+		  (struct tree_list_element *)
+		  malloc (sizeof (struct tree_list_element));
+		tmp_expr->entry = tmp;
 		tmp_expr->next = NULL;
 		LL_APPEND (exprs, tmp_expr);
 	      }
@@ -228,7 +212,7 @@ perform_transform (struct eq_parser *parser)
    correspondingly to number of \expr which were enumerated in the left side.
    In case everything is fine return true. Otherwise, return list of trees with
    errors  */
-bool
+static bool
 validate_tree (unsigned expr_number, tree t)
 {
   bool ret = true;

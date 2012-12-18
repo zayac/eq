@@ -91,7 +91,6 @@ main (int argc, char *argv[])
   char *src_name = NULL;
   extern char *optarg;
   extern int optind;
-  struct tree_list_element *tle;
 
   struct eq_lexer *lex = (struct eq_lexer *) malloc (sizeof (struct eq_lexer));
   struct eq_parser *parser = (struct eq_parser *) malloc (sizeof (struct eq_parser));

@@ -430,7 +430,7 @@ The parser calls @code{eq_lexer_get_token} function until EOF token found. All
 recent tokens are stored in token buffer @code{token_buffer} inside
 @code{struct eq_parser} structure. Physically token is parsed and put into
 token array once only. When @code{eq_parser_unget} is called, then the array
-index pointer is decrease, when @code{eq_parser_get_token} is called again,
+index pointer is decreased, when @code{eq_parser_get_token} is called again,
 then the pointer is increased, and a corresponding value from the buffer is
 returned. It should be noticed that the buffer size @code{buf_size} could
 affect parsing correctness, so that not more than @code{buf_size} tokens can be
@@ -441,9 +441,26 @@ converts hexidecimal numbers to decimal inside @code{eq_parser_get_token}
 function.
 
 The parser uses grammar rules described in BNF to build subtrees for
-expressions, which are combined into a separate tree for each function.
+expressions, which are combined into a separate tree for each function. BNF
+rules are matched inside @code{handle_<rule_name>} functions.
 All function trees are stored in @code{function_list} list. Function prototypes
 are stored separately in @code{function_proto_list}.
+
+These methods in parser are public:
+@itemize
+@item
+@code{bool eq_parser_init (struct eq_parser *, struct eq_lexer *)} --
+initialize parser structure with initial values.
+
+@item
+@code{bool eq_parser_finalize (struct eq_parser *)} -- finalize parser
+structure and deallocate associated variables.
+
+@item
+@code{int eq_parse (struct eq_parser*)} -- parse token sequences and build a
+syntax tree for each function and prototype (lists of trees are stored in
+@code{function_list} and @code{function_proto_list]} global variables).
+@end itemize
 
 @section Tree structure
 The tree structure is described in @code{tree.h}. All nodes are members of
@@ -517,7 +534,73 @@ Tree node usually is constructed using @code{make_tree} function.
 
 @section Macroprocessor/Matcher
 Macroprocessor or matcher transforms a sequence of tokens into a custom
-tree 
+tree. Matcher is implemented as a part of parser module, however it can be used
+seperately (with a parser, which works with a different grammar, for example).
+
+A macro substitution can be performed only in place of production of type
+@dfn{expr}. In all other cases an error will be produced. A function
+@code{perform_transformation} performs a transformation and then
+@code{validate_match} is used to check the correspondance to the language
+grammar.
+
+The matcher is initialised with the parser (function @code{matcher_init} is 
+called from @code{eq_parser_init}). Similarly, @code{matcher_finalize} is
+called from @code{eq_parser_finalize}.
+
+Before apply matching transformations, matching rules have to be declared.
+According to the grammar, @dfn{\match} productions are to be defined in global
+scope before use. Productions consist of left and right part. The left part is an
+arbitrary token sequence with a new token which is not in the predefined
+token set (a token with a type @dfn{tok_unknown}). The right part of the
+production is a sequence of tokens which is supported by the grammar and
+corresponds to the @dfn{expr} grammar rule. tree which is inserted in place of
+matched token sequence. In this part construction @code{\expr@{ <num> @} } can be
+used, which are used as markers. When transformation is performed we substitute
+nodes of type @code{EXPR_MATCH} (they represent @code{\expr@{ <num> @} } rules
+with actual values provided as macros arguments.
+
+Match expressions are handled in @code{handle_match} function. When both parts
+of match expression are parsed, @code{add_match} is called, and a new entry is
+added into global hash table called @code{matches}.
+@example
+struct match_table
+@{
+  const char *key;
+  struct token_list_el *match;
+  tree replace;
+  UT_hash_handle hh;
+@};
+@end example
+The key (@code{key}) of hash table entry is the literal representation of the first token
+(that's why each match should have a unique token as the first one in the
+sequence). The second field in entry structure is a token sequence itself
+(@code{match}). The third field (@code{replace}) is a tree, which will be
+inserted in place where matching token sequence is found.
+
+These matcher methods are public:
+@itemize
+  @item 
+  @code{void matcher_init (void)} -- initialize matcher hash table.
+  
+  @item
+  @code{void add_match (const char *, struct token_list_el *, tree)} -- adds a
+  new entry into global hash table.
+
+  @item
+  @code{struct match_table *find_match (const char*)} -- find an entry given a
+  key. If not found, NULL is returned.
+
+  @item
+  @code{tree perform_transform (struct eq_parser *)} -- providing the following
+  token sequence relates to some match in @code{matches} table, construct a
+  corresponding tree.
+
+  @item
+  @code{bool validate_match (struct token_list_el *, tree)} -- validate
+  transformation correspondance to grammar rules (we can substitute only
+  @dfn{expr} rules). 
+
+@end itemize
 
 @section Type checking
 

@@ -29,12 +29,6 @@ struct token_list_el
   struct token_list_el *next;
 };
 
-struct tree_list_el
-{
-  tree value;
-  struct tree_list_el *next;
-};
-
 /* A hash table for token matches.
    A token string value is used here as a key. This is because we ought to put
    here a pointer to the key. However, to use token class as another key (in
@@ -65,7 +59,6 @@ struct match_table *matches;
 
 void matcher_init (void);
 void add_match (const char *, struct token_list_el *, tree);
-void delete_match (struct match_table *);
 struct match_table *find_match (const char *);
 tree perform_transform (struct eq_parser *);
 bool validate_match (struct token_list_el *, tree);

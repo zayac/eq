@@ -53,6 +53,7 @@ eq_token_is_ ## a (struct eq_token *  tok, enum eq_token_kind tkind) \
 }
 #include "token_class.def"
 #undef TOKEN_CLASS
+
 static inline bool
 eq_token_is_number (struct eq_token *tok)
 {

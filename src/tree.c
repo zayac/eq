@@ -217,6 +217,18 @@ free_atomic_trees ()
   atomic_trees_idx = 0;
 }
 
+void
+free_tree_list (struct tree_list_element *list)
+{
+  struct tree_list_element *tmp = NULL;
+  struct tree_list_element *el = NULL;
+  LL_FOREACH_SAFE (list, el, tmp)
+  {
+    LL_DELETE (list, el);
+    free_tree (el->entry);
+    free (el);
+  }
+}
 
 void
 free_tree (tree node)
@@ -260,15 +272,7 @@ free_tree (tree node)
 	    }
 	}
       else if (code == LIST)
-	{
-	  struct tree_list_element *el = NULL, *tmp = NULL;
-	  DL_FOREACH_SAFE (TREE_LIST (node), el, tmp)
-	  {
-	    DL_DELETE (TREE_LIST (node), el);
-	    free_tree (el->entry);
-	    free (el);
-	  }
-	}
+	free_tree_list (TREE_LIST (node));
       else if (code == ITER_EXPR)
 	{
 	  free_tree (TREE_ITER_LIST (node));
@@ -896,25 +900,4 @@ eliminate_list (tree expr)
   expr = TREE_LIST (expr)->entry;
   free_list (tmp);
   return expr;
-}
-
-static int 
-equal_list_sizes (tree left, tree right)
-{
-  struct tree_list_element *lel = NULL, *rel =NULL;
-  assert (TREE_CODE (left) == LIST && TREE_CODE (right) == LIST,
-    "list tree expected");
-  DL_FOREACH (TREE_LIST (left), lel)
-    {
-      if (rel == NULL)
-	rel = TREE_LIST (right);
-
-      if (lel->next == NULL && rel->next != NULL)
-	return -1;
-      else if (lel->next != NULL && rel->next == NULL)
-	return 1;
-
-      rel = rel->next;
-    }
-  return 0;
 }

@@ -419,6 +419,7 @@ is_assignment_operator (enum eq_token_kind tk)
 tree make_tree (enum tree_code);
 void free_tree (tree);
 void free_tree_type (tree, bool);
+void free_tree_list (struct tree_list_element *);
 void free_atomic_trees (void);
 tree make_string_cst_tok (struct eq_token *);
 tree make_string_cst_str (const char *);

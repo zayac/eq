@@ -28,16 +28,10 @@ static void parser_unget (struct eq_parser *);
 
 static struct eq_token *parser_get_until_one_of_val (struct eq_parser *, int, ...);
 static struct eq_token *parser_get_until_tval (struct eq_parser *, enum eq_token_kind);
-static struct eq_token *parser_get_until_tclass (struct eq_parser *, enum eq_token_class);
-static struct eq_token *parser_forward_tval (struct eq_parser *, enum eq_token_kind);
 static struct eq_token *parser_forward_tclass (struct eq_parser *, enum eq_token_class);
 static struct eq_token *parser_token_alternative_tval (struct eq_parser *, enum eq_token_kind,
 					     enum eq_token_kind);
-static struct eq_token *parser_token_alternative_tclass (struct eq_parser *,
-					       enum eq_token_class,
-					       enum eq_token_class);
 static bool parser_expect_tval (struct eq_parser *, enum eq_token_kind);
-static bool parser_expect_tclass (struct eq_parser *, enum eq_token_class);
 static tree handle_type (struct eq_parser *);
 static tree handle_arraytype (struct eq_parser *);
 static tree handle_ext_type (struct eq_parser *);
@@ -50,12 +44,10 @@ static tree handle_idx (struct eq_parser *);
 static tree handle_lower (struct eq_parser *);
 static tree handle_upper (struct eq_parser *);
 static tree handle_function (struct eq_parser *);
-static tree handle_function_call (struct eq_parser *);
 static tree handle_linear (struct eq_parser *, tree);
 static tree handle_divide (struct eq_parser *);
 static tree handle_sexpr (struct eq_parser *);
 static tree handle_sexpr_op (struct eq_parser *);
-static tree handle_condition (struct eq_parser *);
 static tree handle_filter (struct eq_parser *);
 static tree handle_matrix (struct eq_parser *);
 static tree handle_genarray (struct eq_parser *);
@@ -254,44 +246,6 @@ parser_get_until_tval (struct eq_parser *parser, enum eq_token_kind tkind)
   return tok;
 }
 
-/* Skip tokens until token of class TCLASS would be found.  */
-static struct eq_token *
-parser_get_until_tclass (struct eq_parser *parser, enum eq_token_class tclass)
-{
-  struct eq_token *tok;
-
-  do
-    {
-      tok = parser_get_token (parser);
-      /* FIXME the following condition makes it impossible
-	 to skip until some symbol if you are inside the
-	 block or brackets. */
-      if ( /* parser_parens_zero (parser) && */ eq_token_class (tok) == tclass)
-	return tok;
-    }
-  while (eq_token_class (tok) != tok_eof);
-
-  return tok;
-}
-
-
-/* Get the next token and check if it's value  is what expected.
-   Function doesn't unget the token in case of the success.
-   In case when unexpected value found -- print error message */
-/*struct eq_token *
-parser_forward_tval (struct eq_parser *parser, enum eq_token_kind tkind)
-{
-  struct eq_token *tok = parser_get_token (parser);
-
-  if (eq_token_uses_buf ( eq_token_class (tok)) || eq_token_value (tok) != tkind)
-    {
-      error_loc (eq_token_location (tok), "unexpected token `%s' ",
-		 eq_token_as_string (tok));
-      return NULL;
-    }
-  return tok;
-}*/
-
 /* XXX For the time being make it macro in order to see
    the __LINE__ expansions of error_loc.  */
 #define parser_forward_tval(parser, tkind)  __extension__	  \
@@ -398,24 +352,6 @@ parser_forward_tclass (struct eq_parser *parser, enum eq_token_class tclass)
   return tok;
 }
 
-/* Get the next token from two alternative class options.
-   If the token is different, return NULL.  */
-static struct eq_token *
-parser_token_alternative_tclass (struct eq_parser *parser,
-				 enum eq_token_class first,
-				 enum eq_token_class second)
-{
-  struct eq_token *tok = parser_get_token (parser);
-
-  if (eq_token_class (tok) == first || eq_token_class (tok) == second)
-    return tok;
-
-  parser_unget (parser);
-  return NULL;
-}
-
-/* Get the next token from two alternative valueoptions.
-   If the token is different, return NULL.  */
 struct eq_token *
 parser_token_alternative_tval (struct eq_parser *parser, enum eq_token_kind first,
 			       enum eq_token_kind second)
@@ -448,29 +384,6 @@ parser_expect_tval (struct eq_parser * parser, enum eq_token_kind tkind)
       error_loc (eq_token_location (tok),
 		 "token `%s' expected, `%s' token found",
 		 eq_token_kind_as_string (tkind), eq_token_as_string (tok));
-      parser_unget (parser);
-      return false;
-    }
-}
-
-/* Check if the next token returned by parser_get_token would be
-   token of class TCLASS, in case the class is different,
-   the error_loc would be called.
-   NOTE: function ungets the token after checking it.  */
-static bool
-parser_expect_tclass (struct eq_parser * parser, enum eq_token_class tclass)
-{
-  struct eq_token *tok = parser_get_token (parser);
-  if (eq_token_class (tok) == tclass)
-    {
-      parser_unget (parser);
-      return true;
-    }
-  else
-    {
-      error_loc (eq_token_location (tok),
-		 "token of class `%s' expected, `%s' token found",
-		 eq_token_class_as_string (tclass), eq_token_as_string (tok));
       parser_unget (parser);
       return false;
     }
@@ -3312,12 +3225,6 @@ eq_parse (struct eq_parser *parser)
     }
 
   return 0;
-}
-
-static void
-print_code (tree e)
-{
-  printf ("%s\n", TREE_CODE_NAME (TREE_CODE (TREE_FUNC_INSTRS (e))));
 }
 
 /* I know this is ugly, but life is tough!  */
