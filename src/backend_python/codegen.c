@@ -55,6 +55,21 @@
 static int level;
 static int codegen_get_gen_last_value_function (FILE*);
 static int codegen_genar_function (FILE*);
+static void init_codegen_options (void);
+static int codegen_zero_array (FILE*, struct tree_list_element *,
+			       enum tree_code);
+static int codegen_get_gen_last_value_function (FILE*);
+static int codegen_genar_function (FILE*);
+static int codegen_function (FILE*, tree);
+static int codegen_stmt_list (FILE*, tree, char*);
+static int codegen_parallel_loop (FILE*, tree, tree, bool);
+static int codegen_iterative (FILE*, tree);
+static int codegen_stream (FILE*, tree);
+static int codegen_zero_function (FILE*, tree);
+static inline void append_construct_list (tree);
+static int codegen_stmt (FILE*, tree, char*);
+static int codegen_genar (FILE*, tree, struct tree_list_element *);
+static int codegen_expression (FILE*, tree);
 
 enum circumflex_type { UNKNOWN, GENERATE, VAR, WINDOW };
 /* These parameters specify options for code generating.  */
@@ -234,7 +249,7 @@ codegen_genar_function (FILE* f)
   return 0;
 }
 
-int
+static int
 codegen_function (FILE* f, tree func)
 {
   struct tree_list_element *  el;
@@ -269,7 +284,7 @@ codegen_function (FILE* f, tree func)
   return error;
 }
 
-int
+static int
 codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
 {
   struct tree_list_element *tle;
@@ -282,7 +297,7 @@ codegen_stmt_list (FILE* f, tree stmt_list, char* func_name)
   return error;
 }
 
-int
+static int
 codegen_parallel_loop (FILE* f, tree id, tree stmt, bool recurrent)
 {
   unsigned counter = 0;
@@ -400,7 +415,7 @@ codegen_parallel_loop (FILE* f, tree id, tree stmt, bool recurrent)
 }
 
 /* generate a handler for recurrent expression.  */
-int
+static int
 codegen_iterative (FILE* f, tree var)
 {
   int error = 0;
@@ -524,7 +539,7 @@ codegen_iterative (FILE* f, tree var)
   return error;
 }
 
-int
+static int
 codegen_stream (FILE* f, tree var)
 {
   int error = 0;
@@ -624,7 +639,7 @@ append_construct_list (tree lel)
   return;
 }
 
-int
+static int
 codegen_stmt (FILE* f, tree stmt, char* func_name)
 {
   int error = 0;
@@ -912,7 +927,7 @@ codegen_stmt (FILE* f, tree stmt, char* func_name)
   return error;
 }
 
-int
+static int
 codegen_genar (FILE* f, tree expr, struct tree_list_element *shape)
 {
   int error = 0;
@@ -931,7 +946,7 @@ codegen_genar (FILE* f, tree expr, struct tree_list_element *shape)
   return error;
 }
 
-int
+static int
 codegen_expression (FILE* f, tree expr)
 {
   int error = 0;

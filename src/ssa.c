@@ -48,7 +48,7 @@ ssa_copy_var_hash (struct id_defined *hash)
 
 /* Add new element to a table where we store variable versions for ssa
    replacement.  */
-void
+static void
 ssa_declare_new_var (basic_block bb, tree var)
 {
   char* s;
@@ -68,7 +68,7 @@ ssa_declare_new_var (basic_block bb, tree var)
 		   id_el->id, strlen (id_el->id), id_el);
 }
 
-void
+static void
 ssa_reassign_var (basic_block bb, tree var)
 {
   struct id_defined *id_el = NULL;
@@ -89,7 +89,7 @@ ssa_reassign_var (basic_block bb, tree var)
   return;
 }
 
-void
+static void
 ssa_append_var_definition (basic_block bb, tree var)
 {
   struct id_defined *id_el = NULL;
@@ -110,7 +110,7 @@ ssa_append_var_definition (basic_block bb, tree var)
 
 /* Search subtree for a identifier node. If found, substitute this with a
    redefined identifier.  */
-void
+static void
 ssa_redefine_vars (basic_block bb, tree node, tree assign_node)
 {
   enum tree_code code = TREE_CODE (node);
@@ -140,7 +140,8 @@ ssa_redefine_vars (basic_block bb, tree node, tree assign_node)
 }
 
 /* Callback to sort pointers inside utarray.  */
-static int pointer_sort(struct tree_hash_node *a, struct tree_hash_node *b)
+static int 
+pointer_sort(struct tree_hash_node *a, struct tree_hash_node *b)
 {
   if (a->s < b->s)
     return -1;

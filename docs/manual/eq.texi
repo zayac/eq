@@ -600,13 +600,150 @@ These matcher methods are public:
   transformation correspondance to grammar rules (we can substitute only
   @dfn{expr} rules). 
 
+  @item
+  @code{void print_matches} -- print matcher rules. Can be used for debug
+  purpose.
 @end itemize
 
 @section Type checking
+A static type checker inferences missing types and finds type errors. The
+checker recursively proceeds each node of AST starting from the top.
+
+All tree nodes in the AST are separated into two categories: those, who have
+type property, and those who don't. This property is defined in
+@code{tree.def}. Every typed node has a field @code{TREE_TYPE (node)}, which is
+@code{NULL} before type checking. The goal of type checking is to assign a
+corresponding type to a @code{TREE_TYPE} field. The information about basic
+node types is retrieved from a node identifier and from type
+declarations in the source code. Types of more complex expressions are
+retrieved using simple inference rules. All types are stored in global table
+@code{type_table}. We store only unique types in this table. Therefore, a new
+type is added in the table only when it is not found there. Some basic types
+are added to the table inside intialization function @code{types_init} (and
+removed inside @code{types_finalize} function) -- @code{TYPE_B}, @code{TYPE_N},
+@code{TYPE_R}, @code{TYPE_R}. Other types are added to the table using
+@code{types_assign_type} function.
+
+The only public method in type checker is:
+@itemize
+  @item
+  @code{int typecheck (void)} -- perform type checking.
+@end itemize
 
 @section Control flow analysis
 
+A control flow analysis is performed to build a control flow graph useful for
+future optimisations and performing static single assignment.
+
+Inside a public @code{controlflow} function, a control flow analysis is
+performed for every function in program using @code{controlflow_function}.
+
+The analysis constructs a graph of @code{basic_block} structures as nodes
+connected with @code{edge} edges. Each function has a CFG property which can be
+accessed using @code{TREE_FUNC_CFG} macro. The type of the property is
+@code{struct control_flow_graph}.
+
+Each basic block contains a variable hash @code{var_hash} for every unique
+variable with variable literal string @code{id} as a key. Every hash table
+entry contains another hash table itself (@code{struct tree_hash_node})
+with phi nodes listed.
+
+The main construction routine is focused in @code{controlflow_pass_block}
+function. Here is the brief construction algorithm description:
+@enumerate
+  @item
+  Create a new basic block.
+
+  @item
+  We need to link previously created blocks with the current one, if necessary.
+  We do it if static varibles @code{join_tail1} and @code{join_tail2} are not
+  @code{NULL}.
+
+  @item
+  For current statement perform SSA transformation and def-use/use-def chaining using @code{ssa_verify_vars}
+  function.
+
+  @item
+  Iterate over all statements in function statement list. If it is `if
+  statement', then we create a new internal basic block and copy
+  (@code{ssa_copy_var_hash} function) existing variable context to the new
+  block. Recursively run @code{controlflow_pass_block} function for the
+  internal `true predicate body' block. If `false predicate body' exists, then
+  do the same for this block as well.
+
+  @item
+  After this we need to merge information about variables from the inner
+  contexts with the current one. For every variable which was modified inside
+  one of inner blocks (we check @code{was_modified} property) we substitute old
+  definition with a new one. More precisely:
+  @itemize
+    @item If variable was modified in both inner blocks, create a phi node
+    with definitions from these block. Old definitions from the current block
+    are removed.
+
+    @item If variable was modified inside one of inner blocks only, merge
+    modified definitions with definitions inside the current block (create a
+    new phi node).
+  @end itemize
+
+  Store pointers to the new blocks in static variables @code{join_tail1},
+  @code{join_tail2}.
+
+  @item
+  Move to the next instruction.
+@end enumerate
+
+@subsection SSA transformation and Use-Def/Def-Use chaining
+Here we describe internals of @code{ssa_verify_vars} function.
+
+Basically, we find all variable occurrences inside a given statement. For each
+variable we do a search in a variable hash table inside current basic block for
+all possible definitions. Given this information, we do the following:
+@itemize
+  @item
+  Store pointers to @code{IDENTIFIER} nodes of definitions in
+  @code{TREE_ID_UD_CHAIN} field for current node.
+
+  @item
+  Store a pointer to this @code{IDENTIFIER} node in @code{TREE_ID_DU_CHAIN}
+  field of the definition node.
+
+  @item
+  For current statement, append statements with definitions of variables which
+  are used here (append to @code{TREE_STMT_DEFS} field).
+
+  @item
+  For statement with variable definition, append current statement which uses
+  defined variable (append to @code{TREE_STMT_USES} field).
+
+  @item
+  @code{TREE_ID_DEF} field of the variable node points to the current statement
+  node.
+@end itemize
+
+All these manipulations set dependency links between variable definitions and
+usage to be able to retrieve dataflow information.
+
+Also we do variable redefinitions when we are inside left subtree of the
+assignment node. If variable is not found inside basic block's @code{var_hash},
+then we simply create a new entry. Otherwise we remove all previous definitions
+in the phi node, and create a new one relevant to the current variable.
 @section Data flow analysis
+After all data dependencies are set, the dataflow analysis becomes
+straightforward.
+
+The first thing we do, given a list of return values and print statements for
+each function, we find all reachable statements. The remaining statements can
+be removed from the AST, as they are not used for computations.
+
+Finally we perform statement scheduling based on the dependencies. We do it
+inside @code{dataflow_schedule} function using Breadth First Search (BFS)
+algorithm. All statements with the same distance from a root node (root node is
+either return or print statement) are combined into a separate list. Such list
+represents statements that can be executed concurrently as they don't have
+dependencies among them. Finally function @code{dataflow_schedule} returns a
+list of lists representing the sequence of sets of statements possible to be
+executed in parallel.
 
 @section Code generation
 

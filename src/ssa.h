@@ -50,9 +50,6 @@ struct id_defined
 };
 
 struct id_defined* ssa_copy_var_hash (struct id_defined*);
-void ssa_declare_new_var (basic_block, tree);
-void ssa_reassign_var (basic_block, tree);
 void ssa_verify_vars (basic_block, tree, tree);
-void ssa_redefine_vars (basic_block, tree, tree);
 
 #endif /* __SSA_H__ */

@@ -19,9 +19,5 @@
 #include "print.h"
 
 int dataflow (void);
-void dataflow_mark_redundant_code (tree);
-bool dataflow_is_entry_point (tree, tree);
-tree dataflow_schedule (tree);
-tree dataflow_function (tree);
-//tree dataflow_chain (xfile*, tree);
+
 #endif /* __DATAFLOW_H__ */

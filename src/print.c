@@ -154,11 +154,11 @@ print_expression (xfile *  xf, tree exp)
 	xfile_fprintf (xf, "}\n");
 	level += 2;
 	DL_FOREACH (TREE_LIST (TREE_FUNC_INSTRS (exp)), tle)
-	{
-	  indent (xf, level);
-	  print_expression (xf, tle->entry);
-	  xfile_fprintf (xf, " \\lend\n");
-	}
+	  {
+	    indent (xf, level);
+	    print_expression (xf, tle->entry);
+	    xfile_fprintf (xf, " \\lend\n");
+	  }
 	level -= 2;
 	xfile_fprintf (xf, "\\end{eqcode}\n");
 	break;
@@ -292,14 +292,14 @@ print_expression (xfile *  xf, tree exp)
 	xfile_fprintf (xf, "\\begin{cases}\n");
 	level += 2;
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 2)), tle)
-	{
-	  indent (xf, level);
-	  print_expression (xf, tle->entry);
-	  if (tle->next != NULL)
-	    xfile_fprintf (xf, " \\lend \n");
-	  else
-	    xfile_fprintf (xf, "\n");
-	}
+	  {
+	    indent (xf, level);
+	    print_expression (xf, tle->entry);
+	    if (tle->next != NULL)
+	      xfile_fprintf (xf, " \\lend \n");
+	    else
+	      xfile_fprintf (xf, "\n");
+	  }
 	level -= 2;
 	indent (xf, level);
 	xfile_fprintf (xf, "\\end {cases}");
@@ -320,15 +320,15 @@ print_expression (xfile *  xf, tree exp)
 	xfile_fprintf (xf, "\\begin{tmatrix}\n");
 	level += 2;
 	DL_FOREACH (TREE_LIST (TREE_OPERAND (exp, 0)), tle)
-	{
-	  indent (xf, level);
-	  DL_FOREACH (TREE_LIST (tle->entry), tle2)
 	  {
-	    print_expression (xf, tle2->entry);
-	    xfile_fprintf (xf, " & ");
+	    indent (xf, level);
+	    DL_FOREACH (TREE_LIST (tle->entry), tle2)
+	      {
+		print_expression (xf, tle2->entry);
+		xfile_fprintf (xf, " & ");
+	      }
+	    xfile_fprintf (xf, "\\lend\n");
 	  }
-	  xfile_fprintf (xf, "\\lend\n");
-	}
 	level -= 2;
 	indent (xf, level);
 	xfile_fprintf (xf, "\\end{tmatrix}");

@@ -21,11 +21,15 @@
 
 struct tree_hash_node;
 
+static void dataflow_mark_redundant_code (tree);
+static void dataflow_get_use_list (tree, tree);
+static tree dataflow_schedule (tree);
+
 /* A statement is marked as redundant, if it's not used for calculating return
    value.
    Basically this marks *nonredundant* statements, because each node is 
    redundant by default.  */
-void
+static void
 dataflow_mark_redundant_code (tree stmt)
 {
   struct tree_list_element *el;
@@ -95,7 +99,7 @@ dataflow (void)
 /* Add `use' links of `node' statement definition into `hash' hash table.
    To satisfy all dependency links we add statement into table only when all
    previous statements were proceeded.  */
-void
+static void
 dataflow_get_use_list (tree node, tree queue)
 {
   struct tree_list_element *el;
@@ -149,7 +153,7 @@ dataflow_get_use_list (tree node, tree queue)
 /* Schedule statements returning *a list of statement lists* in the result.
    Each list entry represents a set of statements which can be safely executed
    concurrently. BFS traversal is used for this.  */
-tree
+static tree
 dataflow_schedule (tree entry_list)
 {
   struct tree_list_element *el;

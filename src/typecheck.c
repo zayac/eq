@@ -25,6 +25,25 @@
 #include "recurrence.h"
 
 static int associate_variables (tree, tree, tree);
+static char* add_prefix_to_var (tree, char*);
+static int typecheck_stmt_list (tree, tree, tree, tree);
+static inline bool conversion_possible (tree, tree);
+static int  typecheck_type (tree, tree, tree, tree);
+static int typecheck_recurrent (tree);
+static int typecheck_stmt_assign_right (struct tree_list_element *,
+					tree, tree, tree);
+static int typecheck_stmt_assign_left (struct tree_list_element *, 
+				      tree, tree, tree);
+static int typecheck_assign_index (tree, tree);
+static int typecheck_assign_stream (tree, tree);
+static int typecheck_stmt (tree, tree, tree, tree);
+static int typecheck_function (tree);
+static int typecheck_lower (tree, tree, tree, tree, bool);
+static int typecheck_generator (tree, tree, tree, tree, bool);
+static int typecheck_function_call_args (tree, tree, tree, tree, tree);
+static int typecheck_function_call (tree, tree, tree, tree);
+static int typecheck_genarray (tree, tree, tree, tree);
+static int typecheck_expression (tree, tree, tree, tree);
 
 extern tree iter_var_list;
 extern tree stream_list;
@@ -127,7 +146,7 @@ typecheck (void)
   return function_check || eq_error_count;
 }
 
-int
+static int
 typecheck_stmt_list (tree stmt_list, tree ext_vars, tree vars, tree func_ref)
 {
   struct tree_list_element *tle;
@@ -191,7 +210,7 @@ conversion_possible (tree from, tree to)
 }
 
 /* typecheck trees representing types.  */
-int
+static int
 typecheck_type (tree type, tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;
@@ -276,7 +295,7 @@ shape_fail:
 /* typecheck recurrent index.
    ( <\iter> [ - <integer> ] ) | <integer>
  */
-int
+static int
 typecheck_recurrent (tree expr)
 {
   if (TREE_CODE (expr) == MINUS_EXPR)
@@ -302,7 +321,7 @@ error:
 }
 
 /* typecheck the right part (only one enumeration element) of the assignment.  */
-int
+static int
 typecheck_stmt_assign_right (struct tree_list_element *el,
 				    tree ext_vars, tree vars, tree func_ref)
 {
@@ -312,7 +331,7 @@ typecheck_stmt_assign_right (struct tree_list_element *el,
 }
 
 /* typecheck the left part( only one identifier) of the assignment.  */
-int
+static int
 typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 						    tree vars, tree func_ref)
 {
@@ -437,7 +456,7 @@ typecheck_stmt_assign_left (struct tree_list_element *el, tree ext_vars,
 /* A recurrent variable node stores values on all iterations.
    Here we put an expression corresponding to a current iteration into a list
    with all states.  */
-int
+static int
 typecheck_assign_index (tree lhs, tree rhs)
 {
   int ret = 0;
@@ -494,7 +513,7 @@ typecheck_assign_index (tree lhs, tree rhs)
 }
 
 /* A stream typed expression assignment.  */
-int
+static int
 typecheck_assign_stream (tree lhs, tree rhs)
 {
   assert (TYPE_IS_STREAM (TREE_TYPE (rhs)), "right part of the statement"
@@ -516,7 +535,7 @@ typecheck_assign_stream (tree lhs, tree rhs)
   return 0;
 }
 
-int
+static int
 typecheck_stmt (tree stmt, tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;
@@ -957,7 +976,7 @@ finalize_parallel_loop:
   return ret;
 }
 
-int
+static int
 typecheck_function (tree func_ref)
 {
   struct tree_list_element *el, *type;
@@ -1092,7 +1111,7 @@ free_local:
   return ret;
 }
 
-int
+static int
 typecheck_lower (tree expr, tree ext_vars, tree vars,
 					   tree func_ref, bool generator)
 {
@@ -1285,7 +1304,7 @@ associate_variables (tree t, tree ext_vars, tree vars)
   return 0;
 }
 
-int
+static int
 typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref,
 		     bool decls_allowed)
 {
@@ -1363,7 +1382,7 @@ typecheck_generator (tree expr, tree ext_vars, tree vars, tree func_ref,
 /* A helper function which checks arguments of a function call.
    The first argument is function arg types,
    the second argument is a function call tree. */
-int
+static int
 typecheck_function_call_args (tree func_args, tree expr, tree ext_vars,
 					      tree vars, tree func_ref)
 {
@@ -1451,7 +1470,7 @@ typecheck_function_call_args (tree func_args, tree expr, tree ext_vars,
   return 0;
 }
 
-int
+static int
 typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;
@@ -1506,7 +1525,7 @@ typecheck_function_call (tree expr, tree ext_vars, tree vars, tree func_ref)
   return ret;
 }
 
-int
+static int
 typecheck_genarray (tree expr, tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;
@@ -1633,8 +1652,7 @@ typecheck_genarray (tree expr, tree ext_vars, tree vars, tree func_ref)
   return ret;
 }
 
-
-int
+static int
 typecheck_expression (tree expr, tree ext_vars, tree vars, tree func_ref)
 {
   int ret = 0;

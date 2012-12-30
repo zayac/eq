@@ -20,6 +20,13 @@
 #include "ssa.h"
 #include "controlflow.h"
 
+static int controlflow_function (tree);
+static edge link_blocks (struct control_flow_graph *, 
+			 basic_block, basic_block);
+static basic_block controlflow_pass_block (tree, basic_block,
+					   struct tree_list_element *);
+
+
 /* To output flow graph you need to build the compiler with `-DCFG_OUTPUT'
    flag.
    In order to get a visual representation of the graph run these commands:
@@ -29,19 +36,20 @@
 */
 
 /* `free' function to remove an edge.  */
-void edge_dtor (void *_elt) {
+static void 
+edge_dtor (void *_elt) {
   edge *elt = (edge*) _elt; 
   if (*elt != NULL)
     free (*elt);
 }
 
 /* Used for lists that don't need to remove edges themselves  in the end.  */
-UT_icd edge_icd = {sizeof (edge), NULL, NULL, NULL};
+static UT_icd edge_icd = {sizeof (edge), NULL, NULL, NULL};
 
 /* Must be used for the *only* list that removes edges in the end.
    NOTE Not sure that we need such a global list. It is helpful if some
    optimizations need an access to all edges in graph.  */
-UT_icd edge_icd_dtor = {sizeof (edge), NULL, NULL, edge_dtor};
+static UT_icd edge_icd_dtor = {sizeof (edge), NULL, NULL, edge_dtor};
 
 #ifdef CFG_OUTPUT
 /* Basic block counter in order to assign ids for blocks.  */
@@ -49,7 +57,7 @@ static unsigned id_counter = 0;
 #endif
 
 /* Connect basic blocks with a directed edge.  */
-edge
+static edge
 link_blocks (struct control_flow_graph *cfg, basic_block src, basic_block dest)
 {
   edge new_edge = (edge) malloc (sizeof (struct edge_def));
@@ -67,7 +75,7 @@ link_blocks (struct control_flow_graph *cfg, basic_block src, basic_block dest)
 
 /* Constructs a new CFG.
    Must be called once for every function.  */
-struct control_flow_graph*
+static struct control_flow_graph*
 make_cfg (void)
 {
   struct control_flow_graph* cfg = (struct control_flow_graph*)
@@ -78,7 +86,7 @@ make_cfg (void)
 }
 
 /* Deallocate variable hash.  */
-void
+static void
 free_var_hash (struct id_defined *head)
 {
   struct id_defined *el, *tmp;
@@ -116,7 +124,7 @@ free_cfg (struct control_flow_graph* cfg)
 }
 
 /* Create new basic block for CFG.  */
-basic_block 
+static basic_block 
 make_bb (struct control_flow_graph* cfg, struct tree_list_element *head) {
   basic_block bb = (basic_block) malloc (sizeof (struct basic_block_def));
   memset (bb, 0, sizeof (struct basic_block_def));
@@ -152,7 +160,7 @@ controlflow (void)
 }
 
 
-int
+static int
 controlflow_function (tree func)
 {
   basic_block bb;
@@ -174,7 +182,7 @@ controlflow_function (tree func)
 
 /* Add a variable string to the set explicitly checking 
    the uniqueness.  */
-inline void
+static inline void
 safe_hash_add (struct tree_hash_node **head, tree s)
 {
   struct tree_hash_node *el;
@@ -188,7 +196,8 @@ safe_hash_add (struct tree_hash_node **head, tree s)
   HASH_ADD_PTR (*head, s, el);
 }
 
-bool is_stmt_defines_recurrence (tree node)
+static bool 
+is_stmt_defines_recurrence (tree node)
 {
   enum tree_code code;
   int i;
@@ -224,7 +233,7 @@ bool is_stmt_defines_recurrence (tree node)
 }
 
 /* A recursive pass extracting new blocks.  */
-basic_block
+static basic_block
 controlflow_pass_block (tree func, basic_block bb,
 			struct tree_list_element *head)
 {
